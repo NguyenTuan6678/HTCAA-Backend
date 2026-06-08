@@ -1,16 +1,29 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AuthController } from './auth/auth.controller';
-import { AuthService } from './auth/auth.service';
-import { AuthModule } from './auth/auth.module';
-import { UserController } from './user/user.controller';
-import { UserService } from './user/user.service';
-import { UserModule } from './user/user.module';
+import { AuthModule } from './users/auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
+import { AppConfigModule } from './config/config.module';
 
 @Module({
-  imports: [AuthModule, UserModule],
-  controllers: [AppController, AuthController, UserController],
-  providers: [AppService, AuthService, UserService],
+  imports: [
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        uri: configService.get<string>('app.mongodb.uri'),
+        dbName: configService.get<string>('app.mongodb.name'),
+        retryAttempts: 5,
+        retryDelay: 1000,
+      }),
+    }),
+    AuthModule,
+    UsersModule,
+    AppConfigModule,
+  ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
