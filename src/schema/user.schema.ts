@@ -17,7 +17,15 @@ export type UserDocument = HydratedDocument<User> & IUserMethods;
 })
 export class User {
   @Prop({ required: true, trim: true, type: String })
-  username: string;
+  name: string;
+
+  @Prop({
+    required: true,
+    trim: true,
+    lowercase: true,
+    type: String,
+  })
+  email: string;
 
   @Prop({ required: true, type: String, select: false })
   password: string;
@@ -25,11 +33,25 @@ export class User {
   @Prop({ default: true, type: Boolean })
   isActive: boolean;
 
-  @Prop({ type: String, enum: Role, required: true })
+  @Prop({
+    type: String,
+    enum: Role,
+    default: Role.MEMBER,
+    required: true,
+  })
   role: Role;
+
+  @Prop({ type: String, default: 'member' })
+  memberType: string;
 
   @Prop({ type: String, default: null, select: false })
   refreshTokenHash?: string | null;
+
+  @Prop({ type: String, default: null, select: false })
+  resetPasswordTokenHash?: string | null;
+
+  @Prop({ type: Date, default: null, select: false })
+  resetPasswordExpiresAt?: Date | null;
 
   @Prop({ type: Number, default: 0 })
   tokenVersion: number;
@@ -37,9 +59,8 @@ export class User {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-UserSchema.index({ username: 1 });
+UserSchema.index({ email: 1 }, { unique: true });
 UserSchema.index({ createdAt: -1 });
 
 createUserPreSaveHooks(UserSchema);
-
 createUserMethods(UserSchema);

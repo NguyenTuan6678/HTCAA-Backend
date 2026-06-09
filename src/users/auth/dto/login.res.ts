@@ -1,18 +1,30 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { MessageResponse } from '../../../types/message.res';
+import { Role } from '../../../utils/role/role';
+
+export class AuthUserResType {
+  @ApiProperty({ type: 'string' })
+  id: string;
+
+  @ApiProperty({ type: 'string' })
+  name: string;
+
+  @ApiProperty({ type: 'string' })
+  email: string;
+
+  @ApiProperty({ enum: Role })
+  role: Role;
+
+  @ApiProperty({ type: 'string' })
+  memberType: string;
+}
 
 export class LoginResType {
   @ApiProperty({ type: 'string' })
-  accessToken: string;
+  token: string;
 
-  @ApiProperty({ type: 'number' })
-  expiresToken: number;
-
-  @ApiProperty({ type: 'string' })
-  refreshToken: string;
-
-  @ApiProperty({ type: 'number' })
-  expRefreshToken: number;
+  @ApiProperty({ type: AuthUserResType })
+  user: AuthUserResType;
 }
 
 export class LoginRes extends MessageResponse {

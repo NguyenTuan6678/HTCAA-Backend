@@ -17,18 +17,15 @@ export class JwtAuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
 
-    const authHeader = request.headers['authorization'];
+    const bearerToken = request.headers.authorization?.split(' ')[1];
+    const cookieToken = request.cookies?.accessToken;
 
-    if (!authHeader) {
+    const token = bearerToken || cookieToken;
+
+    if (!token) {
       throw new ForbiddenException(
         'No identity verification information available.',
       );
-    }
-
-    const token = request.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-      throw new ForbiddenException('Token not found');
     }
 
     try {

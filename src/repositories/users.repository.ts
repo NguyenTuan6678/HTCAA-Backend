@@ -22,7 +22,7 @@ export class UsersRepository {
     try {
       const newUser = new this.userModel(createUserDto);
       const savedUser = await newUser.save();
-      this.logger.log(`User created: ${savedUser.username}`, 'UserRepository');
+      this.logger.log(`User created: ${savedUser.email}`, 'UserRepository');
       return savedUser;
     } catch (error: any) {
       this.logger.error(`Error creating user: ${error.message}`, undefined);
@@ -119,7 +119,7 @@ export class UsersRepository {
         .findByIdAndUpdate(id, updateData, { new: true })
         .exec();
       if (updateUser) {
-        this.logger.error('User updated successfully', 'UserRepository');
+        this.logger.log(`User updated: ${updateUser.email}`, 'UserRepository');
       }
       return updateUser;
     } catch (error: any) {
