@@ -7,6 +7,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AppConfigModule } from './config/config.module';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { MemberModule } from './module/member/member.module';
 
 @Module({
   imports: [
@@ -14,7 +15,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
       throttlers: [
         {
           ttl: 60000,
-          limit: 10,
+          limit: 100,
         },
       ],
     }),
@@ -31,6 +32,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
     AuthModule,
     UsersModule,
     AppConfigModule,
+    MemberModule,
   ],
   controllers: [AppController],
   providers: [AppService],

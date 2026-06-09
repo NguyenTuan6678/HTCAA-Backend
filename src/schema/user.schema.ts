@@ -55,6 +55,12 @@ export class User {
 
   @Prop({ type: Number, default: 0 })
   tokenVersion: number;
+
+  @Prop({ type: Number, default: 0, select: false })
+  failedLoginAttempts: number;
+
+  @Prop({ type: Date, default: null, select: false })
+  loginLockedUntil?: Date | null;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

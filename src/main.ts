@@ -1,5 +1,6 @@
 import 'dotenv/config';
 declare const module: any;
+import { join } from 'path';
 import cookieParser from 'cookie-parser';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
@@ -23,6 +24,10 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
+
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/uploads',
+  });
 
   const allExceptionsFilter = new AllExceptionsFilter(logger);
   app.useGlobalFilters(allExceptionsFilter);

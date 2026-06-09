@@ -32,6 +32,24 @@ export class AuthService {
 
   private readonly refreshCookieName = 'refreshToken';
 
+  private readonly maxFailedLoginAttempts = 5;
+  private readonly loginLockMinutes = 15;
+
+  private isLoginLocked(user: any): boolean {
+    return (
+      user.loginLockedUntil &&
+      new Date(user.loginLockedUntil).getTime() > Date.now()
+    );
+  }
+
+  private getRemainingLockMinutes(user: any): number {
+    if (!user.loginLockedUntil) return 0;
+
+    const remainingMs = new Date(user.loginLockedUntil).getTime() - Date.now();
+
+    return Math.ceil(remainingMs / 1000 / 60);
+  }
+
   private getCookieOptions(maxAge: number) {
     const isProduction =
       this.configService.get<string>('NODE_ENV') === 'production';
@@ -192,7 +210,9 @@ export class AuthService {
 
       const user = await this.userModal
         .findOne({ email })
-        .select('+password +refreshTokenHash');
+        .select(
+          '+password +refreshTokenHash +failedLoginAttempts +loginLockedUntil',
+        );
 
       if (!user) {
         return {
@@ -212,18 +232,69 @@ export class AuthService {
         };
       }
 
+      const lockExpired =
+        (user as any).loginLockedUntil &&
+        new Date((user as any).loginLockedUntil).getTime() <= Date.now();
+
+      if (lockExpired) {
+        (user as any).failedLoginAttempts = 0;
+        (user as any).loginLockedUntil = null;
+        await user.save();
+      }
+
+      if (this.isLoginLocked(user)) {
+        return {
+          code: ERROR_RES.FORBIDDEN_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: `Too many failed login attempts. Please try again in ${this.getRemainingLockMinutes(
+            user,
+          )} minutes.`,
+          content: null,
+        };
+      }
+
       const isMatch = await comparePassword(password, (user as any).password);
 
       if (!isMatch) {
+        const failedLoginAttempts =
+          ((user as any).failedLoginAttempts ?? 0) + 1;
+
+        (user as any).failedLoginAttempts = failedLoginAttempts;
+
+        if (failedLoginAttempts >= this.maxFailedLoginAttempts) {
+          const lockedUntil = new Date();
+          lockedUntil.setMinutes(
+            lockedUntil.getMinutes() + this.loginLockMinutes,
+          );
+
+          (user as any).loginLockedUntil = lockedUntil;
+
+          await user.save();
+
+          return {
+            code: ERROR_RES.FORBIDDEN_ERROR.statusCode,
+            info: ERROR_INFO.FAIL,
+            message: `Too many failed login attempts. Account is locked for ${this.loginLockMinutes} minutes.`,
+            content: null,
+          };
+        }
+
+        await user.save();
+
         return {
           code: ERROR_RES.INVALID_CREDENTIALS_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
-          message: 'Password is incorrect',
+          message: `Password is incorrect. You have ${
+            this.maxFailedLoginAttempts - failedLoginAttempts
+          } attempt(s) remaining.`,
           content: null,
         };
       }
 
       const token = await this.generateToken(user);
+
+      (user as any).failedLoginAttempts = 0;
+      (user as any).loginLockedUntil = null;
 
       (user as any).refreshTokenHash = await this.hashRefreshToken(
         token.refreshToken,

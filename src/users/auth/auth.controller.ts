@@ -26,6 +26,7 @@ import { LoginRes } from './dto/login.res';
 import { RegisterAccountDto } from './dto/register.req';
 import { ResetPasswordDto } from './dto/reset-password.req';
 import { JwtAuthGuard } from './guards/auth.guard';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -43,6 +44,7 @@ export class AuthController {
     return this.authService.register(registerAccountDto);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('login')
   @ApiOperation({ summary: 'login account' })
   @ApiResponse({
