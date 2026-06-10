@@ -435,7 +435,7 @@ export class MemberService {
             rejectedAt: new Date(),
             rejectReason: rejectMemberDto.reason,
             approvedBy: null,
-            approvedAt: null,
+            approvedAt: new Date(),
           },
           {
             returnDocument: 'after',
@@ -494,6 +494,7 @@ export class MemberService {
           id,
           {
             status: MemberStatus.EXPIRED,
+            expiredAt: new Date(),
           },
           {
             returnDocument: 'after',

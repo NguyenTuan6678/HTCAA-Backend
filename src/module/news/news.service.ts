@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-
 import { News } from '../../schema/news.schema';
 import { NewsCategory } from '../../schema/news-category.schema';
 import { User } from '../../schema/user.schema';
@@ -18,6 +17,11 @@ import { CreateNewsCategoryDto } from './dto/create-news-category.req';
 import { UpdateNewsCategoryDto } from './dto/update-news-category.req';
 import { QueryNewsCategoryDto } from './dto/query-news-category.req';
 import { NewsStatus } from '../../utils/new-status.enum';
+import { NewsComment } from '../../schema/news-comment.schema';
+import { CreateNewsCommentDto } from './dto/create-news-comment.req';
+import { QueryNewsCommentDto } from './dto/query-news-comment.req';
+import { UpdateNewsCommentDto } from './dto/update-news-comment.req';
+import { MinioService } from '../minio/minio.service';
 
 @Injectable()
 export class NewsService {
@@ -30,6 +34,11 @@ export class NewsService {
 
     @InjectModel(User.name)
     private readonly userModel: Model<User>,
+
+    @InjectModel(NewsComment.name)
+    private readonly newsCommentModel: Model<NewsComment>,
+
+    private readonly minioService: MinioService,
   ) {}
 
   // =========================
@@ -140,6 +149,58 @@ export class NewsService {
         select: 'name slug description isActive',
       },
     ];
+  }
+
+  private async findActiveNewsForModify(
+    id: string,
+    userId: string,
+    role: Role,
+  ) {
+    if (!Types.ObjectId.isValid(id)) {
+      return {
+        error: {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid news id',
+          content: null,
+        },
+        news: null,
+      };
+    }
+
+    const news = await this.newsModel.findOne({
+      _id: new Types.ObjectId(id),
+      isActive: true,
+    });
+
+    if (!news) {
+      return {
+        error: {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'News not found',
+          content: null,
+        },
+        news: null,
+      };
+    }
+
+    if (!this.canModify(news, userId, role)) {
+      return {
+        error: {
+          code: ERROR_RES.FORBIDDEN_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'You do not have permission to modify this news',
+          content: null,
+        },
+        news: null,
+      };
+    }
+
+    return {
+      error: null,
+      news,
+    };
   }
 
   // =========================
@@ -933,6 +994,558 @@ export class NewsService {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
         message: `There is a problem while deleting news: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async createComment(
+    newsId: string,
+    userId: string,
+    createCommentDto: CreateNewsCommentDto,
+  ) {
+    try {
+      if (!Types.ObjectId.isValid(newsId)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid news id',
+          content: null,
+        };
+      }
+
+      if (!Types.ObjectId.isValid(userId)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid user id',
+          content: null,
+        };
+      }
+
+      const news = await this.newsModel.findOne({
+        _id: new Types.ObjectId(newsId),
+        isActive: true,
+        status: NewsStatus.PUBLISHED,
+      });
+
+      if (!news) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'News not found or not published',
+          content: null,
+        };
+      }
+
+      const user = await this.userModel.findOne({
+        _id: new Types.ObjectId(userId),
+        isActive: true,
+      });
+
+      if (!user) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'User not found or inactive',
+          content: null,
+        };
+      }
+
+      const comment = await this.newsCommentModel.create({
+        newsId: new Types.ObjectId(newsId),
+        userId: new Types.ObjectId(userId),
+        content: createCommentDto.content,
+        isActive: true,
+      });
+
+      const populatedComment = await this.newsCommentModel
+        .findById(comment._id)
+        .populate({
+          path: 'userId',
+          select: 'name email role',
+        });
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Create news comment successfully',
+        content: {
+          comment: populatedComment,
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while creating news comment: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async findCommentsByNewsId(newsId: string, query: QueryNewsCommentDto) {
+    try {
+      if (!Types.ObjectId.isValid(newsId)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid news id',
+          content: null,
+        };
+      }
+
+      const page = Number(query.page ?? 1);
+      const limit = Number(query.limit ?? 20);
+      const skip = (page - 1) * limit;
+
+      const news = await this.newsModel.findOne({
+        _id: new Types.ObjectId(newsId),
+        isActive: true,
+      });
+
+      if (!news) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'News not found',
+          content: null,
+        };
+      }
+
+      const filter = {
+        newsId: new Types.ObjectId(newsId),
+        isActive: true,
+      };
+
+      const [items, total] = await Promise.all([
+        this.newsCommentModel
+          .find(filter)
+          .populate({
+            path: 'userId',
+            select: 'name email role',
+          })
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        this.newsCommentModel.countDocuments(filter),
+      ]);
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Get news comments successfully',
+        content: {
+          items,
+          total,
+          page,
+          limit,
+          pages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while getting news comments: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async updateComment(
+    commentId: string,
+    userId: string,
+    role: Role,
+    updateCommentDto: UpdateNewsCommentDto,
+  ) {
+    try {
+      if (!Types.ObjectId.isValid(commentId)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid comment id',
+          content: null,
+        };
+      }
+
+      const comment = await this.newsCommentModel.findOne({
+        _id: new Types.ObjectId(commentId),
+        isActive: true,
+      });
+
+      if (!comment) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Comment not found',
+          content: null,
+        };
+      }
+
+      const isOwner = (comment as any).userId?.toString() === userId;
+      const isAdminOrEditor = role === Role.ADMIN || role === Role.EDITOR;
+
+      if (!isOwner && !isAdminOrEditor) {
+        return {
+          code: ERROR_RES.FORBIDDEN_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'You do not have permission to update this comment',
+          content: null,
+        };
+      }
+
+      const updatedComment = await this.newsCommentModel
+        .findByIdAndUpdate(
+          commentId,
+          {
+            content: updateCommentDto.content,
+          },
+          {
+            returnDocument: 'after',
+            runValidators: true,
+          },
+        )
+        .populate({
+          path: 'userId',
+          select: 'name email role',
+        });
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Update news comment successfully',
+        content: {
+          comment: updatedComment,
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while updating news comment: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async deleteComment(commentId: string, userId: string, role: Role) {
+    try {
+      if (!Types.ObjectId.isValid(commentId)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid comment id',
+          content: null,
+        };
+      }
+
+      const comment = await this.newsCommentModel.findOne({
+        _id: new Types.ObjectId(commentId),
+        isActive: true,
+      });
+
+      if (!comment) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Comment not found',
+          content: null,
+        };
+      }
+
+      const isOwner = (comment as any).userId?.toString() === userId;
+      const isAdminOrEditor = role === Role.ADMIN || role === Role.EDITOR;
+
+      if (!isOwner && !isAdminOrEditor) {
+        return {
+          code: ERROR_RES.FORBIDDEN_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'You do not have permission to delete this comment',
+          content: null,
+        };
+      }
+
+      const deletedComment = await this.newsCommentModel
+        .findByIdAndUpdate(
+          commentId,
+          {
+            isActive: false,
+          },
+          {
+            returnDocument: 'after',
+          },
+        )
+        .populate({
+          path: 'userId',
+          select: 'name email role',
+        });
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Delete news comment successfully',
+        content: {
+          comment: deletedComment,
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while deleting news comment: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async uploadThumbnail(
+    id: string,
+    userId: string,
+    role: Role,
+    thumbnail?: Express.Multer.File,
+  ) {
+    try {
+      if (!thumbnail) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Thumbnail image is required',
+          content: null,
+        };
+      }
+
+      const { error, news } = await this.findActiveNewsForModify(
+        id,
+        userId,
+        role,
+      );
+
+      if (error) {
+        return error;
+      }
+
+      if ((news as any).thumbnail?.objectName) {
+        await this.minioService.removeFile((news as any).thumbnail.objectName);
+      }
+
+      const uploadedFile = await this.minioService.uploadFile(
+        thumbnail,
+        'news/thumbnails',
+      );
+
+      const updatedNews = await this.newsModel
+        .findByIdAndUpdate(
+          id,
+          {
+            thumbnail: uploadedFile,
+          },
+          {
+            returnDocument: 'after',
+            runValidators: true,
+          },
+        )
+        .populate(this.getNewsPopulateQuery());
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Upload news thumbnail successfully',
+        content: {
+          news: updatedNews,
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while uploading news thumbnail: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async deleteThumbnail(id: string, userId: string, role: Role) {
+    try {
+      const { error, news } = await this.findActiveNewsForModify(
+        id,
+        userId,
+        role,
+      );
+
+      if (error) {
+        return error;
+      }
+
+      if ((news as any).thumbnail?.objectName) {
+        await this.minioService.removeFile((news as any).thumbnail.objectName);
+      }
+
+      const updatedNews = await this.newsModel
+        .findByIdAndUpdate(
+          id,
+          {
+            thumbnail: null,
+          },
+          {
+            returnDocument: 'after',
+            runValidators: true,
+          },
+        )
+        .populate(this.getNewsPopulateQuery());
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Delete news thumbnail successfully',
+        content: {
+          news: updatedNews,
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while deleting news thumbnail: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async uploadImages(
+    id: string,
+    userId: string,
+    role: Role,
+    images?: Express.Multer.File[],
+  ) {
+    try {
+      if (!images || images.length === 0) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'At least one image is required',
+          content: null,
+        };
+      }
+
+      const { error } = await this.findActiveNewsForModify(id, userId, role);
+
+      if (error) {
+        return error;
+      }
+
+      const uploadedFiles = await Promise.all(
+        images.map((image) =>
+          this.minioService.uploadFile(image, 'news/images'),
+        ),
+      );
+
+      const updatedNews = await this.newsModel
+        .findByIdAndUpdate(
+          id,
+          {
+            $push: {
+              images: {
+                $each: uploadedFiles,
+              },
+            },
+          },
+          {
+            returnDocument: 'after',
+            runValidators: true,
+          },
+        )
+        .populate(this.getNewsPopulateQuery());
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Upload news images successfully',
+        content: {
+          news: updatedNews,
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while uploading news images: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async deleteImage(
+    id: string,
+    userId: string,
+    role: Role,
+    objectName: string,
+  ) {
+    try {
+      if (!objectName) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Image objectName is required',
+          content: null,
+        };
+      }
+
+      const { error, news } = await this.findActiveNewsForModify(
+        id,
+        userId,
+        role,
+      );
+
+      if (error) {
+        return error;
+      }
+
+      const image = (news as any).images?.find(
+        (item: any) => item.objectName === objectName,
+      );
+
+      if (!image) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'News image not found',
+          content: null,
+        };
+      }
+
+      await this.minioService.removeFile(objectName);
+
+      const updatedNews = await this.newsModel
+        .findByIdAndUpdate(
+          id,
+          {
+            $pull: {
+              images: {
+                objectName,
+              },
+            },
+          },
+          {
+            returnDocument: 'after',
+            runValidators: true,
+          },
+        )
+        .populate(this.getNewsPopulateQuery());
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Delete news image successfully',
+        content: {
+          news: updatedNews,
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while deleting news image: ${error.message}`,
         content: null,
       };
     }

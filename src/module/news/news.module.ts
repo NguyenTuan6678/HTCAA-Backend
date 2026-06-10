@@ -10,6 +10,11 @@ import {
   NewsCategory,
   NewsCategorySchema,
 } from '../../schema/news-category.schema';
+import {
+  NewsComment,
+  NewsCommentSchema,
+} from '../../schema/news-comment.schema';
+import { MinioModule } from '../minio/minio.module';
 
 @Module({
   imports: [
@@ -17,7 +22,9 @@ import {
       { name: News.name, schema: NewsSchema },
       { name: User.name, schema: UserSchema },
       { name: NewsCategory.name, schema: NewsCategorySchema },
+      { name: NewsComment.name, schema: NewsCommentSchema },
     ]),
+    MinioModule,
   ],
   controllers: [NewsController],
   providers: [NewsService, JwtAuthGuard, RolesGuard],

@@ -6,6 +6,29 @@ import { NewsCategory } from './news-category.schema';
 
 export type NewsDocument = HydratedDocument<News>;
 
+@Schema({ _id: false })
+export class NewsFile {
+  @Prop({ type: String, required: true })
+  originalName: string;
+
+  @Prop({ type: String, required: true })
+  objectName: string;
+
+  @Prop({ type: String, required: true })
+  bucket: string;
+
+  @Prop({ type: String, required: true })
+  url: string;
+
+  @Prop({ type: String, required: true })
+  mimetype: string;
+
+  @Prop({ type: Number, required: true })
+  size: number;
+}
+
+export const NewsFileSchema = SchemaFactory.createForClass(NewsFile);
+
 @Schema({
   timestamps: true,
   collection: 'news',
@@ -32,6 +55,12 @@ export class News {
 
   @Prop({ type: String, default: null })
   content?: string | null;
+
+  @Prop({ type: NewsFileSchema, default: null })
+  thumbnail?: NewsFile | null;
+
+  @Prop({ type: [NewsFileSchema], default: [] })
+  images: NewsFile[];
 
   @Prop({
     type: String,

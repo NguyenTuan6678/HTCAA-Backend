@@ -120,6 +120,9 @@ export class Member {
   @Prop({ type: String, trim: true, default: null })
   rejectReason?: string | null;
 
+  @Prop({ type: Date, default: null })
+  expiredAt?: Date | null;
+
   @Prop({ type: Boolean, default: true })
   isActive: boolean;
 }
@@ -131,4 +134,5 @@ MemberSchema.index({ memberCode: 1 }, { unique: true });
 MemberSchema.index({ email: 1 });
 MemberSchema.index({ status: 1 });
 MemberSchema.index({ district: 1 });
+MemberSchema.index({ expiredAt: 1 });
 MemberSchema.index({ createdAt: -1 });
