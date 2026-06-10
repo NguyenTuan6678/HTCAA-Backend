@@ -1,9 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 import { User } from './user.schema';
-import { MemberStatus } from '../utils/member-status';
-import { MemberType } from '../utils/member-type';
-import { PaymentMethod } from '../utils/payment-method';
+import { MemberStatus } from '../utils/member-status.enum';
+import { MemberType } from '../utils/member-type.enum';
+import { PaymentMethod } from '../utils/payment-method.enum';
 
 export type MemberDocument = HydratedDocument<Member>;
 

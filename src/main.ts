@@ -45,7 +45,7 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
   const config = new DocumentBuilder()
-    .setTitle('M-Invoice API')
+    .setTitle('HTCAA API')
     .addBearerAuth(
       {
         type: 'http',
@@ -57,7 +57,7 @@ async function bootstrap() {
       },
       'authorization',
     )
-    .setDescription('The M-Invoice API')
+    .setDescription('The HTCAA API Development by Mikan')
     .setVersion('1.0')
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);
@@ -65,10 +65,6 @@ async function bootstrap() {
 
   const port = process.env.PORT || 4000;
   await app.listen(port);
-
-  logger.log(`🚀 Server running on port ${port}`, 'Bootstrap');
-  logger.log(`📍 MongoDB: ${process.env.MONGODB_URI}`, 'Bootstrap');
-  logger.log(`📜 Swagger UI: http://localhost:${port}/api/docs`, 'Bootstrap');
 
   printServerBanner(port);
   if (module.hot) {

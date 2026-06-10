@@ -8,8 +8,8 @@ import {
   IsString,
   ValidateIf,
 } from 'class-validator';
-import { MemberType } from '../../../utils/member-type';
-import { PaymentMethod } from '../../../utils/payment-method';
+import { MemberType } from '../../../utils/member-type.enum';
+import { PaymentMethod } from '../../../utils/payment-method.enum';
 
 export class RegisterMemberDto {
   @ApiProperty({

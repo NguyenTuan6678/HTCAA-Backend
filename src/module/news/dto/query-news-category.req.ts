@@ -1,32 +1,31 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
-import { MemberStatus } from '../../../utils/member-status.enum';
+import {
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
-export class QueryAdminMemberDto {
+export class QueryNewsCategoryDto {
   @ApiPropertyOptional({
-    example: 'Nguyễn',
-    description:
-      'Search by name, email, phone, memberCode, certificateNumber or workplace',
+    example: 'thuế',
   })
   @IsString()
   @IsOptional()
   q?: string;
 
   @ApiPropertyOptional({
-    enum: MemberStatus,
-    example: MemberStatus.PENDING,
+    example: true,
   })
-  @IsEnum(MemberStatus)
-  @IsOptional()
-  status?: MemberStatus;
-
-  @ApiPropertyOptional({
-    example: 'Quận 1',
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') return undefined;
+    return value === 'true' || value === true;
   })
-  @IsString()
+  @IsBoolean()
   @IsOptional()
-  district?: string;
+  isActive?: boolean;
 
   @ApiPropertyOptional({
     example: 1,

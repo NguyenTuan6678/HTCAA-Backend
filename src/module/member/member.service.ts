@@ -8,8 +8,8 @@ import { RegisterMemberDto } from './dto/register-member.req';
 import { UpdateMemberDto } from './dto/update-member.req';
 import { QueryMemberDirectoryDto } from './dto/query-member-directory.req';
 import { RejectMemberDto } from './dto/reject-member.req';
-import { MemberStatus } from '../../utils/member-status';
-import { MemberType } from '../../utils/member-type';
+import { MemberStatus } from '../../utils/member-status.enum';
+import { MemberType } from '../../utils/member-type.enum';
 import { Counter } from '../../schema/counter.schema';
 import { QueryAdminMemberDto } from './dto/query-admin-member.req';
 

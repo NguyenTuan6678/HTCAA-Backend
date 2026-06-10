@@ -1,32 +1,44 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
-import { MemberStatus } from '../../../utils/member-status.enum';
+import {
+  IsEnum,
+  IsMongoId,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
+import { NewsStatus } from '../../../utils/new-status.enum';
 
-export class QueryAdminMemberDto {
+export class QueryAdminNewsDto {
   @ApiPropertyOptional({
-    example: 'Nguyễn',
-    description:
-      'Search by name, email, phone, memberCode, certificateNumber or workplace',
+    example: '665f1e8d7c1b2a0012a12345',
+  })
+  @IsMongoId()
+  @IsOptional()
+  categoryId?: string;
+
+  @ApiPropertyOptional({
+    example: 'chinh-sach-thue',
+  })
+  @IsString()
+  @IsOptional()
+  categorySlug?: string;
+
+  @ApiPropertyOptional({
+    example: 'thuế',
   })
   @IsString()
   @IsOptional()
   q?: string;
 
   @ApiPropertyOptional({
-    enum: MemberStatus,
-    example: MemberStatus.PENDING,
+    enum: NewsStatus,
+    example: NewsStatus.DRAFT,
   })
-  @IsEnum(MemberStatus)
+  @IsEnum(NewsStatus)
   @IsOptional()
-  status?: MemberStatus;
-
-  @ApiPropertyOptional({
-    example: 'Quận 1',
-  })
-  @IsString()
-  @IsOptional()
-  district?: string;
+  status?: NewsStatus;
 
   @ApiPropertyOptional({
     example: 1,
