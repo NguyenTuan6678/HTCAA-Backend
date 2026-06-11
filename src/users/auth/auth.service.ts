@@ -106,7 +106,7 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-      expiresIn: '15m',
+      expiresIn: '10m',
     });
 
     const refreshToken = this.jwtService.sign(payload, {
@@ -354,124 +354,115 @@ export class AuthService {
     }
   }
 
-  async refreshTokenFromCookie(
-    request: Request,
-    response: Response,
-  ): Promise<LoginRes | null> {
+  async refreshToken(refreshToken: string | undefined, response: Response) {
     try {
-      const refreshToken = (request as any).cookies?.[this.refreshCookieName];
-
-      if (!refreshToken || refreshToken.split('.').length !== 3) {
+      if (!refreshToken) {
         return {
-          code: ERROR_RES.INVALID_CREDENTIALS_ERROR.statusCode,
+          code: ERROR_RES.UNAUTHORIZED_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
-          message: 'Refresh token is missing or invalid format',
+          message: 'Refresh token is required',
           content: null,
         };
       }
 
-      let payload: any;
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+      });
 
-      try {
-        payload = await this.jwtService.verifyAsync(refreshToken, {
-          secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-        });
-      } catch (error: any) {
-        this.clearRefreshTokenCookie(response);
-
+      if (!payload?.id) {
         return {
-          code: ERROR_RES.INVALID_CREDENTIALS_ERROR.statusCode,
+          code: ERROR_RES.UNAUTHORIZED_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
-          message: `Refresh token is invalid: ${error.message}`,
+          message: 'Invalid refresh token',
           content: null,
         };
       }
 
       const user = await this.userModal
         .findById(payload.id)
-        .select('+refreshTokenHash')
-        .exec();
+        .select('+refreshTokenHash');
 
       if (!user || !(user as any).isActive) {
-        this.clearRefreshTokenCookie(response);
-
         return {
-          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          code: ERROR_RES.UNAUTHORIZED_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
           message: 'User not found or inactive',
           content: null,
         };
       }
 
-      if (!(user as any).refreshTokenHash) {
-        this.clearRefreshTokenCookie(response);
-
+      if ((user as any).tokenVersion !== payload.tokenVersion) {
         return {
-          code: ERROR_RES.INVALID_CREDENTIALS_ERROR.statusCode,
+          code: ERROR_RES.UNAUTHORIZED_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
           message: 'Refresh token has been revoked',
           content: null,
         };
       }
 
-      if (((user as any).tokenVersion ?? 0) !== (payload.tokenVersion ?? 0)) {
-        this.clearRefreshTokenCookie(response);
-
+      if (!(user as any).refreshTokenHash) {
         return {
-          code: ERROR_RES.INVALID_CREDENTIALS_ERROR.statusCode,
+          code: ERROR_RES.UNAUTHORIZED_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
-          message: 'Refresh token version is no longer valid',
+          message: 'Refresh token not found',
           content: null,
         };
       }
 
-      const isRefreshTokenMatch = await this.compareRefreshToken(
+      const isRefreshTokenValid = await bcrypt.compare(
         refreshToken,
         (user as any).refreshTokenHash,
       );
 
-      if (!isRefreshTokenMatch) {
+      if (!isRefreshTokenValid) {
         (user as any).refreshTokenHash = null;
         (user as any).tokenVersion = ((user as any).tokenVersion ?? 0) + 1;
-
         await user.save();
 
-        this.clearRefreshTokenCookie(response);
-
         return {
-          code: ERROR_RES.INVALID_CREDENTIALS_ERROR.statusCode,
+          code: ERROR_RES.UNAUTHORIZED_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
-          message: 'Refresh token reuse detected. Please login again.',
+          message: 'Invalid refresh token',
           content: null,
         };
       }
 
-      const token = await this.generateToken(user);
+      const { accessToken, refreshToken: newRefreshToken } =
+        await this.generateToken(user);
 
-      (user as any).refreshTokenHash = await this.hashRefreshToken(
-        token.refreshToken,
-      );
+      const refreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
 
+      (user as any).refreshTokenHash = refreshTokenHash;
       await user.save();
 
-      this.setRefreshTokenCookie(response, token.refreshToken);
+      response.cookie('refreshToken', newRefreshToken, {
+        httpOnly: true,
+        secure: this.configService.get<string>('NODE_ENV') === 'production',
+        sameSite: 'lax',
+        maxAge: 15 * 60 * 1000,
+        path: '/api/auth',
+      });
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
-        message: 'Token refreshed successfully',
+        message: 'Refresh token successfully',
         content: {
-          token: token.accessToken,
-          user: this.toAuthUser(user),
+          token: accessToken,
+          user: {
+            id: (user as any)._id.toString(),
+            name: (user as any).name,
+            email: (user as any).email,
+            role: (user as any).role,
+            memberType: (user as any).memberType,
+          },
         },
       };
     } catch (error: any) {
-      this.clearRefreshTokenCookie(response);
-
       return {
-        code: ERROR_RES.INVALID_CREDENTIALS_ERROR.statusCode,
+        code: ERROR_RES.UNAUTHORIZED_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
-        message: `There is a refresh token problem: ${error.message}`,
+        message: 'Refresh token invalid or expired',
         content: null,
       };
     }

@@ -3,7 +3,7 @@ import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class LoginReqType {
   @ApiProperty({
-    example: 'user@example.com',
+    example: 'canhdongtuyet39@gmail.com',
     description: 'email',
     type: String,
   })
@@ -12,7 +12,7 @@ export class LoginReqType {
   email: string;
 
   @ApiProperty({
-    example: 'password123',
+    example: '123123',
     description: 'password',
     type: String,
   })

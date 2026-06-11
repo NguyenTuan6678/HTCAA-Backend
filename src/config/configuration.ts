@@ -13,9 +13,6 @@ interface AppConfig {
   logging: {
     level: string;
   };
-  mInvoiceToken: {
-    mToken: string;
-  };
 }
 
 export default registerAs<AppConfig>('app', () => ({
@@ -27,12 +24,9 @@ export default registerAs<AppConfig>('app', () => ({
   },
   jwt: {
     secret: process.env.JWT_SECRET || '22v1jv2hv1h3v1uk3h1v23j1v1v3h1v2',
-    expiresIn: process.env.JWT_EXPIRES_IN || '12h',
+    expiresIn: process.env.JWT_EXPIRATION || '12h',
   },
   logging: {
     level: process.env.LOG_LEVEL || 'debug',
-  },
-  mInvoiceToken: {
-    mToken: process.env.MINVOICE_RECEIPT_TOKEN || 'ywuigeiuaehgawgeage',
   },
 }));

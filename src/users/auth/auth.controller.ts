@@ -9,7 +9,6 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common';
-import { Response } from 'express';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -27,6 +26,16 @@ import { RegisterAccountDto } from './dto/register.req';
 import { ResetPasswordDto } from './dto/reset-password.req';
 import { JwtAuthGuard } from './guards/auth.guard';
 import { Throttle } from '@nestjs/throttler';
+import { RefreshTokenDto } from './dto/refresh-token.req';
+
+import { Request, Response } from 'express';
+
+type RequestWithCookies = Request & {
+  cookies?: {
+    refreshToken?: string;
+    [key: string]: string | undefined;
+  };
+};
 
 @Controller('auth')
 export class AuthController {
@@ -73,17 +82,24 @@ export class AuthController {
   }
 
   @Post('refresh')
-  @ApiOperation({ summary: 'refresh access token' })
-  @ApiResponse({
-    status: ERROR_RES.SUCCESS.statusCode,
-    description: 'Token refreshed successfully',
-    type: LoginRes,
+  @ApiOperation({
+    summary: 'Refresh access token by refresh token from body or cookie',
   })
-  refresh(
-    @Req() request: Request,
+  @ApiBody({
+    type: RefreshTokenDto,
+    required: false,
+  })
+  refreshToken(
+    @Body() refreshTokenDto: RefreshTokenDto,
+    @Req() request: RequestWithCookies,
     @Res({ passthrough: true }) response: Response,
   ) {
-    return this.authService.refreshTokenFromCookie(request, response);
+    const refreshTokenFromBody = refreshTokenDto?.refreshToken;
+    const refreshTokenFromCookie = request.cookies?.refreshToken;
+
+    const refreshToken = refreshTokenFromBody || refreshTokenFromCookie;
+
+    return this.authService.refreshToken(refreshToken, response);
   }
 
   @Post('forgot-password')

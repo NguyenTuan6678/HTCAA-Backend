@@ -4,15 +4,12 @@ import { Model, Types } from 'mongoose';
 import { News } from '../../schema/news.schema';
 import { NewsCategory } from '../../schema/news-category.schema';
 import { User } from '../../schema/user.schema';
-
 import { ERROR_INFO, ERROR_RES } from '../../constants/error.const';
 import { Role } from '../../utils/role/role';
-
 import { CreateNewsDto } from './dto/create-news.req';
 import { UpdateNewsDto } from './dto/update-news.req';
 import { QueryNewsDto } from './dto/query-news.req';
 import { QueryAdminNewsDto } from './dto/query-admin-news.req';
-
 import { CreateNewsCategoryDto } from './dto/create-news-category.req';
 import { UpdateNewsCategoryDto } from './dto/update-news-category.req';
 import { QueryNewsCategoryDto } from './dto/query-news-category.req';
@@ -897,6 +894,7 @@ export class NewsService {
           {
             _id: new Types.ObjectId(id),
             isActive: true,
+            isFeatured: false,
           },
           {
             status: NewsStatus.DRAFT,
