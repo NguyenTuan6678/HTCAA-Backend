@@ -841,6 +841,7 @@ export class NewsService {
           {
             _id: new Types.ObjectId(id),
             isActive: true,
+            isFeatured: true,
           },
           {
             status: NewsStatus.PUBLISHED,
