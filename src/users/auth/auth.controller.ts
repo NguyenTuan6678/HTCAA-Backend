@@ -15,6 +15,7 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
+import { Request, Response } from 'express';
 import { ERROR_RES } from '../../constants/error.const';
 import { MessageResponse } from '../../types/message.res';
 import { AuthService } from './auth.service';
@@ -27,8 +28,6 @@ import { ResetPasswordDto } from './dto/reset-password.req';
 import { JwtAuthGuard } from './guards/auth.guard';
 import { Throttle } from '@nestjs/throttler';
 import { RefreshTokenDto } from './dto/refresh-token.req';
-
-import { Request, Response } from 'express';
 
 type RequestWithCookies = Request & {
   cookies?: {

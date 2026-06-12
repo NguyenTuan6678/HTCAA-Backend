@@ -18,13 +18,12 @@ export class NewsFile {
   bucket: string;
 
   @Prop({ type: String, required: true })
-  url: string;
-
-  @Prop({ type: String, required: true })
   mimetype: string;
 
   @Prop({ type: Number, required: true })
   size: number;
+
+  url?: string | null;
 }
 
 export const NewsFileSchema = SchemaFactory.createForClass(NewsFile);

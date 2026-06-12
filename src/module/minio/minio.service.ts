@@ -2,11 +2,18 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as Minio from 'minio';
 
+export type UploadedMinioFile = {
+  originalName: string;
+  objectName: string;
+  bucket: string;
+  mimetype: string;
+  size: number;
+};
+
 @Injectable()
 export class MinioService implements OnModuleInit {
   private readonly client: Minio.Client;
   private readonly bucket: string;
-  private readonly publicUrl: string;
 
   constructor(private readonly configService: ConfigService) {
     this.bucket = this.configService.get<string>('MINIO_BUCKET') || 'htcaa';
@@ -25,12 +32,6 @@ export class MinioService implements OnModuleInit {
     const portFromEnv = this.configService.get<string>('MINIO_PORT');
 
     const port = portFromEnv ? Number(portFromEnv) : useSSL ? 443 : 9000;
-
-    this.publicUrl =
-      this.configService.get<string>('MINIO_PUBLIC_URL') ||
-      `${useSSL ? 'https' : 'http'}://${normalizedEndpoint}${
-        port === 80 || port === 443 ? '' : `:${port}`
-      }`;
 
     this.client = new Minio.Client({
       endPoint: normalizedEndpoint,
@@ -51,38 +52,17 @@ export class MinioService implements OnModuleInit {
       await this.client.makeBucket(this.bucket);
     }
 
-    await this.setPublicBucketPolicy();
-  }
-
-  private async setPublicBucketPolicy() {
-    const policy = {
-      Version: '2012-10-17',
-      Statement: [
-        {
-          Effect: 'Allow',
-          Principal: {
-            AWS: ['*'],
-          },
-          Action: ['s3:GetObject'],
-          Resource: [`arn:aws:s3:::${this.bucket}/*`],
-        },
-      ],
-    };
-
-    await this.client.setBucketPolicy(this.bucket, JSON.stringify(policy));
+    /**
+     * Không set public policy nữa.
+     * Bucket nên để private.
+     * Khi FE cần xem ảnh/file, backend sẽ generate presigned URL.
+     */
   }
 
   async uploadFile(
     file: Express.Multer.File,
     folder: string,
-  ): Promise<{
-    originalName: string;
-    objectName: string;
-    bucket: string;
-    url: string;
-    mimetype: string;
-    size: number;
-  }> {
+  ): Promise<UploadedMinioFile> {
     const safeOriginalName = file.originalname
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
@@ -109,10 +89,44 @@ export class MinioService implements OnModuleInit {
       originalName: file.originalname,
       objectName,
       bucket: this.bucket,
-      url: `${this.publicUrl}/${this.bucket}/${objectName}`,
       mimetype: file.mimetype,
       size: file.size,
     };
+  }
+
+  async getPresignedUrl(
+    objectName?: string | null,
+    expirySeconds?: number,
+  ): Promise<string | null> {
+    if (!objectName) return null;
+
+    const expiresInEnv = this.configService.get<string>(
+      'MINIO_PRESIGNED_EXPIRES_IN',
+    );
+
+    const parsedExpiresIn = expiresInEnv ? Number(expiresInEnv) : 3600;
+
+    const expiresIn =
+      expirySeconds ??
+      (Number.isFinite(parsedExpiresIn) && parsedExpiresIn > 0
+        ? parsedExpiresIn
+        : 3600);
+
+    return this.client.presignedGetObject(this.bucket, objectName, expiresIn);
+  }
+
+  async attachPresignedUrl<T extends Record<string, any> | null | undefined>(
+    file: T,
+    expirySeconds?: number,
+  ): Promise<T> {
+    if (!file?.objectName) return file as T;
+
+    const url = await this.getPresignedUrl(file.objectName, expirySeconds);
+
+    return {
+      ...file,
+      url,
+    } as T;
   }
 
   async removeFile(objectName?: string | null) {

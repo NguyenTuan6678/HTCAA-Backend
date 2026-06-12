@@ -8,9 +8,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AppConfigModule } from './config/config.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { MemberModule } from './module/member/member.module';
-import { NewsService } from './module/news/news.service';
-import { NewsController } from './module/news/news.controller';
 import { NewsModule } from './module/news/news.module';
+import { HomepageModule } from './module/homepage/homepage.module';
+import { CourseModule } from './module/course/course.module';
 
 @Module({
   imports: [
@@ -37,6 +37,8 @@ import { NewsModule } from './module/news/news.module';
     AppConfigModule,
     MemberModule,
     NewsModule,
+    HomepageModule,
+    CourseModule,
   ],
   controllers: [AppController],
   providers: [AppService],

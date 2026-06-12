@@ -200,6 +200,33 @@ export class NewsService {
     };
   }
 
+  private async attachNewsFileUrls(news: any) {
+    if (!news) return news;
+
+    const newsObject =
+      typeof news.toObject === 'function' ? news.toObject() : news;
+
+    if (newsObject.thumbnail?.objectName) {
+      newsObject.thumbnail = await this.minioService.attachPresignedUrl(
+        newsObject.thumbnail,
+      );
+    }
+
+    if (Array.isArray(newsObject.images)) {
+      newsObject.images = await Promise.all(
+        newsObject.images.map((image: any) =>
+          this.minioService.attachPresignedUrl(image),
+        ),
+      );
+    }
+
+    return newsObject;
+  }
+
+  private async attachNewsListFileUrls(newsList: any[]) {
+    return Promise.all(newsList.map((news) => this.attachNewsFileUrls(news)));
+  }
+
   // =========================
   // NEWS CATEGORY
   // =========================
@@ -573,12 +600,14 @@ export class NewsService {
         this.newsModel.countDocuments(filter),
       ]);
 
+      const itemsWithUrls = await this.attachNewsListFileUrls(items);
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Get news list successfully',
         content: {
-          items,
+          items: itemsWithUrls,
           total,
           page,
           limit,
@@ -637,12 +666,14 @@ export class NewsService {
         this.newsModel.countDocuments(filter),
       ]);
 
+      const itemsWithUrls = await this.attachNewsListFileUrls(items);
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Get admin news list successfully',
         content: {
-          items,
+          items: itemsWithUrls,
           total,
           page,
           limit,
@@ -686,12 +717,14 @@ export class NewsService {
         };
       }
 
+      const newsWithUrls = await this.attachNewsFileUrls(news);
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Get news detail successfully',
         content: {
-          news,
+          news: newsWithUrls,
         },
       };
     } catch (error: any) {
@@ -1346,12 +1379,14 @@ export class NewsService {
         )
         .populate(this.getNewsPopulateQuery());
 
+      const newsWithUrls = await this.attachNewsFileUrls(updatedNews);
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Upload news thumbnail successfully',
         content: {
-          news: updatedNews,
+          news: newsWithUrls,
         },
       };
     } catch (error: any) {

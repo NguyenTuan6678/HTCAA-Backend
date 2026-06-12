@@ -105,6 +105,12 @@ export class Member {
   })
   status: MemberStatus;
 
+  @Prop({ type: Boolean, default: false })
+  isFeatured: boolean;
+
+  @Prop({ type: Number, default: 0 })
+  featuredOrder: number;
+
   @Prop({ type: Types.ObjectId, ref: User.name, default: null })
   approvedBy?: Types.ObjectId | null;
 
