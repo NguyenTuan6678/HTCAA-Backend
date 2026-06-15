@@ -894,11 +894,11 @@ export class NewsService {
           {
             _id: new Types.ObjectId(id),
             isActive: true,
-            isFeatured: true,
           },
           {
             status: NewsStatus.PUBLISHED,
             publishedAt: new Date(),
+            isFeatured: true,
           },
           {
             returnDocument: 'after',
@@ -950,11 +950,11 @@ export class NewsService {
           {
             _id: new Types.ObjectId(id),
             isActive: true,
-            isFeatured: false,
           },
           {
             status: NewsStatus.DRAFT,
             publishedAt: null,
+            isFeatured: false,
           },
           {
             returnDocument: 'after',
