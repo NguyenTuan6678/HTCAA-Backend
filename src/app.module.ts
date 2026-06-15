@@ -11,7 +11,7 @@ import { MemberModule } from './module/member/member.module';
 import { NewsModule } from './module/news/news.module';
 import { HomepageModule } from './module/homepage/homepage.module';
 import { CourseModule } from './module/course/course.module';
-import { AboutModule } from './module/about/about.module';
+import { AboutUsModule } from './module/about/about.module';
 
 @Module({
   imports: [
@@ -40,7 +40,7 @@ import { AboutModule } from './module/about/about.module';
     NewsModule,
     HomepageModule,
     CourseModule,
-    AboutModule,
+    AboutUsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

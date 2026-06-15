@@ -1,189 +1,118 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Model } from 'mongoose';
-import { AboutSetting } from '../../schema/about-setting.schema';
-import { MinioService } from '../minio/minio.service';
-import { CreateExecutiveBoardDto } from './dto/create-excutive-board.req';
-import { UpdateExecutiveBoardDto } from './dto/update-excutve-board.req';
-import { UpdateIntroductionDto } from './dto/update-introduction.req';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { AboutUs } from '../../schema/about-setting.schema';
+import { UpdateAboutUsDto } from './dto/update-excutve-board.req';
 
 @Injectable()
-export class AboutService {
+export class AboutUsService {
   constructor(
-    @InjectModel(AboutSetting.name)
-    private readonly aboutSettingModel: Model<AboutSetting>,
-
-    private readonly minioService: MinioService,
+    @InjectModel(AboutUs.name)
+    private readonly aboutUsModel: Model<AboutUs>,
   ) {}
 
-  private async getOrCreateSetting() {
-    let setting = await this.aboutSettingModel.findOne();
+  // Always work with a single document (singleton pattern, same as your original)
+  private async getOrCreate(): Promise<AboutUs> {
+    let doc = await this.aboutUsModel.findOne();
 
-    if (!setting) {
-      setting = await this.aboutSettingModel.create({
-        introduction: {
-          title: 'Giới thiệu',
-          content: '',
+    if (!doc) {
+      doc = await this.aboutUsModel.create({
+        description: '',
+        company_name: '',
+        logo: '',
+        email: '',
+        address: '',
+        phone: '',
+        map: '',
+        tag: '',
+        facebook_link: '',
+        youtube_link: '',
+        zalo_link: '',
+        leadership: {
+          header: { eyebrow: '', title: '', description: '' },
+          items: [],
         },
-        executiveBoard: [],
+        mission: {
+          header: { eyebrow: '', title: '', description: '' },
+          items: [],
+        },
+        stats: {
+          header: { eyebrow: '', title: '', description: '' },
+          items: [],
+        },
+        timeline: {
+          header: { eyebrow: '', title: '', description: '' },
+          items: [],
+          highlights: [],
+        },
       });
     }
 
-    return setting;
+    return doc;
   }
 
   async findPublic() {
-    const setting = await this.getOrCreateSetting();
-
-    const result = setting.toObject();
-
-    result.executiveBoard = await Promise.all(
-      result.executiveBoard.map(async (member) => {
-        if (member.avatar?.objectName) {
-          member.avatar = await this.minioService.attachPresignedUrl(
-            member.avatar,
-          );
-        }
-
-        return member;
-      }),
-    );
-
-    result.executiveBoard.sort((a, b) => a.order - b.order);
+    const doc = await this.getOrCreate();
 
     return {
       code: 200,
       info: 'SUCCESS',
-      message: 'Get about page successfully',
-      content: result,
+      message: 'Get about us page successfully',
+      content: doc.toObject(),
     };
   }
 
-  async updateIntroduction(dto: UpdateIntroductionDto) {
-    const setting = await this.getOrCreateSetting();
+  async update(dto: UpdateAboutUsDto) {
+    const doc = await this.getOrCreate();
 
-    setting.introduction = {
-      title: dto.title,
-      content: dto.content,
-    };
+    // Top-level scalar fields
+    const scalarFields = [
+      'description',
+      'company_name',
+      'logo',
+      'email',
+      'address',
+      'phone',
+      'map',
+      'tag',
+      'facebook_link',
+      'youtube_link',
+      'zalo_link',
+    ] as const;
 
-    await setting.save();
+    for (const field of scalarFields) {
+      if (dto[field] !== undefined) {
+        (doc as any)[field] = dto[field];
+      }
+    }
+
+    // Nested section fields — replace the whole section when provided
+    const sectionFields = [
+      'leadership',
+      'mission',
+      'stats',
+      'timeline',
+    ] as const;
+
+    for (const section of sectionFields) {
+      if (dto[section] !== undefined) {
+        (doc as any)[section] = dto[section];
+      }
+    }
+
+    // Tell Mongoose the nested objects changed (mixed-type safety)
+    doc.markModified('leadership');
+    doc.markModified('mission');
+    doc.markModified('stats');
+    doc.markModified('timeline');
+
+    await doc.save();
 
     return {
       code: 200,
       info: 'SUCCESS',
-      message: 'Update introduction successfully',
-      content: setting,
-    };
-  }
-
-  async createExecutiveBoard(dto: CreateExecutiveBoardDto) {
-    const setting = await this.getOrCreateSetting();
-
-    setting.executiveBoard.push({
-      name: dto.name,
-      position: dto.position,
-      description: dto.description,
-      order: dto.order ?? 0,
-    } as any);
-
-    await setting.save();
-
-    return {
-      code: 200,
-      info: 'SUCCESS',
-      message: 'Create executive board member successfully',
-      content: setting,
-    };
-  }
-
-  async updateExecutiveBoard(memberId: string, dto: UpdateExecutiveBoardDto) {
-    const setting = await this.getOrCreateSetting();
-
-    const member = setting.executiveBoard.find(
-      (item: any) => item._id.toString() === memberId,
-    );
-
-    if (!member) {
-      throw new NotFoundException('Executive board member not found');
-    }
-
-    if (!member) {
-      throw new NotFoundException('Executive board member not found');
-    }
-
-    if (dto.name !== undefined) {
-      member.name = dto.name;
-    }
-
-    if (dto.position !== undefined) {
-      member.position = dto.position;
-    }
-
-    if (dto.description !== undefined) {
-      member.description = dto.description;
-    }
-
-    if (dto.order !== undefined) {
-      member.order = dto.order;
-    }
-
-    await setting.save();
-
-    return {
-      code: 200,
-      info: 'SUCCESS',
-      message: 'Update executive board member successfully',
-      content: setting,
-    };
-  }
-
-  async deleteExecutiveBoard(memberId: string) {
-    const setting = await this.getOrCreateSetting();
-
-    setting.executiveBoard = setting.executiveBoard.filter(
-      (item) => item._id.toString() !== memberId,
-    ) as any;
-
-    await setting.save();
-
-    return {
-      code: 200,
-      info: 'SUCCESS',
-      message: 'Delete executive board member successfully',
-      content: null,
-    };
-  }
-
-  async uploadAvatar(memberId: string, file: Express.Multer.File) {
-    const setting = await this.getOrCreateSetting();
-
-    const member = setting.executiveBoard.find(
-      (item: any) => item._id.toString() === memberId,
-    );
-
-    if (!member) {
-      throw new NotFoundException('Executive board member not found');
-    }
-
-    if (!member) {
-      throw new NotFoundException('Executive board member not found');
-    }
-
-    const uploadedFile = await this.minioService.uploadFile(
-      file,
-      'about/executive-board',
-    );
-
-    member.avatar = uploadedFile;
-
-    await setting.save();
-
-    return {
-      code: 200,
-      info: 'SUCCESS',
-      message: 'Upload avatar successfully',
-      content: member,
+      message: 'Update about us successfully',
+      content: doc.toObject(),
     };
   }
 }
