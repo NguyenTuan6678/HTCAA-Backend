@@ -31,11 +31,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
 
-const imageFileFilter = (
-  req: any,
-  file: Express.Multer.File,
-  callback: any,
-) => {
+const imageFileFilter = (file: Express.Multer.File, callback: any) => {
   const allowedMimeTypes = [
     'image/jpeg',
     'image/jpg',
