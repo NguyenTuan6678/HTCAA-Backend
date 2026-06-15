@@ -470,7 +470,12 @@ export class NewsService {
   // NEWS
   // =========================
 
-  async create(userId: string, createNewsDto: CreateNewsDto) {
+  async create(
+    userId: string,
+    createNewsDto: CreateNewsDto,
+    thumbnail?: Express.Multer.File,
+    images?: Express.Multer.File[],
+  ) {
     try {
       if (!Types.ObjectId.isValid(userId)) {
         return {
@@ -507,6 +512,20 @@ export class NewsService {
 
       const slug = await this.generateUniqueNewsSlug(createNewsDto.title);
 
+      // Upload thumbnail and images in parallel if provided
+      const [uploadedThumbnail, uploadedImages] = await Promise.all([
+        thumbnail
+          ? this.minioService.uploadFile(thumbnail, 'news/thumbnails')
+          : Promise.resolve(null),
+        images && images.length > 0
+          ? Promise.all(
+              images.map((img) =>
+                this.minioService.uploadFile(img, 'news/images'),
+              ),
+            )
+          : Promise.resolve([]),
+      ]);
+
       const news = await this.newsModel.create({
         createdBy: new Types.ObjectId(userId),
         categoryId: new Types.ObjectId(createNewsDto.categoryId),
@@ -520,18 +539,22 @@ export class NewsService {
         publishedAt: null,
         viewCount: 0,
         isActive: true,
+        thumbnail: uploadedThumbnail ?? null,
+        images: uploadedImages,
       });
 
       const populatedNews = await this.newsModel
         .findById(news._id)
         .populate(this.getNewsPopulateQuery());
 
+      const newsWithUrls = await this.attachNewsFileUrls(populatedNews);
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Create news successfully',
         content: {
-          news: populatedNews,
+          news: newsWithUrls,
         },
       };
     } catch (error: any) {

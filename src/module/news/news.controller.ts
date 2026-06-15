@@ -27,7 +27,11 @@ import {
 import { Request } from 'express';
 import { extname } from 'path';
 import { memoryStorage } from 'multer';
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+  FilesInterceptor,
+} from '@nestjs/platform-express';
 
 import { NewsService } from './news.service';
 import { Role } from '../../utils/role/role';
@@ -207,10 +211,52 @@ export class NewsController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor create news' })
-  @ApiBody({ type: CreateNewsDto })
-  create(@Body() createNewsDto: CreateNewsDto, @Req() request: Request) {
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['categoryId', 'title'],
+      properties: {
+        categoryId: { type: 'string', example: '665f1e8d7c1b2a0012a12345' },
+        title: { type: 'string', example: 'Cập nhật chính sách thuế 2026' },
+        summary: { type: 'string', example: 'Tóm tắt ngắn...' },
+        content: { type: 'string', example: '<p>Nội dung bài viết...</p>' },
+        tags: { type: 'array', items: { type: 'string' } },
+        isFeatured: { type: 'boolean' },
+        thumbnail: { type: 'string', format: 'binary' },
+        images: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+        },
+      },
+    },
+  })
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'thumbnail', maxCount: 1 },
+        { name: 'images', maxCount: 10 },
+      ],
+      {
+        storage: memoryStorage(),
+        limits: { fileSize: 5 * 1024 * 1024 },
+        fileFilter: imageFileFilter,
+      },
+    ),
+  )
+  create(
+    @Body() createNewsDto: CreateNewsDto,
+    @UploadedFiles()
+    files: {
+      thumbnail?: Express.Multer.File[];
+      images?: Express.Multer.File[];
+    },
+    @Req() request: Request,
+  ) {
     const userId = (request as any).user.id;
-    return this.newsService.create(userId, createNewsDto);
+    const thumbnail = files?.thumbnail?.[0];
+    const images = files?.images;
+    return this.newsService.create(userId, createNewsDto, thumbnail, images);
   }
 
   @Put(':id')
