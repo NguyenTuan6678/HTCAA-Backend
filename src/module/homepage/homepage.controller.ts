@@ -63,155 +63,155 @@ const imageFileFilter = (file: Express.Multer.File, callback: any) => {
 export class HomepageController {
   constructor(private readonly homepageService: HomepageService) {}
 
-  // @Get()
-  // @ApiOperation({ summary: 'Public get homepage data' })
-  // findPublic() {
-  //   return this.homepageService.findPublic();
-  // }
+  @Get()
+  @ApiOperation({ summary: 'Public get homepage data' })
+  findPublic() {
+    return this.homepageService.findPublic();
+  }
 
-  // @Get('admin')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.ADMIN, Role.EDITOR)
-  // @ApiBearerAuth('authorization')
-  // @ApiOperation({ summary: 'Admin/editor get homepage setting' })
-  // findAdmin() {
-  //   return this.homepageService.findAdmin();
-  // }
+  @Get('admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin/editor get homepage setting' })
+  findAdmin() {
+    return this.homepageService.findAdmin();
+  }
 
-  // @Post('seed')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.ADMIN)
-  // @ApiBearerAuth('authorization')
-  // @ApiOperation({ summary: 'Admin seed homepage default setting' })
-  // seedHomepageSetting() {
-  //   return this.homepageService.seedHomepageSetting();
-  // }
+  @Post('seed')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin seed homepage default setting' })
+  seedHomepageSetting() {
+    return this.homepageService.seedHomepageSetting();
+  }
 
-  // @Put()
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.ADMIN, Role.EDITOR)
-  // @ApiBearerAuth('authorization')
-  // @ApiOperation({ summary: 'Admin/editor update homepage setting' })
-  // @ApiBody({ type: UpdateHomepageSettingDto })
-  // update(@Body() updateHomepageSettingDto: UpdateHomepageSettingDto) {
-  //   return this.homepageService.update(updateHomepageSettingDto);
-  // }
+  @Put()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin/editor update homepage setting' })
+  @ApiBody({ type: UpdateHomepageSettingDto })
+  update(@Body() updateHomepageSettingDto: UpdateHomepageSettingDto) {
+    return this.homepageService.update(updateHomepageSettingDto);
+  }
 
-  // @Patch('reset')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.ADMIN)
-  // @ApiBearerAuth('authorization')
-  // @ApiOperation({ summary: 'Admin reset homepage setting to default' })
-  // resetToDefault() {
-  //   return this.homepageService.resetToDefault();
-  // }
+  @Patch('reset')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin reset homepage setting to default' })
+  resetToDefault() {
+    return this.homepageService.resetToDefault();
+  }
 
-  // @Patch(':section')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.ADMIN, Role.EDITOR)
-  // @ApiBearerAuth('authorization')
-  // @ApiOperation({ summary: 'Admin/editor update homepage section' })
-  // @ApiParam({
-  //   name: 'section',
-  //   example: 'hero',
-  // })
-  // updateSection(
-  //   @Body() data: Record<string, any>,
-  //   @Param('section') section: string,
-  // ) {
-  //   return this.homepageService.updateSection(section, data);
-  // }
+  @Patch(':section')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin/editor update homepage section' })
+  @ApiParam({
+    name: 'section',
+    example: 'hero',
+  })
+  updateSection(
+    @Body() data: Record<string, any>,
+    @Param('section') section: string,
+  ) {
+    return this.homepageService.updateSection(section, data);
+  }
 
-  // @Patch('media/hero-image')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.ADMIN, Role.EDITOR)
-  // @ApiBearerAuth('authorization')
-  // @ApiOperation({ summary: 'Admin/editor upload homepage hero image' })
-  // @ApiConsumes('multipart/form-data')
-  // @ApiBody({
-  //   schema: {
-  //     type: 'object',
-  //     properties: {
-  //       image: {
-  //         type: 'string',
-  //         format: 'binary',
-  //       },
-  //     },
-  //     required: ['image'],
-  //   },
-  // })
-  // @UseInterceptors(
-  //   FileInterceptor('image', {
-  //     storage: memoryStorage(),
-  //     limits: {
-  //       fileSize: 5 * 1024 * 1024,
-  //     },
-  //     fileFilter: imageFileFilter,
-  //   }),
-  // )
-  // uploadHeroImage(@UploadedFile() image: Express.Multer.File) {
-  //   return this.homepageService.uploadHeroImage(image);
-  // }
+  @Patch('media/hero-image')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin/editor upload homepage hero image' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        image: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+      required: ['image'],
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+      fileFilter: imageFileFilter,
+    }),
+  )
+  uploadHeroImage(@UploadedFile() image: Express.Multer.File) {
+    return this.homepageService.uploadHeroImage(image);
+  }
 
-  // @Patch('media/president-avatar')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.ADMIN, Role.EDITOR)
-  // @ApiBearerAuth('authorization')
-  // @ApiOperation({ summary: 'Admin/editor upload president avatar' })
-  // @ApiConsumes('multipart/form-data')
-  // @ApiBody({
-  //   schema: {
-  //     type: 'object',
-  //     properties: {
-  //       image: {
-  //         type: 'string',
-  //         format: 'binary',
-  //       },
-  //     },
-  //     required: ['image'],
-  //   },
-  // })
-  // @UseInterceptors(
-  //   FileInterceptor('image', {
-  //     storage: memoryStorage(),
-  //     limits: {
-  //       fileSize: 5 * 1024 * 1024,
-  //     },
-  //     fileFilter: imageFileFilter,
-  //   }),
-  // )
-  // uploadPresidentAvatar(@UploadedFile() image: Express.Multer.File) {
-  //   return this.homepageService.uploadPresidentAvatar(image);
-  // }
+  @Patch('media/president-avatar')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin/editor upload president avatar' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        image: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+      required: ['image'],
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+      fileFilter: imageFileFilter,
+    }),
+  )
+  uploadPresidentAvatar(@UploadedFile() image: Express.Multer.File) {
+    return this.homepageService.uploadPresidentAvatar(image);
+  }
 
-  // @Patch('media/zalo-qr')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.ADMIN, Role.EDITOR)
-  // @ApiBearerAuth('authorization')
-  // @ApiOperation({ summary: 'Admin/editor upload Zalo QR image' })
-  // @ApiConsumes('multipart/form-data')
-  // @ApiBody({
-  //   schema: {
-  //     type: 'object',
-  //     properties: {
-  //       image: {
-  //         type: 'string',
-  //         format: 'binary',
-  //       },
-  //     },
-  //     required: ['image'],
-  //   },
-  // })
-  // @UseInterceptors(
-  //   FileInterceptor('image', {
-  //     storage: memoryStorage(),
-  //     limits: {
-  //       fileSize: 5 * 1024 * 1024,
-  //     },
-  //     fileFilter: imageFileFilter,
-  //   }),
-  // )
-  // uploadZaloQr(@UploadedFile() image: Express.Multer.File) {
-  //   return this.homepageService.uploadZaloQr(image);
-  // }
+  @Patch('media/zalo-qr')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin/editor upload Zalo QR image' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        image: {
+          type: 'string',
+          format: 'binary',
+        },
+      },
+      required: ['image'],
+    },
+  })
+  @UseInterceptors(
+    FileInterceptor('image', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+      fileFilter: imageFileFilter,
+    }),
+  )
+  uploadZaloQr(@UploadedFile() image: Express.Multer.File) {
+    return this.homepageService.uploadZaloQr(image);
+  }
 }

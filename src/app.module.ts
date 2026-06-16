@@ -12,6 +12,7 @@ import { NewsModule } from './module/news/news.module';
 import { HomepageModule } from './module/homepage/homepage.module';
 import { CourseModule } from './module/course/course.module';
 import { AboutUsModule } from './module/about/about.module';
+import { LegalDocsModule } from './module/docs/legal-docs.module';
 
 @Module({
   imports: [
@@ -38,9 +39,10 @@ import { AboutUsModule } from './module/about/about.module';
     AppConfigModule,
     MemberModule,
     NewsModule,
-    HomepageModule,
+    // HomepageModule,
     CourseModule,
     AboutUsModule,
+    LegalDocsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

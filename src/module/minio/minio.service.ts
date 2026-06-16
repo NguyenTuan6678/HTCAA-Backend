@@ -1,6 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as Minio from 'minio';
+import { Readable } from 'stream';
 
 export type UploadedMinioFile = {
   originalName: string;
@@ -133,5 +134,9 @@ export class MinioService implements OnModuleInit {
     if (!objectName) return;
 
     await this.client.removeObject(this.bucket, objectName);
+  }
+
+  async getFileStream(objectName: string): Promise<Readable> {
+    return this.client.getObject(this.bucket, objectName);
   }
 }
