@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AboutUs } from '../../schema/about-setting.schema';
 import { UpdateAboutUsDto } from './dto/update-excutve-board.req';
+import { ERROR_INFO, ERROR_RES } from '../../constants/error.const';
 
 @Injectable()
 export class AboutUsService {
@@ -55,8 +56,8 @@ export class AboutUsService {
     const doc = await this.getOrCreate();
 
     return {
-      code: 200,
-      info: 'SUCCESS',
+      code: ERROR_RES.SUCCESS.statusCode,
+      info: ERROR_INFO.SUCCESS,
       message: 'Get about us page successfully',
       content: doc.toObject(),
     };
@@ -109,8 +110,8 @@ export class AboutUsService {
     await doc.save();
 
     return {
-      code: 200,
-      info: 'SUCCESS',
+      code: ERROR_RES.SUCCESS.statusCode,
+      info: ERROR_INFO.SUCCESS,
       message: 'Update about us successfully',
       content: doc.toObject(),
     };

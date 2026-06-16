@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { LegalDocStatus } from '../../../schema/legal-docs.schema';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateLegalDocDto {
   @ApiProperty({ example: 'Hợp đồng lao động 2026' })
@@ -15,5 +14,5 @@ export class CreateLegalDocDto {
 
   @ApiPropertyOptional({ type: 'string', format: 'binary' })
   @IsOptional()
-  file?: any; // Multer handles the actual value, we just whitelist the key
+  file?: any;
 }

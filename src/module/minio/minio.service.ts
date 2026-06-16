@@ -9,6 +9,7 @@ export type UploadedMinioFile = {
   bucket: string;
   mimetype: string;
   size: number;
+  url?: string; // ← add this
 };
 
 @Injectable()

@@ -20,7 +20,6 @@ import { HomepageService } from './homepage.service';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 import { MinioModule } from '../minio/minio.module';
-import { CourseModule } from '../course/course.module';
 import { Course, CourseSchema } from '../../schema/course.schema';
 
 @Module({

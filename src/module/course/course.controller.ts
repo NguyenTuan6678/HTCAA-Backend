@@ -34,41 +34,41 @@ import { UpdateCourseDto } from './dto/update-course.req';
 export class CourseController {
   constructor(private readonly courseService: CourseService) {}
 
-  // @Get()
-  // @ApiOperation({ summary: 'Get courses' })
-  // findAll(@Query() query: QueryCourseDto) {
-  //   return this.courseService.findAll(query);
-  // }
+  @Get()
+  @ApiOperation({ summary: 'Get courses' })
+  findAll(@Query() query: QueryCourseDto) {
+    return this.courseService.findAll(query);
+  }
 
-  // @Post()
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.ADMIN, Role.EDITOR)
-  // @ApiBearerAuth('authorization')
-  // @ApiOperation({ summary: 'Admin/editor create course' })
-  // @ApiBody({ type: CreateCourseDto })
-  // create(@Body() createCourseDto: CreateCourseDto, @Req() request: Request) {
-  //   const userId = (request as any).user.id;
-  //   return this.courseService.create(userId, createCourseDto);
-  // }
+  @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin/editor create course' })
+  @ApiBody({ type: CreateCourseDto })
+  create(@Body() createCourseDto: CreateCourseDto, @Req() request: Request) {
+    const userId = (request as any).user.id;
+    return this.courseService.create(userId, createCourseDto);
+  }
 
-  // @Put(':id')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.ADMIN, Role.EDITOR)
-  // @ApiBearerAuth('authorization')
-  // @ApiOperation({ summary: 'Admin/editor update course' })
-  // @ApiParam({ name: 'id', description: 'Course id' })
-  // @ApiBody({ type: UpdateCourseDto })
-  // update(@Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto) {
-  //   return this.courseService.update(id, updateCourseDto);
-  // }
+  @Put(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin/editor update course' })
+  @ApiParam({ name: 'id', description: 'Course id' })
+  @ApiBody({ type: UpdateCourseDto })
+  update(@Param('id') id: string, @Body() updateCourseDto: UpdateCourseDto) {
+    return this.courseService.update(id, updateCourseDto);
+  }
 
-  // @Delete(':id')
-  // @UseGuards(JwtAuthGuard, RolesGuard)
-  // @Roles(Role.ADMIN, Role.EDITOR)
-  // @ApiBearerAuth('authorization')
-  // @ApiOperation({ summary: 'Admin/editor delete course' })
-  // @ApiParam({ name: 'id', description: 'Course id' })
-  // delete(@Param('id') id: string) {
-  //   return this.courseService.delete(id);
-  // }
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin/editor delete course' })
+  @ApiParam({ name: 'id', description: 'Course id' })
+  delete(@Param('id') id: string) {
+    return this.courseService.delete(id);
+  }
 }
