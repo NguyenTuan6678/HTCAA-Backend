@@ -54,4 +54,12 @@ export class CreateNewsDto {
   @IsBoolean()
   @IsOptional()
   isFeatured?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  thumbnail?: any;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  images?: any;
 }

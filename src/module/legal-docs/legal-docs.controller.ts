@@ -36,6 +36,9 @@ import { RolesGuard } from '../../users/auth/guards/roles.guard';
 import { CreateLegalDocDto } from './dto/create-legal-docs.req';
 import { QueryLegalDocDto } from './dto/query-legal-docs.req';
 import { UpdateLegalDocDto } from './dto/update-legal.docs.req';
+import { CreateLegalDocCategoryDto } from './dto/create-legal-docs-category.req';
+import { UpdateLegalDocCategoryDto } from './dto/update-legal-docs-category.req';
+import { QueryLegalDocCategoryDto } from './dto/query-legal-docs-category.req';
 
 const docFileFilter = (req: any, file: Express.Multer.File, callback: any) => {
   const allowedMimeTypes = ['application/pdf'];
@@ -82,6 +85,46 @@ export class LegalDocsController {
   @ApiOperation({ summary: 'Admin/editor – get all legal docs (any status)' })
   findAdmin(@Query() query: QueryLegalDocDto) {
     return this.legalDocsService.findAll(query);
+  }
+
+  @Get('categories')
+  @ApiOperation({ summary: 'Get legal doc categories' })
+  findCategories(@Query() query: QueryLegalDocCategoryDto) {
+    return this.legalDocsService.findCategories(query);
+  }
+
+  @Post('categories')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin/editor create legal doc category' })
+  @ApiBody({ type: CreateLegalDocCategoryDto })
+  createCategory(@Body() createLegalDocCategoryDto: CreateLegalDocCategoryDto) {
+    return this.legalDocsService.createCategory(createLegalDocCategoryDto);
+  }
+
+  @Put('categories/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin/editor update legal doc category' })
+  @ApiParam({ name: 'id', description: 'Category id' })
+  @ApiBody({ type: UpdateLegalDocCategoryDto })
+  updateCategory(
+    @Param('id') id: string,
+    @Body() updateLegalDocCategoryDto: UpdateLegalDocCategoryDto,
+  ) {
+    return this.legalDocsService.updateCategory(id, updateLegalDocCategoryDto);
+  }
+
+  @Delete('categories/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin/editor delete legal doc category' })
+  @ApiParam({ name: 'id', description: 'Category id' })
+  deleteCategory(@Param('id') id: string) {
+    return this.legalDocsService.deleteCategory(id);
   }
 
   @Get(':id')

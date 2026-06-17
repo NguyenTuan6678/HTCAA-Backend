@@ -3,7 +3,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Response } from 'express';
 import { LegalDoc, LegalDocStatus } from '../../schema/legal-docs.schema';
-import { NewsCategory } from '../../schema/news-category.schema';
 import { User } from '../../schema/user.schema';
 import { ERROR_INFO, ERROR_RES } from '../../constants/error.const';
 import { Role } from '../../utils/role/role';
@@ -11,6 +10,10 @@ import { MinioService } from '../minio/minio.service';
 import { CreateLegalDocDto } from './dto/create-legal-docs.req';
 import { QueryLegalDocDto } from './dto/query-legal-docs.req';
 import { UpdateLegalDocDto } from './dto/update-legal.docs.req';
+import { LegalDocsCategory } from '../../schema/legal-docs-category.schema';
+import { CreateLegalDocCategoryDto } from './dto/create-legal-docs-category.req';
+import { QueryLegalDocCategoryDto } from './dto/query-legal-docs-category.req';
+import { UpdateLegalDocCategoryDto } from './dto/update-legal-docs-category.req';
 
 const ALLOWED_DOC_MIME_TYPES = [
   'application/pdf',
@@ -24,8 +27,8 @@ export class LegalDocsService {
     @InjectModel(LegalDoc.name)
     private readonly legalDocModel: Model<LegalDoc>,
 
-    @InjectModel(NewsCategory.name)
-    private readonly newsCategoryModel: Model<NewsCategory>,
+    @InjectModel(LegalDocsCategory.name)
+    private readonly legalDocsCategoryModel: Model<LegalDocsCategory>,
 
     @InjectModel(User.name)
     private readonly userModel: Model<User>,
@@ -107,38 +110,308 @@ export class LegalDocsService {
     return Promise.all(docs.map((d) => this.attachDocFileUrl(d)));
   }
 
-  /** Validate that the categoryId exists and is active */
-  private async validateCategory(categoryId?: string) {
-    if (!categoryId) return { error: null };
+  private normalizeVietnamese(str: string): string {
+    return str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D');
+  }
 
-    if (!Types.ObjectId.isValid(categoryId)) {
-      return {
-        error: {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid category id',
-          content: null,
-        },
-      };
+  private slugify(value: string): string {
+    return this.normalizeVietnamese(value)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  private async generateUniqueLegalDocsSlug(title: string): Promise<string> {
+    const baseSlug = this.slugify(title);
+    let slug = baseSlug;
+    let count = 1;
+
+    while (await this.legalDocModel.exists({ slug })) {
+      slug = `${baseSlug}-${count}`;
+      count++;
     }
 
-    const category = await this.newsCategoryModel.findOne({
+    return slug;
+  }
+
+  private async generateUniqueCategorySlug(name: string): Promise<string> {
+    const baseSlug = this.slugify(name);
+    let slug = baseSlug;
+    let count = 1;
+
+    while (await this.legalDocsCategoryModel.exists({ slug })) {
+      slug = `${baseSlug}-${count}`;
+      count++;
+    }
+
+    return slug;
+  }
+
+  // Validates that categoryId (if provided) refers to an existing, active category.
+  // Returns true when categoryId is undefined/null (the field is optional).
+  private async ensureCategoryExists(
+    categoryId?: string | null,
+  ): Promise<boolean> {
+    if (!categoryId) return true;
+    if (!Types.ObjectId.isValid(categoryId)) return false;
+
+    const exists = await this.legalDocsCategoryModel.exists({
       _id: new Types.ObjectId(categoryId),
       isActive: true,
     });
 
-    if (!category) {
+    return !!exists;
+  }
+
+  // =========================
+  // LEGAL DOC CATEGORY
+  // =========================
+
+  async createCategory(createLegalDocCategoryDto: CreateLegalDocCategoryDto) {
+    try {
+      const slug = await this.generateUniqueCategorySlug(
+        createLegalDocCategoryDto.name,
+      );
+
+      const category = await this.legalDocsCategoryModel.create({
+        name: createLegalDocCategoryDto.name,
+        slug,
+        description: createLegalDocCategoryDto.description ?? null,
+        isActive: true,
+      });
+
       return {
-        error: {
-          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Category not found',
-          content: null,
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Create legal doc category successfully',
+        content: {
+          category,
         },
       };
-    }
+    } catch (error: any) {
+      if (error?.code === 11000) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Legal doc category slug already exists',
+          content: null,
+        };
+      }
 
-    return { error: null };
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while creating legal doc category: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async findCategories(query: QueryLegalDocCategoryDto) {
+    try {
+      const page = Number(query.page ?? 1);
+      const limit = Number(query.limit ?? 20);
+      const skip = (page - 1) * limit;
+
+      const filter: any = {};
+
+      if (query.isActive !== undefined) {
+        filter.isActive = query.isActive;
+      } else {
+        filter.isActive = true;
+      }
+
+      if (query.q) {
+        const regex = new RegExp(query.q, 'i');
+
+        filter.$or = [{ name: regex }, { slug: regex }, { description: regex }];
+      }
+
+      const [items, total] = await Promise.all([
+        this.legalDocsCategoryModel
+          .find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        this.legalDocsCategoryModel.countDocuments(filter),
+      ]);
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Get legal doc categories successfully',
+        content: {
+          items,
+          total,
+          page,
+          limit,
+          pages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while getting legal doc categories: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async updateCategory(
+    id: string,
+    updateLegalDocCategoryDto: UpdateLegalDocCategoryDto,
+  ) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid category id',
+          content: null,
+        };
+      }
+
+      const existingCategory = await this.legalDocsCategoryModel.findOne({
+        _id: new Types.ObjectId(id),
+        isActive: true,
+      });
+
+      if (!existingCategory) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Legal doc category not found',
+          content: null,
+        };
+      }
+
+      const updateData: any = {};
+
+      if (updateLegalDocCategoryDto.name !== undefined) {
+        updateData.name = updateLegalDocCategoryDto.name;
+
+        if (updateLegalDocCategoryDto.name !== (existingCategory as any).name) {
+          updateData.slug = await this.generateUniqueCategorySlug(
+            updateLegalDocCategoryDto.name,
+          );
+        }
+      }
+
+      if (updateLegalDocCategoryDto.description !== undefined) {
+        updateData.description = updateLegalDocCategoryDto.description;
+      }
+
+      const category = await this.legalDocsCategoryModel.findByIdAndUpdate(
+        id,
+        updateData,
+        {
+          returnDocument: 'after',
+          runValidators: true,
+        },
+      );
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Update legal doc category successfully',
+        content: {
+          category,
+        },
+      };
+    } catch (error: any) {
+      if (error?.code === 11000) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Legal doc category slug already exists',
+          content: null,
+        };
+      }
+
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while updating legal doc category: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async deleteCategory(id: string) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid category id',
+          content: null,
+        };
+      }
+
+      const category = await this.legalDocsCategoryModel.findOne({
+        _id: new Types.ObjectId(id),
+        isActive: true,
+      });
+
+      if (!category) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Legal doc category not found',
+          content: null,
+        };
+      }
+
+      const hasLegalDocs = await this.legalDocModel.exists({
+        categoryId: new Types.ObjectId(id),
+        isActive: true,
+      });
+
+      if (hasLegalDocs) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message:
+            'Cannot delete category because it is being used by legal docs',
+          content: null,
+        };
+      }
+
+      const deletedCategory =
+        await this.legalDocsCategoryModel.findByIdAndUpdate(
+          id,
+          {
+            isActive: false,
+          },
+          {
+            returnDocument: 'after',
+          },
+        );
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Delete legal doc category successfully',
+        content: {
+          category: deletedCategory,
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while deleting legal doc category: ${error.message}`,
+        content: null,
+      };
+    }
   }
 
   // =========================
@@ -151,11 +424,14 @@ export class LegalDocsService {
     file?: Express.Multer.File,
   ) {
     try {
-      // Validate category if provided
-      const { error: categoryError } = await this.validateCategory(
-        dto.categoryId,
-      );
-      if (categoryError) return categoryError;
+      if (!(await this.ensureCategoryExists(dto.categoryId))) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Legal doc category not found',
+          content: null,
+        };
+      }
 
       let fileMetadata: any = null;
       if (file) {
@@ -306,12 +582,18 @@ export class LegalDocsService {
       );
       if (error) return error;
 
-      // Validate new category if provided
-      if (dto.categoryId !== undefined) {
-        const { error: categoryError } = await this.validateCategory(
-          dto.categoryId,
-        );
-        if (categoryError) return categoryError;
+      if (
+        dto.categoryId !== undefined &&
+        dto.categoryId !== null &&
+        dto.categoryId !== '' &&
+        !(await this.ensureCategoryExists(dto.categoryId))
+      ) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Legal doc category not found',
+          content: null,
+        };
       }
 
       const updatedDoc = await this.legalDocModel

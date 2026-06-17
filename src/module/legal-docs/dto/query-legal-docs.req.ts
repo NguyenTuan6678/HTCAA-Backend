@@ -12,6 +12,7 @@ import { LegalDocStatus } from '../../../schema/legal-docs.schema';
 
 export class QueryLegalDocDto {
   @ApiPropertyOptional({ example: '665f1e8d7c1b2a0012a12345' })
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsMongoId()
   @IsOptional()
   categoryId?: string;

@@ -95,7 +95,7 @@ export class NewsController {
     return this.newsService.findPublic(query);
   }
 
-  @Get('admin')
+  @Get('admin/list')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')

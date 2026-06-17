@@ -5,7 +5,7 @@ import { LegalDocStatus } from '../../../schema/legal-docs.schema';
 export class UpdateLegalDocDto {
   @ApiPropertyOptional({
     example: '665f1e8d7c1b2a0012a12345',
-    description: 'Category id (from news_categories collection)',
+    description: 'Category id (from legal_docs_categories collection)',
   })
   @IsMongoId()
   @IsOptional()

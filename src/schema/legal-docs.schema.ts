@@ -25,7 +25,7 @@ export class LegalDoc extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   createdBy: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'NewsCategory', default: null })
+  @Prop({ type: Types.ObjectId, ref: 'LegalDocsCategory', default: null })
   categoryId: Types.ObjectId | null;
 
   @Prop({ required: true, trim: true })
