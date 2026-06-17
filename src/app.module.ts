@@ -14,6 +14,7 @@ import { NewsModule } from './module/news/news.module';
 import { AboutUsModule } from './module/about/about.module';
 import { LegalDocsModule } from './module/docs/legal-docs.module';
 import { UploadModule } from './module/upload/upload.module';
+import { FaqsModule } from './faqs/faqs.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { UploadModule } from './module/upload/upload.module';
     AboutUsModule,
     UploadModule,
     LegalDocsModule,
+    FaqsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
