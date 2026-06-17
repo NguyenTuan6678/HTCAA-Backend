@@ -23,10 +23,10 @@ import { FaqsService } from './faqs.service';
 import { CreateFaqDto } from './dto/create-faq.req';
 import { UpdateFaqDto } from './dto/update-faq.req';
 import { QueryFaqDto } from './dto/query-faq.req';
-import { Roles } from '../users/auth/decorators/roles.decorator';
-import { JwtAuthGuard } from '../users/auth/guards/auth.guard';
-import { RolesGuard } from '../users/auth/guards/roles.guard';
-import { Role } from '../utils/role/role';
+import { Roles } from '../../users/auth/decorators/roles.decorator';
+import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
+import { RolesGuard } from '../../users/auth/guards/roles.guard';
+import { Role } from '../../utils/role/role';
 
 @ApiTags('FAQs')
 @Controller('faqs')

@@ -12,9 +12,10 @@ import { NewsModule } from './module/news/news.module';
 // import { HomepageModule } from './module/homepage/homepage.module';
 // import { CourseModule } from './module/course/course.module';
 import { AboutUsModule } from './module/about/about.module';
-import { LegalDocsModule } from './module/docs/legal-docs.module';
+import { LegalDocsModule } from './module/legal-docs/legal-docs.module';
 import { UploadModule } from './module/upload/upload.module';
-import { FaqsModule } from './faqs/faqs.module';
+import { FaqsModule } from './module/faqs/faqs.module';
+import { DocumentsModule } from './documents/documents.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { FaqsModule } from './faqs/faqs.module';
     UploadModule,
     LegalDocsModule,
     FaqsModule,
+    DocumentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

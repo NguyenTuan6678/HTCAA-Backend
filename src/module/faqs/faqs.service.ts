@@ -4,9 +4,9 @@ import { Model, Types } from 'mongoose';
 import { CreateFaqDto } from './dto/create-faq.req';
 import { UpdateFaqDto } from './dto/update-faq.req';
 import { QueryFaqDto } from './dto/query-faq.req';
-import { ERROR_RES, ERROR_INFO } from '../constants/error.const';
-import { Faq, FaqStatus } from '../schema/faqs.schema';
-import { Role } from '../utils/role/role';
+import { ERROR_RES, ERROR_INFO } from '../../constants/error.const';
+import { Faq, FaqStatus } from '../../schema/faqs.schema';
+import { Role } from '../../utils/role/role';
 
 @Injectable()
 export class FaqsService {
