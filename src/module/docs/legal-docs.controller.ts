@@ -28,7 +28,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
 import { Request, Response } from 'express';
-
 import { LegalDocsService } from './legal-docs.service';
 import { Role } from '../../utils/role/role';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
@@ -38,7 +37,6 @@ import { CreateLegalDocDto } from './dto/create-legal-docs.req';
 import { QueryLegalDocDto } from './dto/query-legal-docs.req';
 import { UpdateLegalDocDto } from './dto/update-legal.docs.req';
 
-// Accept PDF, DOC, DOCX only
 const docFileFilter = (req: any, file: Express.Multer.File, callback: any) => {
   const allowedMimeTypes = ['application/pdf'];
   const allowedExtensions = ['.pdf'];
@@ -93,10 +91,6 @@ export class LegalDocsController {
     return this.legalDocsService.findOne(id);
   }
 
-  /**
-   * Preview endpoint – streams the file inline so browsers can render it
-   * without downloading (e.g. PDF viewer, Google Docs Viewer fallback).
-   */
   @Get(':id/preview')
   @ApiOperation({ summary: 'Public – preview (inline) the attached file' })
   @ApiParam({ name: 'id', description: 'Legal doc id' })
@@ -107,10 +101,6 @@ export class LegalDocsController {
     return this.legalDocsService.streamFile(id, 'inline', res);
   }
 
-  /**
-   * Download endpoint – streams the file as an attachment so the browser
-   * triggers a Save-As dialog.
-   */
   @Get(':id/download')
   @ApiOperation({ summary: 'Public – download the attached file' })
   @ApiParam({ name: 'id', description: 'Legal doc id' })
@@ -136,6 +126,11 @@ export class LegalDocsController {
       type: 'object',
       required: ['title', 'type'],
       properties: {
+        categoryId: {
+          type: 'string',
+          example: '665f1e8d7c1b2a0012a12345',
+          description: 'Category id (from news_categories)',
+        },
         title: { type: 'string', example: 'Hợp đồng lao động 2026' },
         type: { type: 'string', example: 'Hợp đồng' },
         file: { type: 'string', format: 'binary' },
@@ -151,11 +146,11 @@ export class LegalDocsController {
   )
   create(
     @Body() dto: CreateLegalDocDto,
-    @UploadedFile() file: Express.Multer.File, // ← new
+    @UploadedFile() file: Express.Multer.File,
     @Req() req: Request,
   ) {
     const userId = (req as any).user.id;
-    return this.legalDocsService.create(userId, dto, file); // ← pass file
+    return this.legalDocsService.create(userId, dto, file);
   }
 
   @Put(':id')

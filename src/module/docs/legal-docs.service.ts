@@ -2,8 +2,8 @@ import { Injectable, StreamableFile } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Response } from 'express';
-
 import { LegalDoc, LegalDocStatus } from '../../schema/legal-docs.schema';
+import { NewsCategory } from '../../schema/news-category.schema';
 import { User } from '../../schema/user.schema';
 import { ERROR_INFO, ERROR_RES } from '../../constants/error.const';
 import { Role } from '../../utils/role/role';
@@ -12,7 +12,6 @@ import { CreateLegalDocDto } from './dto/create-legal-docs.req';
 import { QueryLegalDocDto } from './dto/query-legal-docs.req';
 import { UpdateLegalDocDto } from './dto/update-legal.docs.req';
 
-// Allowed MIME types for uploaded documents
 const ALLOWED_DOC_MIME_TYPES = [
   'application/pdf',
   'application/msword',
@@ -24,6 +23,9 @@ export class LegalDocsService {
   constructor(
     @InjectModel(LegalDoc.name)
     private readonly legalDocModel: Model<LegalDoc>,
+
+    @InjectModel(NewsCategory.name)
+    private readonly newsCategoryModel: Model<NewsCategory>,
 
     @InjectModel(User.name)
     private readonly userModel: Model<User>,
@@ -86,21 +88,18 @@ export class LegalDocsService {
   }
 
   private getPopulateQuery() {
-    return [{ path: 'createdBy', select: 'name email role' }];
+    return [
+      { path: 'createdBy', select: 'name email role' },
+      { path: 'categoryId', select: 'name slug description' }, // populate category info
+    ];
   }
 
-  /**
-   * Attaches a short-lived presigned URL to the doc's file field so the
-   * frontend can download or preview it directly from MinIO.
-   */
   private async attachDocFileUrl(doc: any) {
     if (!doc) return doc;
     const obj = typeof doc.toObject === 'function' ? doc.toObject() : doc;
-
     if (obj.file?.objectName) {
       obj.file = await this.minioService.attachPresignedUrl(obj.file);
     }
-
     return obj;
   }
 
@@ -108,19 +107,57 @@ export class LegalDocsService {
     return Promise.all(docs.map((d) => this.attachDocFileUrl(d)));
   }
 
+  /** Validate that the categoryId exists and is active */
+  private async validateCategory(categoryId?: string) {
+    if (!categoryId) return { error: null };
+
+    if (!Types.ObjectId.isValid(categoryId)) {
+      return {
+        error: {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid category id',
+          content: null,
+        },
+      };
+    }
+
+    const category = await this.newsCategoryModel.findOne({
+      _id: new Types.ObjectId(categoryId),
+      isActive: true,
+    });
+
+    if (!category) {
+      return {
+        error: {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Category not found',
+          content: null,
+        },
+      };
+    }
+
+    return { error: null };
+  }
+
   // =========================
   // CRUD
   // =========================
 
-  /** Admin/Editor – create a new legal doc record (no file yet) */
   async create(
     userId: string,
     dto: CreateLegalDocDto,
-    file?: Express.Multer.File, // ← new
+    file?: Express.Multer.File,
   ) {
     try {
-      let fileMetadata: any = null;
+      // Validate category if provided
+      const { error: categoryError } = await this.validateCategory(
+        dto.categoryId,
+      );
+      if (categoryError) return categoryError;
 
+      let fileMetadata: any = null;
       if (file) {
         const uploaded = await this.minioService.uploadFile(
           file,
@@ -136,14 +173,16 @@ export class LegalDocsService {
 
       const doc = await this.legalDocModel.create({
         createdBy: new Types.ObjectId(userId),
+        categoryId: dto.categoryId ? new Types.ObjectId(dto.categoryId) : null,
         title: dto.title,
         type: dto.type,
         status: LegalDocStatus.DRAFT,
-        file: fileMetadata, // ← null if no file uploaded
+        file: fileMetadata,
         isActive: true,
       });
 
-      const docWithUrl = await this.attachDocFileUrl(doc);
+      const populated = await doc.populate(this.getPopulateQuery());
+      const docWithUrl = await this.attachDocFileUrl(populated);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
@@ -161,7 +200,6 @@ export class LegalDocsService {
     }
   }
 
-  /** Admin/Editor – list all docs with optional filters */
   async findAll(query: QueryLegalDocDto) {
     try {
       const page = Number(query.page ?? 1);
@@ -172,6 +210,8 @@ export class LegalDocsService {
 
       if (query.status) filter.status = query.status;
       if (query.type) filter.type = new RegExp(query.type, 'i');
+      if (query.categoryId)
+        filter.categoryId = new Types.ObjectId(query.categoryId);
       if (query.q) {
         const regex = new RegExp(query.q, 'i');
         filter.$or = [{ title: regex }, { type: regex }];
@@ -211,12 +251,10 @@ export class LegalDocsService {
     }
   }
 
-  /** Public – list only Published docs */
   async findPublic(query: QueryLegalDocDto) {
     return this.findAll({ ...query, status: LegalDocStatus.PUBLISHED });
   }
 
-  /** Get a single doc by id */
   async findOne(id: string) {
     try {
       if (!Types.ObjectId.isValid(id)) {
@@ -259,7 +297,6 @@ export class LegalDocsService {
     }
   }
 
-  /** Admin/Editor – update metadata (title, type, status) */
   async update(id: string, userId: string, role: Role, dto: UpdateLegalDocDto) {
     try {
       const { error, doc } = await this.findActiveDocForModify(
@@ -269,10 +306,23 @@ export class LegalDocsService {
       );
       if (error) return error;
 
+      // Validate new category if provided
+      if (dto.categoryId !== undefined) {
+        const { error: categoryError } = await this.validateCategory(
+          dto.categoryId,
+        );
+        if (categoryError) return categoryError;
+      }
+
       const updatedDoc = await this.legalDocModel
         .findByIdAndUpdate(
           id,
           {
+            ...(dto.categoryId !== undefined && {
+              categoryId: dto.categoryId
+                ? new Types.ObjectId(dto.categoryId)
+                : null,
+            }),
             ...(dto.title && { title: dto.title }),
             ...(dto.type && { type: dto.type }),
             ...(dto.status && { status: dto.status }),
@@ -299,7 +349,6 @@ export class LegalDocsService {
     }
   }
 
-  /** Admin/Editor – soft delete */
   async delete(id: string, userId: string, role: Role) {
     try {
       const { error, doc } = await this.findActiveDocForModify(
@@ -309,7 +358,6 @@ export class LegalDocsService {
       );
       if (error) return error;
 
-      // Remove the file from MinIO if it exists
       if ((doc as any).file?.objectName) {
         await this.minioService.removeFile((doc as any).file.objectName);
       }
@@ -424,18 +472,12 @@ export class LegalDocsService {
   // FILE UPLOAD / DELETE
   // =========================
 
-  /**
-   * Upload (or replace) the document file (PDF, DOCX, DOC).
-   * The presigned URL in the response can be used by the frontend for
-   * inline preview (e.g. PDF.js, Google Docs Viewer) or direct download.
-   */
   async uploadFile(
     id: string,
     userId: string,
     role: Role,
     file?: Express.Multer.File,
   ) {
-    console.log(file);
     try {
       if (!file) {
         return {
@@ -462,7 +504,6 @@ export class LegalDocsService {
       );
       if (error) return error;
 
-      // Remove old file from MinIO before uploading the new one
       if ((doc as any).file?.objectName) {
         await this.minioService.removeFile((doc as any).file.objectName);
       }
@@ -472,9 +513,8 @@ export class LegalDocsService {
         'legal-docs/files',
       );
 
-      // Store full metadata so we can stream/preview later
       const fileMetadata = {
-        ...uploadedFile, // objectName from MinIO helper
+        ...uploadedFile,
         originalName: file.originalname,
         mimeType: file.mimetype,
         size: file.size,
@@ -506,7 +546,6 @@ export class LegalDocsService {
     }
   }
 
-  /** Remove the attached file from MinIO and clear the field */
   async deleteFile(id: string, userId: string, role: Role) {
     try {
       const { error, doc } = await this.findActiveDocForModify(
@@ -552,18 +591,9 @@ export class LegalDocsService {
   }
 
   // =========================
-  // DOWNLOAD / PREVIEW (stream)
+  // STREAM (preview / download)
   // =========================
 
-  /**
-   * Streams the file directly from MinIO to the HTTP response.
-   *
-   * - For **download**: caller sets `disposition = 'attachment'`
-   * - For **preview** (inline browser render): caller sets `disposition = 'inline'`
-   *
-   * The controller should NOT use @Res() passthrough mode here; it sets
-   * headers manually and pipes the stream so NestJS' StreamableFile works.
-   */
   async streamFile(
     id: string,
     disposition: 'attachment' | 'inline',
@@ -604,11 +634,9 @@ export class LegalDocsService {
         };
       }
 
-      // Get a readable stream from MinIO
       const fileStream = await this.minioService.getFileStream(
         fileInfo.objectName,
       );
-
       const encodedName = encodeURIComponent(
         fileInfo.originalName ?? 'document',
       );
@@ -621,12 +649,8 @@ export class LegalDocsService {
         'Content-Disposition',
         `${disposition}; filename="${encodedName}"; filename*=UTF-8''${encodedName}`,
       );
+      if (fileInfo.size) res.setHeader('Content-Length', fileInfo.size);
 
-      if (fileInfo.size) {
-        res.setHeader('Content-Length', fileInfo.size);
-      }
-
-      // StreamableFile pipes the stream to the response automatically
       return new StreamableFile(fileStream);
     } catch (error: any) {
       return {

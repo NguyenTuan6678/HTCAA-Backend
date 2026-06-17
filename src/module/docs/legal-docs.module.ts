@@ -9,12 +9,17 @@ import { RolesGuard } from '../../users/auth/guards/roles.guard';
 
 import { LegalDocsController } from './legal-docs.controller';
 import { LegalDocsService } from './legal-docs.service';
+import {
+  NewsCategory,
+  NewsCategorySchema,
+} from '../../schema/news-category.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: LegalDoc.name, schema: LegalDocSchema },
       { name: User.name, schema: UserSchema },
+      { name: NewsCategory.name, schema: NewsCategorySchema },
     ]),
     MinioModule,
   ],

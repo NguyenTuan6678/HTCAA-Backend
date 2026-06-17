@@ -1,9 +1,21 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsMongoId,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 import { LegalDocStatus } from '../../../schema/legal-docs.schema';
 
 export class QueryLegalDocDto {
+  @ApiPropertyOptional({ example: '665f1e8d7c1b2a0012a12345' })
+  @IsMongoId()
+  @IsOptional()
+  categoryId?: string;
+
   @ApiPropertyOptional({ example: 'hợp đồng' })
   @IsString()
   @IsOptional()
