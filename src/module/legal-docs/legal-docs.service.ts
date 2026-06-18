@@ -181,9 +181,11 @@ export class LegalDocsService {
       );
 
       const category = await this.legalDocsCategoryModel.create({
+        title: createLegalDocCategoryDto.title,
         name: createLegalDocCategoryDto.name,
         slug,
         description: createLegalDocCategoryDto.description ?? null,
+        typeCategoryId: createLegalDocCategoryDto.typeId,
         isActive: true,
       });
 

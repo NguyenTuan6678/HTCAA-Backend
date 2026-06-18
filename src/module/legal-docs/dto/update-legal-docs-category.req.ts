@@ -1,7 +1,15 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsMongoId, IsOptional, IsString } from 'class-validator';
 
 export class UpdateLegalDocCategoryDto {
+  @ApiPropertyOptional({
+    example: 'Tiêu đề chính sách thuế',
+    description: 'Category title',
+  })
+  @IsString()
+  @IsOptional()
+  title: string;
+
   @ApiPropertyOptional({
     example: 'Chính sách thuế',
   })
@@ -15,4 +23,12 @@ export class UpdateLegalDocCategoryDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiPropertyOptional({
+    example: '665f1e8d7c1b2a0012a12345',
+    description: 'Category id (from category_types collection)',
+  })
+  @IsMongoId()
+  @IsOptional()
+  typeId?: string;
 }
