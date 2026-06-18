@@ -8,7 +8,7 @@ import {
   IsString,
   Min,
 } from 'class-validator';
-import { DocumentStatus } from '../../schema/documents.schema';
+import { DocumentStatus } from '../../../schema/documents.schema';
 
 export class QueryDocumentDto {
   @ApiPropertyOptional({ example: '665f1e8d7c1b2a0012a12345' })

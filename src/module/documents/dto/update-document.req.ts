@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsMongoId, IsOptional, IsString } from 'class-validator';
-import { DocumentStatus } from '../../schema/documents.schema';
+import { DocumentStatus } from '../../../schema/documents.schema';
 
 export class UpdateDocumentDto {
   @ApiPropertyOptional({ example: '665f1e8d7c1b2a0012a12345' })

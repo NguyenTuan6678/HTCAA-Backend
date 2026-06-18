@@ -33,10 +33,10 @@ import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.req';
 import { UpdateDocumentDto } from './dto/update-document.req';
 import { QueryDocumentDto } from './dto/query-document.req';
-import { JwtAuthGuard } from '../users/auth/guards/auth.guard';
-import { Roles } from '../users/auth/decorators/roles.decorator';
-import { RolesGuard } from '../users/auth/guards/roles.guard';
-import { Role } from '../utils/role/role';
+import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
+import { Roles } from '../../users/auth/decorators/roles.decorator';
+import { RolesGuard } from '../../users/auth/guards/roles.guard';
+import { Role } from '../../utils/role/role';
 
 // Accept .xlsx and .xls only
 const xlsxFileFilter = (req: any, file: Express.Multer.File, callback: any) => {

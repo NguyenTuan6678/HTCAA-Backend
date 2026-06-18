@@ -2,14 +2,17 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DocumentsController } from './documents.controller';
 import { DocumentsService } from './documents.service';
-import { MinioModule } from '../module/minio/minio.module';
-import { DocumentFile, DocumentFileSchema } from '../schema/documents.schema';
+import { MinioModule } from '../minio/minio.module';
+import {
+  DocumentFile,
+  DocumentFileSchema,
+} from '../../schema/documents.schema';
 import {
   NewsCategory,
   NewsCategorySchema,
-} from '../schema/news-category.schema';
-import { JwtAuthGuard } from '../users/auth/guards/auth.guard';
-import { RolesGuard } from '../users/auth/guards/roles.guard';
+} from '../../schema/news-category.schema';
+import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
+import { RolesGuard } from '../../users/auth/guards/roles.guard';
 
 @Module({
   imports: [

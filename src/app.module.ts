@@ -15,7 +15,7 @@ import { AboutUsModule } from './module/about/about.module';
 import { LegalDocsModule } from './module/legal-docs/legal-docs.module';
 import { UploadModule } from './module/upload/upload.module';
 import { FaqsModule } from './module/faqs/faqs.module';
-import { DocumentsModule } from './documents/documents.module';
+import { DocumentsModule } from './module/documents/documents.module';
 
 @Module({
   imports: [
