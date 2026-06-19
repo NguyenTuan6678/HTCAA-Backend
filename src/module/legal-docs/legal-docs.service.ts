@@ -99,9 +99,23 @@ export class LegalDocsService {
 
   private getPopulateQuery() {
     return [
-      { path: 'createdBy', select: 'name email role' },
-      { path: 'categoryId', select: 'name slug description' }, // populate category info
+      {
+        path: 'createdBy',
+        select: 'name email role',
+      },
+      {
+        path: 'categoryId',
+        select: 'name slug description',
+        populate: {
+          path: 'typeCategoryId',
+          select: 'name description',
+        },
+      },
     ];
+  }
+
+  private getTypeCategoryQuery() {
+    return [{ path: 'typeCategoryId', select: 'name description' }];
   }
 
   private async attachDocFileUrl(doc: any) {
@@ -478,7 +492,8 @@ export class LegalDocsService {
           .find(filter)
           .sort({ createdAt: -1 })
           .skip(skip)
-          .limit(limit),
+          .limit(limit)
+          .populate(this.getTypeCategoryQuery()),
         this.legalDocsCategoryModel.countDocuments(filter),
       ]);
 

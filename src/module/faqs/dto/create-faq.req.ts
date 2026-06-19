@@ -1,7 +1,14 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateFaqDto {
+  @ApiPropertyOptional({
+    description: 'Category id (from legal_docs_categories collection)',
+  })
+  @IsString()
+  @IsOptional()
+  categoryId?: string;
+
   @ApiProperty({ example: 'Làm thế nào để đăng ký tài khoản?' })
   @IsString()
   @IsNotEmpty()

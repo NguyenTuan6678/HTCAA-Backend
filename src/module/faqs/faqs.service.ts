@@ -20,7 +20,10 @@ export class FaqsService {
   // =========================
 
   private getPopulateQuery() {
-    return [{ path: 'createdBy', select: 'name email role' }];
+    return [
+      { path: 'createdBy', select: 'name email role' },
+      { path: 'categoryId', select: 'name slug description' },
+    ];
   }
 
   private async findActiveById(id: string) {
@@ -69,6 +72,7 @@ export class FaqsService {
     try {
       const faq = await this.faqModel.create({
         createdBy: new Types.ObjectId(userId),
+        categoryId: dto.categoryId ? new Types.ObjectId(dto.categoryId) : null,
         question: dto.question,
         answer: dto.answer,
         status: FaqStatus.DRAFT,

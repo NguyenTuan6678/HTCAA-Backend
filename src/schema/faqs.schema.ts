@@ -13,6 +13,9 @@ export class Faq {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   createdBy: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, ref: 'LegalDocsCategory', default: null })
+  categoryId: Types.ObjectId | null;
+
   @Prop({ type: String, required: true, trim: true })
   question: string;
 

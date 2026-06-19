@@ -2,6 +2,13 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsString } from 'class-validator';
 
 export class UpdateFaqDto {
+  @ApiPropertyOptional({
+    description: 'Category id (from legal_docs_categories collection)',
+  })
+  @IsString()
+  @IsOptional()
+  categoryId?: string;
+
   @ApiPropertyOptional({ example: 'Làm thế nào để đăng ký tài khoản?' })
   @IsString()
   @IsOptional()
