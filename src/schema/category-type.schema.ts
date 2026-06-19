@@ -8,14 +8,8 @@ export type TypeCategoryDocument = HydratedDocument<TypeCategory>;
   collection: 'category_types',
 })
 export class TypeCategory {
-  @Prop({ type: String, required: true })
-  title: string;
-
   @Prop({ type: String, required: true, trim: true })
   name: string;
-
-  @Prop({ type: String, required: true, trim: true })
-  slug: string;
 
   @Prop({ type: String, default: null, trim: true })
   description?: string | null;
@@ -26,7 +20,5 @@ export class TypeCategory {
 
 export const TypeCategorySchema = SchemaFactory.createForClass(TypeCategory);
 
-TypeCategorySchema.index({ slug: 1 }, { unique: true });
-TypeCategorySchema.index({ title: 1 }, { unique: true });
-TypeCategorySchema.index({ name: 1 });
+TypeCategorySchema.index({ name: 1 }, { unique: true });
 TypeCategorySchema.index({ createdAt: -1 });

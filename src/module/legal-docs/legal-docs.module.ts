@@ -13,6 +13,10 @@ import {
   LegalDocsCategory,
   LegalDocsCategorySchema,
 } from '../../schema/legal-docs-category.schema';
+import {
+  TypeCategory,
+  TypeCategorySchema,
+} from '../../schema/category-type.schema';
 
 @Module({
   imports: [
@@ -20,6 +24,7 @@ import {
       { name: LegalDoc.name, schema: LegalDocSchema },
       { name: User.name, schema: UserSchema },
       { name: LegalDocsCategory.name, schema: LegalDocsCategorySchema },
+      { name: TypeCategory.name, schema: TypeCategorySchema },
     ]),
     MinioModule,
   ],

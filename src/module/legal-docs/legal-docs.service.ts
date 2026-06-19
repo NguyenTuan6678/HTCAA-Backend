@@ -14,6 +14,10 @@ import { LegalDocsCategory } from '../../schema/legal-docs-category.schema';
 import { CreateLegalDocCategoryDto } from './dto/create-legal-docs-category.req';
 import { QueryLegalDocCategoryDto } from './dto/query-legal-docs-category.req';
 import { UpdateLegalDocCategoryDto } from './dto/update-legal-docs-category.req';
+import { CreateTypeCategoryDto } from './dto/create-type-category.req';
+import { TypeCategory } from '../../schema/category-type.schema';
+import { QueryTypeCategoryDto } from './dto/query-type-category.req';
+import { UpdateTypeCategoryDto } from './dto/update-type-category.req';
 
 const ALLOWED_DOC_MIME_TYPES = [
   'application/pdf',
@@ -29,6 +33,9 @@ export class LegalDocsService {
 
     @InjectModel(LegalDocsCategory.name)
     private readonly legalDocsCategoryModel: Model<LegalDocsCategory>,
+
+    @InjectModel(TypeCategory.name)
+    private readonly typeCategoryModel: Model<TypeCategory>,
 
     @InjectModel(User.name)
     private readonly userModel: Model<User>,
@@ -168,6 +175,236 @@ export class LegalDocsService {
     });
 
     return !!exists;
+  }
+
+  // =========================
+  // TYPE CATEGORY
+  // =========================
+
+  async createTypeCategory(createTypeCategoryDto: CreateTypeCategoryDto) {
+    try {
+      const type = await this.typeCategoryModel.create({
+        name: createTypeCategoryDto.name,
+        description: createTypeCategoryDto.description ?? null,
+        isActive: true,
+      });
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Create type category successfully',
+        content: {
+          type,
+        },
+      };
+    } catch (error: any) {
+      if (error?.code === 11000) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Type category slug already exists',
+          content: null,
+        };
+      }
+
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while creating type category: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async findTypeCategories(query: QueryTypeCategoryDto) {
+    try {
+      const page = Number(query.page ?? 1);
+      const limit = Number(query.limit ?? 20);
+      const skip = (page - 1) * limit;
+
+      const filter: any = {};
+
+      if (query.isActive !== undefined) {
+        filter.isActive = query.isActive;
+      } else {
+        filter.isActive = true;
+      }
+
+      if (query.q) {
+        const regex = new RegExp(query.q, 'i');
+
+        filter.$or = [{ name: regex }, { slug: regex }, { description: regex }];
+      }
+
+      const [items, total] = await Promise.all([
+        this.legalDocsCategoryModel
+          .find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        this.legalDocsCategoryModel.countDocuments(filter),
+      ]);
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Get type categories successfully',
+        content: {
+          items,
+          total,
+          page,
+          limit,
+          pages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while getting type categories: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async updateTypeCategory(
+    id: string,
+    updateTypeCategoryDto: UpdateTypeCategoryDto,
+  ) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid type category id',
+          content: null,
+        };
+      }
+
+      const existingCategory = await this.typeCategoryModel.findOne({
+        _id: new Types.ObjectId(id),
+        isActive: true,
+      });
+
+      if (!existingCategory) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Type category not found',
+          content: null,
+        };
+      }
+
+      const updateData: any = {};
+
+      if (updateTypeCategoryDto.name !== undefined) {
+        updateData.name = updateTypeCategoryDto.name;
+
+        if (updateTypeCategoryDto.name !== (existingCategory as any).name) {
+          updateData.slug = await this.generateUniqueCategorySlug(
+            updateTypeCategoryDto.name,
+          );
+        }
+      }
+
+      if (updateTypeCategoryDto.description !== undefined) {
+        updateData.description = updateTypeCategoryDto.description;
+      }
+
+      const category = await this.typeCategoryModel.findByIdAndUpdate(
+        id,
+        updateData,
+        {
+          returnDocument: 'after',
+          runValidators: true,
+        },
+      );
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Update type category successfully',
+        content: {
+          category,
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while updating type category: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async deleteTypeCategory(id: string) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid type category id',
+          content: null,
+        };
+      }
+
+      const category = await this.typeCategoryModel.findOne({
+        _id: new Types.ObjectId(id),
+        isActive: true,
+      });
+
+      if (!category) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Types category not found',
+          content: null,
+        };
+      }
+
+      const hasDocsCategory = await this.legalDocsCategoryModel.exists({
+        categoryId: new Types.ObjectId(id),
+        isActive: true,
+      });
+
+      if (hasDocsCategory) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message:
+            'Cannot delete category because it is being used by legal docs',
+          content: null,
+        };
+      }
+
+      const deletedTypeCategory =
+        await this.typeCategoryModel.findByIdAndUpdate(
+          id,
+          {
+            isActive: false,
+          },
+          {
+            returnDocument: 'after',
+          },
+        );
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Delete type category successfully',
+        content: {
+          category: deletedTypeCategory,
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while deleting type category: ${error.message}`,
+        content: null,
+      };
+    }
   }
 
   // =========================
