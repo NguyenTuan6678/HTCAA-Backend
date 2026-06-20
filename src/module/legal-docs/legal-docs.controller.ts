@@ -71,7 +71,7 @@ const uploadDocInterceptor = FileInterceptor('file', {
 @ApiTags('Legal Docs')
 @Controller('legal-docs')
 export class LegalDocsController {
-  constructor(private readonly legalDocsService: LegalDocsService) {}
+  constructor(private readonly legalDocsService: LegalDocsService) { }
 
   // ─── PUBLIC ────────────────────────────────────────────────────────────────
 
@@ -217,7 +217,7 @@ export class LegalDocsController {
         categoryId: {
           type: 'string',
           example: '665f1e8d7c1b2a0012a12345',
-          description: 'Category id (from news_categories)',
+          description: 'Category id (from legal_docs_categories)',
         },
         title: { type: 'string', example: 'Hợp đồng lao động 2026' },
         type: { type: 'string', example: 'Hợp đồng' },

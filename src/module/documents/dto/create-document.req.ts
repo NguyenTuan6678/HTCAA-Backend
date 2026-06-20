@@ -4,7 +4,7 @@ import { IsMongoId, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 export class CreateDocumentDto {
   @ApiPropertyOptional({
     example: '665f1e8d7c1b2a0012a12345',
-    description: 'Category id (from news_categories collection)',
+    description: 'Category id (from legal_docs_categories collection)',
   })
   @IsMongoId()
   @IsOptional()
