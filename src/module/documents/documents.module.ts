@@ -8,9 +8,9 @@ import {
   DocumentFileSchema,
 } from '../../schema/documents.schema';
 import {
-  NewsCategory,
-  NewsCategorySchema,
-} from '../../schema/news-category.schema';
+  LegalDocsCategory,
+  LegalDocsCategorySchema,
+} from '../../schema/legal-docs-category.schema';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 
@@ -18,7 +18,7 @@ import { RolesGuard } from '../../users/auth/guards/roles.guard';
   imports: [
     MongooseModule.forFeature([
       { name: DocumentFile.name, schema: DocumentFileSchema },
-      { name: NewsCategory.name, schema: NewsCategorySchema },
+      { name: LegalDocsCategory.name, schema: LegalDocsCategorySchema },
     ]),
     MinioModule,
   ],

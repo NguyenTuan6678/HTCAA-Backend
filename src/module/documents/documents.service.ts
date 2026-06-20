@@ -8,7 +8,7 @@ import { QueryDocumentDto } from './dto/query-document.req';
 import { ERROR_RES, ERROR_INFO } from '../../constants/error.const';
 import { MinioService } from '../minio/minio.service';
 import { DocumentFile, DocumentStatus } from '../../schema/documents.schema';
-import { NewsCategory } from '../../schema/news-category.schema';
+import { LegalDocsCategory } from '../../schema/legal-docs-category.schema';
 import { Role } from '../../utils/role/role';
 
 // Only .xlsx (and legacy .xls) allowed
@@ -23,8 +23,8 @@ export class DocumentsService {
     @InjectModel(DocumentFile.name)
     private readonly documentModel: Model<DocumentFile>,
 
-    @InjectModel(NewsCategory.name)
-    private readonly newsCategoryModel: Model<NewsCategory>,
+    @InjectModel(LegalDocsCategory.name)
+    private readonly legalDocsCategoryModel: Model<LegalDocsCategory>,
 
     private readonly minioService: MinioService,
   ) {}
@@ -117,7 +117,7 @@ export class DocumentsService {
       };
     }
 
-    const category = await this.newsCategoryModel.findOne({
+    const category = await this.legalDocsCategoryModel.findOne({
       _id: new Types.ObjectId(categoryId),
       isActive: true,
     });
