@@ -130,33 +130,6 @@ export class LegalDocsController {
     return this.legalDocsService.deleteCategory(id);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Public – get legal doc detail by id' })
-  @ApiParam({ name: 'id', description: 'Legal doc id' })
-  findOne(@Param('id') id: string) {
-    return this.legalDocsService.findOne(id);
-  }
-
-  @Get(':id/preview')
-  @ApiOperation({ summary: 'Public – preview (inline) the attached file' })
-  @ApiParam({ name: 'id', description: 'Legal doc id' })
-  async preview(
-    @Param('id') id: string,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<StreamableFile | object> {
-    return this.legalDocsService.streamFile(id, 'inline', res);
-  }
-
-  @Get(':id/download')
-  @ApiOperation({ summary: 'Public – download the attached file' })
-  @ApiParam({ name: 'id', description: 'Legal doc id' })
-  async download(
-    @Param('id') id: string,
-    @Res({ passthrough: true }) res: Response,
-  ): Promise<StreamableFile | object> {
-    return this.legalDocsService.streamFile(id, 'attachment', res);
-  }
-
   // ─── TYPE ────────────────────────────────────────────────────────────────
 
   @Get('type-categories')
@@ -197,6 +170,33 @@ export class LegalDocsController {
   @ApiParam({ name: 'id', description: 'Type category id' })
   deleteTypeCategory(@Param('id') id: string) {
     return this.legalDocsService.deleteTypeCategory(id);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Public – get legal doc detail by id' })
+  @ApiParam({ name: 'id', description: 'Legal doc id' })
+  findOne(@Param('id') id: string) {
+    return this.legalDocsService.findOne(id);
+  }
+
+  @Get(':id/preview')
+  @ApiOperation({ summary: 'Public – preview (inline) the attached file' })
+  @ApiParam({ name: 'id', description: 'Legal doc id' })
+  async preview(
+    @Param('id') id: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile | object> {
+    return this.legalDocsService.streamFile(id, 'inline', res);
+  }
+
+  @Get(':id/download')
+  @ApiOperation({ summary: 'Public – download the attached file' })
+  @ApiParam({ name: 'id', description: 'Legal doc id' })
+  async download(
+    @Param('id') id: string,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile | object> {
+    return this.legalDocsService.streamFile(id, 'attachment', res);
   }
 
   // ─── ADMIN / EDITOR ────────────────────────────────────────────────────────

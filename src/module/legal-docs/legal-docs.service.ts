@@ -41,7 +41,7 @@ export class LegalDocsService {
     private readonly userModel: Model<User>,
 
     private readonly minioService: MinioService,
-  ) {}
+  ) { }
 
   // =========================
   // HELPERS
@@ -251,12 +251,12 @@ export class LegalDocsService {
       }
 
       const [items, total] = await Promise.all([
-        this.legalDocsCategoryModel
+        this.typeCategoryModel
           .find(filter)
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit),
-        this.legalDocsCategoryModel.countDocuments(filter),
+        this.typeCategoryModel.countDocuments(filter),
       ]);
 
       return {

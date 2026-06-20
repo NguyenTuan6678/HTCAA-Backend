@@ -2,8 +2,10 @@
   "compilerOptions": {
     "module": "node16",
     "moduleResolution": "node16",
-    "target": "ES2025",
-    "lib": ["ES2025"],
+    "target": "ES2022",
+    "lib": [
+      "ES2022"
+    ],
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
@@ -19,6 +21,11 @@
     "strictPropertyInitialization": false,
     "emitDecoratorMetadata": true
   },
-  "include": ["src"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }
