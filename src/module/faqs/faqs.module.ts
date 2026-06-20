@@ -3,11 +3,22 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { FaqsController } from './faqs.controller';
 import { FaqsService } from './faqs.service';
 import { Faq, FaqSchema } from '../../schema/faqs.schema';
+import { User, UserSchema } from '../../schema/user.schema';
+import {
+  LegalDocsCategory,
+  LegalDocsCategorySchema,
+} from '../../schema/legal-docs-category.schema';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Faq.name, schema: FaqSchema }])],
+  imports: [
+    MongooseModule.forFeature([
+      { name: Faq.name, schema: FaqSchema },
+      { name: LegalDocsCategory.name, schema: LegalDocsCategorySchema },
+      { name: User.name, schema: UserSchema },
+    ]),
+  ],
   controllers: [FaqsController],
   providers: [FaqsService, JwtAuthGuard, RolesGuard],
   exports: [FaqsService],

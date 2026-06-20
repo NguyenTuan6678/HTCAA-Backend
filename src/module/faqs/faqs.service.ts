@@ -195,6 +195,11 @@ export class FaqsService {
         .findByIdAndUpdate(
           id,
           {
+            ...(dto.categoryId !== undefined && {
+              categoryId: dto.categoryId
+                ? new Types.ObjectId(dto.categoryId)
+                : null,
+            }),
             ...(dto.question && { question: dto.question }),
             ...(dto.answer && { answer: dto.answer }),
           },

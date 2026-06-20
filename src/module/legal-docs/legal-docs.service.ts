@@ -105,7 +105,7 @@ export class LegalDocsService {
       },
       {
         path: 'categoryId',
-        select: 'name slug description',
+        select: 'name slug description typeCategoryId',
         populate: {
           path: 'typeCategoryId',
           select: 'name description',
