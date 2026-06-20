@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -46,6 +47,16 @@ export class CreateNewsDto {
   @IsArray()
   @IsString({ each: true })
   @IsOptional()
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) return value;
+
+    if (typeof value === 'string') {
+
+      return [value];
+    }
+
+    return value;
+  })
   tags?: string[];
 
   @ApiPropertyOptional({
