@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsEnum, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 import { Role } from '../../utils/role/role';
 
 export class CreateUserDto {
@@ -38,11 +38,11 @@ export class CreateUserDto {
   @IsNotEmpty()
   role: Role;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'member',
     description: 'Custom member type tag',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   memberType?: string = 'member';
 }

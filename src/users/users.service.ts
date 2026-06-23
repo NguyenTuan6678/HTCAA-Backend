@@ -7,6 +7,7 @@ import { UpdateUserDto } from './dto/update-user.req';
 import { ERROR_RES, ERROR_INFO } from '../constants/error.const';
 import { User } from '../schema/user.schema';
 import { LoggerService } from '../common/loggers/logger.service';
+import { Role } from '../utils/role/role';
 
 @Injectable()
 export class UsersService {
@@ -18,6 +19,15 @@ export class UsersService {
 
   async create(dto: CreateUserDto) {
     try {
+      if (dto.role === Role.ADMIN) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Cannot create admin user',
+          content: null,
+        };
+      }
+
       const email = dto.email.toLowerCase().trim();
       const existing = await this.userModal.findOne({ email });
 
@@ -206,6 +216,14 @@ export class UsersService {
       }
 
       if (dto.role !== undefined) {
+        if (dto.role === Role.ADMIN) {
+          return {
+            code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+            info: ERROR_INFO.FAIL,
+            message: 'Cannot assign admin role to user',
+            content: null,
+          };
+        }
         user.role = dto.role;
       }
 
