@@ -115,8 +115,7 @@ export class NewsController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor create news category' })
-  @ApiBody({ type: CreateNewsCategoryDto })
-  createCategory(@Body() createNewsCategoryDto: CreateNewsCategoryDto) {
+  createCategory(@Query() createNewsCategoryDto: CreateNewsCategoryDto) {
     return this.newsService.createCategory(createNewsCategoryDto);
   }
 
@@ -159,10 +158,9 @@ export class NewsController {
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Logged-in user comment on news' })
   @ApiParam({ name: 'id', description: 'News id' })
-  @ApiBody({ type: CreateNewsCommentDto })
   createComment(
     @Param('id') id: string,
-    @Body() createNewsCommentDto: CreateNewsCommentDto,
+    @Query() createNewsCommentDto: CreateNewsCommentDto,
     @Req() request: Request,
   ) {
     const userId = (request as any).user.id;

@@ -102,6 +102,19 @@ export class MinioService implements OnModuleInit {
   ): Promise<string | null> {
     if (!objectName) return null;
 
+    const backendUrl =
+      this.configService.get<string>('BACKEND_URL') ||
+      'http://localhost:4000';
+
+    return `${backendUrl}/api/media/${objectName}`;
+  }
+
+  async getRealPresignedUrl(
+    objectName?: string | null,
+    expirySeconds?: number,
+  ): Promise<string | null> {
+    if (!objectName) return null;
+
     const expiresInEnv = this.configService.get<string>(
       'MINIO_PRESIGNED_EXPIRES_IN',
     );

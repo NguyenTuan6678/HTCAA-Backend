@@ -5,9 +5,9 @@ import { FaqsService } from './faqs.service';
 import { Faq, FaqSchema } from '../../schema/faqs.schema';
 import { User, UserSchema } from '../../schema/user.schema';
 import {
-  LegalDocsCategory,
-  LegalDocsCategorySchema,
-} from '../../schema/legal-docs-category.schema';
+  FaqCategory,
+  FaqCategorySchema,
+} from '../../schema/faq-category.schema';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 
@@ -15,7 +15,7 @@ import { RolesGuard } from '../../users/auth/guards/roles.guard';
   imports: [
     MongooseModule.forFeature([
       { name: Faq.name, schema: FaqSchema },
-      { name: LegalDocsCategory.name, schema: LegalDocsCategorySchema },
+      { name: FaqCategory.name, schema: FaqCategorySchema },
       { name: User.name, schema: UserSchema },
     ]),
   ],

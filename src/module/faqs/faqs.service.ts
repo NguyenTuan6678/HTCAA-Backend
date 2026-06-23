@@ -4,8 +4,12 @@ import { Model, Types } from 'mongoose';
 import { CreateFaqDto } from './dto/create-faq.req';
 import { UpdateFaqDto } from './dto/update-faq.req';
 import { QueryFaqDto } from './dto/query-faq.req';
+import { CreateFaqCategoryDto } from './dto/create-faq-category.req';
+import { UpdateFaqCategoryDto } from './dto/update-faq-category.req';
+import { QueryFaqCategoryDto } from './dto/query-faq-category.req';
 import { ERROR_RES, ERROR_INFO } from '../../constants/error.const';
 import { Faq, FaqStatus } from '../../schema/faqs.schema';
+import { FaqCategory } from '../../schema/faq-category.schema';
 import { Role } from '../../utils/role/role';
 
 @Injectable()
@@ -13,6 +17,8 @@ export class FaqsService {
   constructor(
     @InjectModel(Faq.name)
     private readonly faqModel: Model<Faq>,
+    @InjectModel(FaqCategory.name)
+    private readonly faqCategoryModel: Model<FaqCategory>,
   ) {}
 
   // =========================
@@ -22,7 +28,7 @@ export class FaqsService {
   private getPopulateQuery() {
     return [
       { path: 'createdBy', select: 'name email role' },
-      { path: 'categoryId', select: 'name slug description' },
+      { path: 'categoryId', select: 'title name slug description' },
     ];
   }
 
@@ -64,12 +70,79 @@ export class FaqsService {
     return faq.createdBy?.toString() === userId;
   }
 
+  private normalizeVietnamese(str: string): string {
+    return str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D');
+  }
+
+  private slugify(value: string): string {
+    return this.normalizeVietnamese(value)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  private async generateUniqueCategorySlug(title: string): Promise<string> {
+    const baseSlug = this.slugify(title);
+    let slug = baseSlug;
+    let count = 1;
+
+    while (await this.faqCategoryModel.exists({ slug })) {
+      slug = `${baseSlug}-${count}`;
+      count++;
+    }
+
+    return slug;
+  }
+
+  private async validateCategory(categoryId?: string) {
+    if (!categoryId) return { error: null };
+
+    if (!Types.ObjectId.isValid(categoryId)) {
+      return {
+        error: {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid category id',
+          content: null,
+        },
+      };
+    }
+
+    const category = await this.faqCategoryModel.findOne({
+      _id: new Types.ObjectId(categoryId),
+      isActive: true,
+    });
+
+    if (!category) {
+      return {
+        error: {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'FAQ Category not found or inactive',
+          content: null,
+        },
+      };
+    }
+
+    return { error: null };
+  }
+
   // =========================
   // CRUD
   // =========================
 
   async create(userId: string, dto: CreateFaqDto) {
     try {
+      const { error: categoryError } = await this.validateCategory(dto.categoryId);
+      if (categoryError) return categoryError;
+
       const faq = await this.faqModel.create({
         createdBy: new Types.ObjectId(userId),
         categoryId: dto.categoryId ? new Types.ObjectId(dto.categoryId) : null,
@@ -111,6 +184,13 @@ export class FaqsService {
       const filter: any = { isActive: true };
 
       if (query.status) filter.status = query.status;
+      if (query.categoryId) {
+        if (Types.ObjectId.isValid(query.categoryId)) {
+          filter.categoryId = new Types.ObjectId(query.categoryId);
+        } else {
+          filter.categoryId = null;
+        }
+      }
       if (query.q) {
         const regex = new RegExp(query.q, 'i');
         filter.$or = [{ question: regex }, { answer: regex }];
@@ -189,6 +269,11 @@ export class FaqsService {
           message: 'You do not have permission to modify this FAQ',
           content: null,
         };
+      }
+
+      if (dto.categoryId !== undefined) {
+        const { error: categoryError } = await this.validateCategory(dto.categoryId);
+        if (categoryError) return categoryError;
       }
 
       const updated = await this.faqModel
@@ -463,6 +548,227 @@ export class FaqsService {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
         message: `There is a problem while disliking FAQ: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  // =========================
+  // FAQ CATEGORY CRUD
+  // =========================
+
+  async createCategory(dto: CreateFaqCategoryDto) {
+    try {
+      const slug = await this.generateUniqueCategorySlug(dto.title);
+      const category = await this.faqCategoryModel.create({
+        title: dto.title,
+        name: dto.name,
+        slug,
+        description: dto.description ?? null,
+        isActive: true,
+      });
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Create FAQ category successfully',
+        content: { category },
+      };
+    } catch (error: any) {
+      if (error?.code === 11000) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Category title or slug already exists',
+          content: null,
+        };
+      }
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while creating FAQ category: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async findCategories(query: QueryFaqCategoryDto) {
+    try {
+      const page = Number(query.page ?? 1);
+      const limit = Number(query.limit ?? 20);
+      const skip = (page - 1) * limit;
+
+      const filter: any = {};
+      if (query.isActive !== undefined) {
+        filter.isActive = query.isActive;
+      } else {
+        filter.isActive = true;
+      }
+
+      if (query.q) {
+        const regex = new RegExp(query.q, 'i');
+        filter.$or = [{ title: regex }, { name: regex }];
+      }
+
+      const [items, total] = await Promise.all([
+        this.faqCategoryModel
+          .find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        this.faqCategoryModel.countDocuments(filter),
+      ]);
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Get FAQ categories successfully',
+        content: {
+          items,
+          total,
+          page,
+          limit,
+          pages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while getting FAQ categories: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async updateCategory(id: string, dto: UpdateFaqCategoryDto) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid category id',
+          content: null,
+        };
+      }
+
+      const category = await this.faqCategoryModel.findOne({
+        _id: new Types.ObjectId(id),
+        isActive: true,
+      });
+
+      if (!category) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'FAQ category not found',
+          content: null,
+        };
+      }
+
+      const updateData: any = {};
+      if (dto.title !== undefined) {
+        updateData.title = dto.title;
+        if (dto.title !== (category as any).title) {
+          updateData.slug = await this.generateUniqueCategorySlug(dto.title);
+        }
+      }
+      if (dto.name !== undefined) {
+        updateData.name = dto.name;
+      }
+      if (dto.description !== undefined) {
+        updateData.description = dto.description ?? null;
+      }
+      if (dto.isActive !== undefined) {
+        updateData.isActive = dto.isActive;
+      }
+
+      const updated = await this.faqCategoryModel.findByIdAndUpdate(
+        id,
+        updateData,
+        { returnDocument: 'after', runValidators: true },
+      );
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Update FAQ category successfully',
+        content: { category: updated },
+      };
+    } catch (error: any) {
+      if (error?.code === 11000) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Category title or slug already exists',
+          content: null,
+        };
+      }
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while updating FAQ category: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async deleteCategory(id: string) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid category id',
+          content: null,
+        };
+      }
+
+      const category = await this.faqCategoryModel.findOne({
+        _id: new Types.ObjectId(id),
+        isActive: true,
+      });
+
+      if (!category) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'FAQ category not found',
+          content: null,
+        };
+      }
+
+      const hasFaqs = await this.faqModel.exists({
+        categoryId: new Types.ObjectId(id),
+        isActive: true,
+      });
+
+      if (hasFaqs) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Cannot delete category because it is being used by FAQs',
+          content: null,
+        };
+      }
+
+      const deleted = await this.faqCategoryModel.findByIdAndUpdate(
+        id,
+        { isActive: false },
+        { returnDocument: 'after' },
+      );
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Delete FAQ category successfully',
+        content: { category: deleted },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while deleting FAQ category: ${error.message}`,
         content: null,
       };
     }

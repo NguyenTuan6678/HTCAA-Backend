@@ -1,6 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
+import { FaqCategory } from './faq-category.schema';
+
 export type FaqDocument = HydratedDocument<Faq>;
 
 export enum FaqStatus {
@@ -13,7 +15,7 @@ export class Faq {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   createdBy: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'LegalDocsCategory', default: null })
+  @Prop({ type: Types.ObjectId, ref: 'FaqCategory', default: null })
   categoryId: Types.ObjectId | null;
 
   @Prop({ type: String, required: true, trim: true })

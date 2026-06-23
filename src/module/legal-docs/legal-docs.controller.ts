@@ -101,8 +101,7 @@ export class LegalDocsController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor create legal doc category' })
-  @ApiBody({ type: CreateLegalDocCategoryDto })
-  createCategory(@Body() createLegalDocCategoryDto: CreateLegalDocCategoryDto) {
+  createCategory(@Query() createLegalDocCategoryDto: CreateLegalDocCategoryDto) {
     return this.legalDocsService.createCategory(createLegalDocCategoryDto);
   }
 
@@ -143,8 +142,7 @@ export class LegalDocsController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor create legal doc category' })
-  @ApiBody({ type: CreateTypeCategoryDto })
-  createTypeCategory(@Body() createTypeCategoryDto: CreateTypeCategoryDto) {
+  createTypeCategory(@Query() createTypeCategoryDto: CreateTypeCategoryDto) {
     return this.legalDocsService.createTypeCategory(createTypeCategoryDto);
   }
 

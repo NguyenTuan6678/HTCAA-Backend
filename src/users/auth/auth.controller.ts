@@ -5,6 +5,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Req,
   Res,
   UseGuards,
@@ -38,7 +39,7 @@ type RequestWithCookies = Request & {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('register')
   @ApiOperation({ summary: 'register account' })
@@ -47,8 +48,7 @@ export class AuthController {
     description: 'Register successfully',
     type: MessageResponse,
   })
-  @ApiBody({ type: RegisterAccountDto, description: 'Register request' })
-  register(@Body() registerAccountDto: RegisterAccountDto) {
+  register(@Query() registerAccountDto: RegisterAccountDto) {
     return this.authService.register(registerAccountDto);
   }
 
@@ -60,9 +60,8 @@ export class AuthController {
     description: 'Login successfully',
     type: LoginRes,
   })
-  @ApiBody({ type: LoginReqType, description: 'Login request' })
   login(
-    @Body() loginDto: LoginReqType,
+    @Query() loginDto: LoginReqType,
     @Res({ passthrough: true }) response: Response,
   ) {
     return this.authService.login(loginDto, response);
@@ -84,12 +83,8 @@ export class AuthController {
   @ApiOperation({
     summary: 'Refresh access token by refresh token from body or cookie',
   })
-  @ApiBody({
-    type: RefreshTokenDto,
-    required: false,
-  })
   refreshToken(
-    @Body() refreshTokenDto: RefreshTokenDto,
+    @Query() refreshTokenDto: RefreshTokenDto,
     @Req() request: RequestWithCookies,
     @Res({ passthrough: true }) response: Response,
   ) {
@@ -101,19 +96,17 @@ export class AuthController {
     return this.authService.refreshToken(refreshToken, response);
   }
 
-  @Post('forgot-password')
+  @Post('forgot-password/:email')
   @ApiOperation({ summary: 'forgot password' })
-  @ApiBody({ type: ForgotPasswordDto })
   forgotPassword(@Param('email') email: string) {
     return this.authService.forgotPassword(email);
   }
 
   @Post('reset-password/:token')
   @ApiOperation({ summary: 'reset password' })
-  @ApiBody({ type: ResetPasswordDto })
   resetPassword(
     @Param('token') token: string,
-    @Body() resetPasswordDto: ResetPasswordDto,
+    @Query() resetPasswordDto: ResetPasswordDto,
   ) {
     return this.authService.resetPassword(token, resetPasswordDto);
   }

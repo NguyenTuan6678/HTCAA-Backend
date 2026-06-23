@@ -3,7 +3,7 @@ import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateFaqDto {
   @ApiPropertyOptional({
-    description: 'Category id (from legal_docs_categories collection)',
+    description: 'Category id (from faq_categories collection)',
   })
   @IsString()
   @IsOptional()

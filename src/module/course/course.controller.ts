@@ -45,8 +45,7 @@ export class CourseController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor create course' })
-  @ApiBody({ type: CreateCourseDto })
-  create(@Body() createCourseDto: CreateCourseDto, @Req() request: Request) {
+  create(@Query() createCourseDto: CreateCourseDto, @Req() request: Request) {
     const userId = (request as any).user.id;
     return this.courseService.create(userId, createCourseDto);
   }

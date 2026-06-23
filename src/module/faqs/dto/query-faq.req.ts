@@ -9,6 +9,13 @@ export class QueryFaqDto {
   @IsOptional()
   q?: string;
 
+  @ApiPropertyOptional({
+    description: 'Filter by category id',
+  })
+  @IsString()
+  @IsOptional()
+  categoryId?: string;
+
   @ApiPropertyOptional({ enum: FaqStatus, example: FaqStatus.PUBLISHED })
   @IsEnum(FaqStatus)
   @IsOptional()

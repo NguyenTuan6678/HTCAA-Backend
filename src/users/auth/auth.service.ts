@@ -26,7 +26,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
-  ) {}
+  ) { }
 
   logger = new LoggerService(AuthService.name);
 
@@ -284,9 +284,8 @@ export class AuthService {
         return {
           code: ERROR_RES.INVALID_CREDENTIALS_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
-          message: `Password is incorrect. You have ${
-            this.maxFailedLoginAttempts - failedLoginAttempts
-          } attempt(s) remaining.`,
+          message: `Password is incorrect. You have ${this.maxFailedLoginAttempts - failedLoginAttempts
+            } attempt(s) remaining.`,
           content: null,
         };
       }
@@ -509,6 +508,7 @@ export class AuthService {
   }
 
   async forgotPassword(email: string): Promise<MessageResponse> {
+    console.log("email", email)
     try {
       if (!email) {
         return {
