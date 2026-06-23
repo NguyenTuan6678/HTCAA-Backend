@@ -522,12 +522,11 @@ export class AuthService {
 
       const user = await this.userModal.findOne({ email: decodedEmail });
 
-      // Không expose email có tồn tại hay không để tránh dò tài khoản
       if (!user) {
         return {
-          code: ERROR_RES.SUCCESS.statusCode,
-          info: ERROR_INFO.SUCCESS,
-          message: 'If the email exists, reset password link has been sent',
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Can not send email',
         };
       }
 
@@ -553,7 +552,7 @@ export class AuthService {
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
-        message: 'If the email exists, reset password link has been sent',
+        message: 'Reset password link has been sent successfully',
       };
     } catch (error: any) {
       return {
@@ -567,7 +566,7 @@ export class AuthService {
   async resetPassword(
     token: string,
     resetPasswordDto: ResetPasswordDto,
-  ): Promise<MessageResponse> {
+  ): Promise<any> {
     try {
       const { newPassword } = resetPasswordDto;
 
@@ -580,7 +579,7 @@ export class AuthService {
       }
 
       const users = await this.userModal
-        .find({
+         .find({
           resetPasswordTokenHash: { $ne: null },
           resetPasswordExpiresAt: { $gt: new Date() },
         })
@@ -620,6 +619,9 @@ export class AuthService {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Reset password successfully',
+        content: {
+          newPassword: newPassword,
+        },
       };
     } catch (error: any) {
       return {
