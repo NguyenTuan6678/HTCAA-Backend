@@ -4,7 +4,6 @@ import { LoggerService } from '../common/loggers/logger.service';
 import { User, UserSchema } from '../schema/user.schema';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { UsersRepository } from '../repositories/users.repository';
 import { JwtAuthGuard } from './auth/guards/auth.guard';
 
 @Module({
@@ -12,7 +11,7 @@ import { JwtAuthGuard } from './auth/guards/auth.guard';
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
   controllers: [UsersController],
-  providers: [UsersService, UsersRepository, LoggerService, JwtAuthGuard],
-  exports: [UsersService, UsersRepository, MongooseModule],
+  providers: [UsersService, LoggerService, JwtAuthGuard],
+  exports: [UsersService, MongooseModule],
 })
-export class UsersModule {}
+export class UsersModule { }

@@ -21,7 +21,6 @@ import { ERROR_RES } from '../../constants/error.const';
 import { MessageResponse } from '../../types/message.res';
 import { AuthService } from './auth.service';
 import { ChangePasswordDto } from './dto/change-password.req';
-import { ForgotPasswordDto } from './dto/forgot-password.req';
 import { LoginReqType } from './dto/login.req';
 import { LoginRes } from './dto/login.res';
 import { RegisterAccountDto } from './dto/register.req';
