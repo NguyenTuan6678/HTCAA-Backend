@@ -12,6 +12,7 @@ import { MemberStatus } from '../../utils/member-status.enum';
 import { MemberType } from '../../utils/member-type.enum';
 import { Counter } from '../../schema/counter.schema';
 import { QueryAdminMemberDto } from './dto/query-admin-member.req';
+import { escapeRegex } from '../../utils/escape-regex';
 
 @Injectable()
 export class MemberService {
@@ -285,7 +286,8 @@ export class MemberService {
       }
 
       if (query.q) {
-        const regex = new RegExp(query.q, 'i');
+        const escaped = escapeRegex(query.q);
+        const regex = new RegExp(escaped, 'i');
 
         filter.$or = [
           { name: regex },
@@ -552,7 +554,8 @@ export class MemberService {
       }
 
       if (query.q) {
-        const regex = new RegExp(query.q, 'i');
+        const escaped = escapeRegex(query.q);
+        const regex = new RegExp(escaped, 'i');
 
         filter.$or = [
           { memberCode: regex },

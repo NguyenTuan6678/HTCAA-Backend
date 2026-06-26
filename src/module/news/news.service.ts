@@ -19,6 +19,7 @@ import { CreateNewsCommentDto } from './dto/create-news-comment.req';
 import { QueryNewsCommentDto } from './dto/query-news-comment.req';
 import { UpdateNewsCommentDto } from './dto/update-news-comment.req';
 import { MinioService } from '../minio/minio.service';
+import { escapeRegex } from '../../utils/escape-regex';
 
 @Injectable()
 export class NewsService {
@@ -286,7 +287,8 @@ export class NewsService {
       }
 
       if (query.q) {
-        const regex = new RegExp(query.q, 'i');
+        const escaped = escapeRegex(query.q);
+        const regex = new RegExp(escaped, 'i');
 
         filter.$or = [{ name: regex }, { slug: regex }, { description: regex }];
       }
@@ -602,7 +604,8 @@ export class NewsService {
       }
 
       if (query.q) {
-        const regex = new RegExp(query.q, 'i');
+        const escaped = escapeRegex(query.q);
+        const regex = new RegExp(escaped, 'i');
 
         filter.$or = [
           { title: regex },
@@ -668,7 +671,8 @@ export class NewsService {
       }
 
       if (query.q) {
-        const regex = new RegExp(query.q, 'i');
+        const escaped = escapeRegex(query.q);
+        const regex = new RegExp(escaped, 'i');
 
         filter.$or = [
           { title: regex },

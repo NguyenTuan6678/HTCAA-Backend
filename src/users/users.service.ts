@@ -14,6 +14,7 @@ import { ERROR_RES, ERROR_INFO } from '../constants/error.const';
 import { User } from '../schema/user.schema';
 import { LoggerService } from '../common/loggers/logger.service';
 import { Role } from '../utils/role/role';
+import { escapeRegex } from '../utils/escape-regex';
 
 @Injectable()
 export class UsersService {
@@ -90,7 +91,8 @@ export class UsersService {
       }
 
       if (query.q) {
-        const regex = new RegExp(query.q, 'i');
+        const escaped = escapeRegex(query.q);
+        const regex = new RegExp(escaped, 'i');
         filter.$or = [{ name: regex }, { email: regex }];
       }
 

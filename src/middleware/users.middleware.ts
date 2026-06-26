@@ -1,4 +1,4 @@
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { Schema } from 'mongoose';
 
 export function createUserPreSaveHooks(schema: Schema): void {

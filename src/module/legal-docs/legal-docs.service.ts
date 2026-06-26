@@ -7,6 +7,7 @@ import { User } from '../../schema/user.schema';
 import { ERROR_INFO, ERROR_RES } from '../../constants/error.const';
 import { Role } from '../../utils/role/role';
 import { MinioService } from '../minio/minio.service';
+import { escapeRegex } from '../../utils/escape-regex';
 import { CreateLegalDocDto } from './dto/create-legal-docs.req';
 import { QueryLegalDocDto } from './dto/query-legal-docs.req';
 import { UpdateLegalDocDto } from './dto/update-legal.docs.req';
@@ -245,7 +246,8 @@ export class LegalDocsService {
       }
 
       if (query.q) {
-        const regex = new RegExp(query.q, 'i');
+        const escaped = escapeRegex(query.q);
+        const regex = new RegExp(escaped, 'i');
 
         filter.$or = [{ name: regex }, { slug: regex }, { description: regex }];
       }
@@ -482,7 +484,8 @@ export class LegalDocsService {
       }
 
       if (query.q) {
-        const regex = new RegExp(query.q, 'i');
+        const escaped = escapeRegex(query.q);
+        const regex = new RegExp(escaped, 'i');
 
         filter.$or = [{ name: regex }, { slug: regex }, { description: regex }];
       }
@@ -739,11 +742,15 @@ export class LegalDocsService {
       const filter: any = { isActive: true };
 
       if (query.status) filter.status = query.status;
-      if (query.type) filter.type = new RegExp(query.type, 'i');
+      if (query.type) {
+        const escapedType = escapeRegex(query.type);
+        filter.type = new RegExp(escapedType, 'i');
+      }
       if (query.categoryId)
         filter.categoryId = new Types.ObjectId(query.categoryId);
       if (query.q) {
-        const regex = new RegExp(query.q, 'i');
+        const escaped = escapeRegex(query.q);
+        const regex = new RegExp(escaped, 'i');
         filter.$or = [{ title: regex }, { type: regex }];
       }
 

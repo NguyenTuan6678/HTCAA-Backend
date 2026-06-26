@@ -98,7 +98,6 @@ export class MinioService implements OnModuleInit {
 
   async getPresignedUrl(
     objectName?: string | null,
-    expirySeconds?: number,
   ): Promise<string | null> {
     if (!objectName) return null;
 
@@ -132,11 +131,10 @@ export class MinioService implements OnModuleInit {
 
   async attachPresignedUrl<T extends Record<string, any> | null | undefined>(
     file: T,
-    expirySeconds?: number,
   ): Promise<T> {
     if (!file?.objectName) return file as T;
 
-    const url = await this.getPresignedUrl(file.objectName, expirySeconds);
+    const url = await this.getPresignedUrl(file.objectName);
 
     return {
       ...file,

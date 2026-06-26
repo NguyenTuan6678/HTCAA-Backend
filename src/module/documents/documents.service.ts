@@ -10,6 +10,7 @@ import { MinioService } from '../minio/minio.service';
 import { DocumentFile, DocumentStatus } from '../../schema/documents.schema';
 import { LegalDocsCategory } from '../../schema/legal-docs-category.schema';
 import { Role } from '../../utils/role/role';
+import { escapeRegex } from '../../utils/escape-regex';
 
 // Only .xlsx (and legacy .xls) allowed
 const ALLOWED_MIME_TYPES = [
@@ -222,7 +223,8 @@ export class DocumentsService {
       if (query.categoryId)
         filter.categoryId = new Types.ObjectId(query.categoryId);
       if (query.q) {
-        const regex = new RegExp(query.q, 'i');
+        const escaped = escapeRegex(query.q);
+        const regex = new RegExp(escaped, 'i');
         filter.$or = [{ title: regex }, { description: regex }];
       }
 

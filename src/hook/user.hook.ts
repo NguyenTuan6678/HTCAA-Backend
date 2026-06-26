@@ -1,4 +1,4 @@
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { Schema, Document } from 'mongoose';
 
 export function createUserMethods(schema: Schema): void {
@@ -19,6 +19,7 @@ export function createUserMethods(schema: Schema): void {
   schemaAny.methods.toJSON = function (this: Document) {
     const obj = this.toObject();
     delete obj.password;
+    delete obj.refreshTokenHash;
     delete obj.__v;
     return obj;
   };

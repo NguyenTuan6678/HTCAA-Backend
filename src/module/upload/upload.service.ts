@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { MinioService } from '../minio/minio.service';
 import { ERROR_INFO, ERROR_RES } from '../../constants/error.const';
 
@@ -19,12 +19,7 @@ export class UploadService {
   async uploadFiles(files: Express.Multer.File[], category?: string) {
     try {
       if (!files || files.length === 0) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'At least one file is required',
-          content: null,
-        };
+        throw new BadRequestException('At least one file is required');
       }
 
       // Resolve folder from category, fall back to general
@@ -56,12 +51,12 @@ export class UploadService {
         },
       };
     } catch (error: any) {
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while uploading files: ${error.message}`,
-        content: null,
-      };
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        `There is a problem while uploading files: ${error.message}`,
+      );
     }
   }
 }

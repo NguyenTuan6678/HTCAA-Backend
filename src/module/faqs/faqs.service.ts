@@ -11,6 +11,7 @@ import { ERROR_RES, ERROR_INFO } from '../../constants/error.const';
 import { Faq, FaqStatus } from '../../schema/faqs.schema';
 import { FaqCategory } from '../../schema/faq-category.schema';
 import { Role } from '../../utils/role/role';
+import { escapeRegex } from '../../utils/escape-regex';
 
 @Injectable()
 export class FaqsService {
@@ -192,7 +193,8 @@ export class FaqsService {
         }
       }
       if (query.q) {
-        const regex = new RegExp(query.q, 'i');
+        const escaped = escapeRegex(query.q);
+        const regex = new RegExp(escaped, 'i');
         filter.$or = [{ question: regex }, { answer: regex }];
       }
 
@@ -606,7 +608,8 @@ export class FaqsService {
       }
 
       if (query.q) {
-        const regex = new RegExp(query.q, 'i');
+        const escaped = escapeRegex(query.q);
+        const regex = new RegExp(escaped, 'i');
         filter.$or = [{ title: regex }, { name: regex }];
       }
 

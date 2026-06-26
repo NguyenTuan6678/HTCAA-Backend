@@ -14,6 +14,7 @@ import { NewsModule } from './module/news/news.module';
 import { AboutUsModule } from './module/about/about.module';
 import { LegalDocsModule } from './module/legal-docs/legal-docs.module';
 import { UploadModule } from './module/upload/upload.module';
+import { MinioModule } from './module/minio/minio.module';
 import { FaqsModule } from './module/faqs/faqs.module';
 import { DocumentsModule } from './module/documents/documents.module';
 import { ContactModule } from './module/contact/contact.module';
@@ -47,6 +48,7 @@ import { ContactModule } from './module/contact/contact.module';
     // CourseModule,
     AboutUsModule,
     UploadModule,
+    MinioModule,
     LegalDocsModule,
     FaqsModule,
     DocumentsModule,

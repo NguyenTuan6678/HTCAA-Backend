@@ -1,4 +1,4 @@
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import {
   Injectable,
@@ -95,20 +95,12 @@ export class AuthService {
   }
 
   async generateToken(userInfo: User) {
-    const existingUser = await this.userModel.findOne({
-      email: userInfo.email,
-    });
-
-    if (!existingUser) {
-      throw new NotFoundException('email not found');
-    }
-
     const payload = {
-      id: existingUser._id.toString(),
-      email: existingUser.email,
-      role: existingUser.role,
-      memberType: existingUser.memberType ?? 'member',
-      tokenVersion: existingUser.tokenVersion ?? 0,
+      id: (userInfo as any)._id?.toString() || (userInfo as any).id,
+      email: userInfo.email,
+      role: userInfo.role,
+      memberType: userInfo.memberType ?? 'member',
+      tokenVersion: (userInfo as any).tokenVersion ?? 0,
     };
 
     const accessToken = this.jwtService.sign(payload, {
@@ -344,7 +336,7 @@ export class AuthService {
         throw new UnauthorizedException('Refresh token not found');
       }
 
-      const isRefreshTokenValid = await bcrypt.compare(
+      const isRefreshTokenValid = await this.compareRefreshToken(
         refreshToken,
         (user as any).refreshTokenHash,
       );
@@ -360,7 +352,7 @@ export class AuthService {
       const { accessToken, refreshToken: newRefreshToken } =
         await this.generateToken(user);
 
-      const refreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
+      const refreshTokenHash = await this.hashRefreshToken(newRefreshToken);
 
       (user as any).refreshTokenHash = refreshTokenHash;
       await user.save();

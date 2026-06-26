@@ -6,6 +6,7 @@ import { QueryContactDto } from './dto/query-contact.req';
 import { UpdateContactStatusDto } from './dto/update-contact-status.req';
 import { ERROR_RES, ERROR_INFO } from '../../constants/error.const';
 import { Contact, ContactStatus } from '../../schema/contact.schema';
+import { escapeRegex } from '../../utils/escape-regex';
 
 @Injectable()
 export class ContactService {
@@ -63,7 +64,8 @@ export class ContactService {
       }
 
       if (query.q) {
-        const regex = new RegExp(query.q, 'i');
+        const escaped = escapeRegex(query.q);
+        const regex = new RegExp(escaped, 'i');
         filter.$or = [
           { subject: regex },
           { fullName: regex },

@@ -10,6 +10,7 @@ import { CreateCourseDto } from './dto/create-course.req';
 import { QueryCourseDto } from './dto/query-course.req';
 import { CourseStatus } from '../../utils/course-status.enum';
 import { UpdateCourseDto } from './dto/update-course.req';
+import { escapeRegex } from '../../utils/escape-regex';
 
 @Injectable()
 export class CourseService {
@@ -106,7 +107,8 @@ export class CourseService {
       }
 
       if (query.q) {
-        const regex = new RegExp(query.q, 'i');
+        const escaped = escapeRegex(query.q);
+        const regex = new RegExp(escaped, 'i');
 
         filter.$or = [{ title: regex }, { location: regex }];
       }
