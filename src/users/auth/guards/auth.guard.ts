@@ -1,8 +1,8 @@
 import {
   CanActivate,
   ExecutionContext,
-  ForbiddenException,
   Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -23,7 +23,7 @@ export class JwtAuthGuard implements CanActivate {
     const token = bearerToken || cookieToken;
 
     if (!token) {
-      throw new ForbiddenException(
+      throw new UnauthorizedException(
         'No identity verification information available.',
       );
     }
@@ -33,14 +33,14 @@ export class JwtAuthGuard implements CanActivate {
         secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
       });
       if (!payload) {
-        throw new ForbiddenException('Token not valid');
+        throw new UnauthorizedException('Token not valid');
       }
       request.user = payload;
 
       return true;
     } catch (error) {
-      throw new ForbiddenException(
-        'The account does not have the authority to perform this action.',
+      throw new UnauthorizedException(
+        'The account does not have the authority to perform this action or token expired.',
       );
     }
   }
