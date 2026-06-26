@@ -10,9 +10,17 @@ import { ValidationPipe } from '@nestjs/common/pipes/validation.pipe';
 import { AllExceptionsFilter } from './common/filters/all-exception.filter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { printServerBanner } from './banner/server-banner';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+    }),
+  );
+
   const logger = new LoggerService();
 
   app.useGlobalPipes(
@@ -35,7 +43,37 @@ async function bootstrap() {
   app.use(cookieParser());
 
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, postman)
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins = [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:5173',
+      ];
+
+      const envFrontend = process.env.FRONTEND_URL;
+      if (envFrontend) {
+        // Normalize: prefix with http:// if missing protocol
+        const normalized = envFrontend.startsWith('http') ? envFrontend : `http://${envFrontend}`;
+        allowedOrigins.push(normalized);
+        allowedOrigins.push(normalized.replace('http://', 'https://'));
+      }
+
+      const isAllowed =
+        allowedOrigins.indexOf(origin) !== -1 ||
+        origin.startsWith('http://localhost') ||
+        origin.startsWith('http://127.0.0.1') ||
+        origin.startsWith('http://192.168.');
+
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     preflightContinue: false,
     credentials: true,
