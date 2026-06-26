@@ -1,4 +1,4 @@
-import { Injectable, StreamableFile } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException, StreamableFile } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Response } from 'express';
@@ -565,15 +565,10 @@ export class DocumentsService {
   async downloadFile(
     id: string,
     res: Response,
-  ): Promise<StreamableFile | object> {
+  ): Promise<StreamableFile> {
     try {
       if (!Types.ObjectId.isValid(id)) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid document id',
-          content: null,
-        };
+        throw new BadRequestException('Invalid document id');
       }
 
       const doc = await this.documentModel.findOne({
@@ -582,23 +577,13 @@ export class DocumentsService {
       });
 
       if (!doc) {
-        return {
-          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Document not found',
-          content: null,
-        };
+        throw new NotFoundException('Document not found');
       }
 
       const fileInfo = (doc as any).file;
 
       if (!fileInfo?.objectName) {
-        return {
-          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'This document has no file attached',
-          content: null,
-        };
+        throw new NotFoundException('This document has no file attached');
       }
 
       const fileStream = await this.minioService.getFileStream(
@@ -621,12 +606,15 @@ export class DocumentsService {
 
       return new StreamableFile(fileStream);
     } catch (error: any) {
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while downloading the file: ${error.message}`,
-        content: null,
-      };
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        `There is a problem while downloading the file: ${error.message}`,
+      );
     }
   }
 }

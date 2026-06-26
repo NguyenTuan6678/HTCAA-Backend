@@ -28,6 +28,7 @@ import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 import { UpdateCourseDto } from './dto/update-course.req';
+import { CurrentUser } from '../../users/auth/decorators/current-user.decorator';
 
 @ApiTags('Course')
 @Controller('courses')
@@ -45,8 +46,10 @@ export class CourseController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor create course' })
-  create(@Query() createCourseDto: CreateCourseDto, @Req() request: Request) {
-    const userId = (request as any).user.id;
+  create(
+    @Query() createCourseDto: CreateCourseDto,
+    @CurrentUser('id') userId: string,
+  ) {
     return this.courseService.create(userId, createCourseDto);
   }
 

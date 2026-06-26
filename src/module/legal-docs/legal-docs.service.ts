@@ -1,4 +1,4 @@
-import { Injectable, StreamableFile } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException, StreamableFile } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Response } from 'express';
@@ -1141,15 +1141,10 @@ export class LegalDocsService {
     id: string,
     disposition: 'attachment' | 'inline',
     res: Response,
-  ): Promise<StreamableFile | object> {
+  ): Promise<StreamableFile> {
     try {
       if (!Types.ObjectId.isValid(id)) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid legal doc id',
-          content: null,
-        };
+        throw new BadRequestException('Invalid legal doc id');
       }
 
       const doc = await this.legalDocModel.findOne({
@@ -1158,23 +1153,13 @@ export class LegalDocsService {
       });
 
       if (!doc) {
-        return {
-          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Legal doc not found',
-          content: null,
-        };
+        throw new NotFoundException('Legal doc not found');
       }
 
       const fileInfo = (doc as any).file;
 
       if (!fileInfo?.objectName) {
-        return {
-          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'This legal doc has no file attached',
-          content: null,
-        };
+        throw new NotFoundException('This legal doc has no file attached');
       }
 
       const fileStream = await this.minioService.getFileStream(
@@ -1196,12 +1181,15 @@ export class LegalDocsService {
 
       return new StreamableFile(fileStream);
     } catch (error: any) {
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while streaming the file: ${error.message}`,
-        content: null,
-      };
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        `There is a problem while streaming the file: ${error.message}`,
+      );
     }
   }
 }

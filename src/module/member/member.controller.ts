@@ -35,6 +35,7 @@ import { QueryMemberDirectoryDto } from './dto/query-member-directory.req';
 import { RejectMemberDto } from './dto/reject-member.req';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
+import { CurrentUser } from '../../users/auth/decorators/current-user.decorator';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 import { QueryAdminMemberDto } from './dto/query-admin-member.req';
 
@@ -144,9 +145,8 @@ export class MemberController {
   register(
     @Body() registerMemberDto: RegisterMemberDto,
     @UploadedFile() profileFile: Express.Multer.File | undefined,
-    @Req() request: Request,
+    @CurrentUser('id') userId: string,
   ) {
-    const userId = (request as any).user.id;
     return this.memberService.register(userId, registerMemberDto, profileFile);
   }
 
@@ -154,8 +154,7 @@ export class MemberController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Get my member profile' })
-  me(@Req() request: Request) {
-    const userId = (request as any).user.id;
+  me(@CurrentUser('id') userId: string) {
     return this.memberService.me(userId);
   }
 
@@ -163,8 +162,10 @@ export class MemberController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Update my member profile' })
-  updateMe(@Body() updateMemberDto: UpdateMemberDto, @Req() request: Request) {
-    const userId = (request as any).user.id;
+  updateMe(
+    @Body() updateMemberDto: UpdateMemberDto,
+    @CurrentUser('id') userId: string,
+  ) {
     return this.memberService.updateMe(userId, updateMemberDto);
   }
 
@@ -193,8 +194,7 @@ export class MemberController {
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Approve member profile' })
   @ApiParam({ name: 'id', description: 'Member id' })
-  approve(@Param('id') id: string, @Req() request: Request) {
-    const adminId = (request as any).user.id;
+  approve(@Param('id') id: string, @CurrentUser('id') adminId: string) {
     return this.memberService.approve(id, adminId);
   }
 
@@ -208,9 +208,8 @@ export class MemberController {
   reject(
     @Param('id') id: string,
     @Body() rejectMemberDto: RejectMemberDto,
-    @Req() request: Request,
+    @CurrentUser('id') adminId: string,
   ) {
-    const adminId = (request as any).user.id;
     return this.memberService.reject(id, adminId, rejectMemberDto);
   }
 

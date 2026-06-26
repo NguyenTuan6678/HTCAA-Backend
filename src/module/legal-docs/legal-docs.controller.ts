@@ -33,6 +33,7 @@ import { Role } from '../../utils/role/role';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
+import { CurrentUser } from '../../users/auth/decorators/current-user.decorator';
 import { CreateLegalDocDto } from './dto/create-legal-docs.req';
 import { QueryLegalDocDto } from './dto/query-legal-docs.req';
 import { UpdateLegalDocDto } from './dto/update-legal.docs.req';
@@ -183,7 +184,7 @@ export class LegalDocsController {
   async preview(
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<StreamableFile | object> {
+  ): Promise<StreamableFile> {
     return this.legalDocsService.streamFile(id, 'inline', res);
   }
 
@@ -193,7 +194,7 @@ export class LegalDocsController {
   async download(
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<StreamableFile | object> {
+  ): Promise<StreamableFile> {
     return this.legalDocsService.streamFile(id, 'attachment', res);
   }
 
@@ -233,9 +234,8 @@ export class LegalDocsController {
   create(
     @Body() dto: CreateLegalDocDto,
     @UploadedFile() file: Express.Multer.File,
-    @Req() req: Request,
+    @CurrentUser('id') userId: string,
   ) {
-    const userId = (req as any).user.id;
     return this.legalDocsService.create(userId, dto, file);
   }
 
@@ -249,10 +249,9 @@ export class LegalDocsController {
   update(
     @Param('id') id: string,
     @Body() dto: UpdateLegalDocDto,
-    @Req() req: Request,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
   ) {
-    const userId = (req as any).user.id;
-    const role = (req as any).user.role;
     return this.legalDocsService.update(id, userId, role, dto);
   }
 
@@ -282,9 +281,11 @@ export class LegalDocsController {
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor – soft-delete a legal doc' })
   @ApiParam({ name: 'id', description: 'Legal doc id' })
-  delete(@Param('id') id: string, @Req() req: Request) {
-    const userId = (req as any).user.id;
-    const role = (req as any).user.role;
+  delete(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
     return this.legalDocsService.delete(id, userId, role);
   }
 
@@ -313,10 +314,9 @@ export class LegalDocsController {
   uploadFile(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
-    @Req() req: Request,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
   ) {
-    const userId = (req as any).user.id;
-    const role = (req as any).user.role;
     return this.legalDocsService.uploadFile(id, userId, role, file);
   }
 
@@ -328,9 +328,11 @@ export class LegalDocsController {
     summary: 'Admin/editor – remove the attached file from MinIO',
   })
   @ApiParam({ name: 'id', description: 'Legal doc id' })
-  deleteFile(@Param('id') id: string, @Req() req: Request) {
-    const userId = (req as any).user.id;
-    const role = (req as any).user.role;
+  deleteFile(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
     return this.legalDocsService.deleteFile(id, userId, role);
   }
 }

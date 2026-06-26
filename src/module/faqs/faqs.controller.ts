@@ -28,6 +28,7 @@ import { UpdateFaqCategoryDto } from './dto/update-faq-category.req';
 import { QueryFaqCategoryDto } from './dto/query-faq-category.req';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
+import { CurrentUser } from '../../users/auth/decorators/current-user.decorator';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 import { Role } from '../../utils/role/role';
 
@@ -73,8 +74,7 @@ export class FaqsController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor – create FAQ' })
-  create(@Query() dto: CreateFaqDto, @Req() req: Request) {
-    const userId = (req as any).user.id;
+  create(@Query() dto: CreateFaqDto, @CurrentUser('id') userId: string) {
     return this.faqsService.create(userId, dto);
   }
 
@@ -88,10 +88,9 @@ export class FaqsController {
   update(
     @Param('id') id: string,
     @Body() dto: UpdateFaqDto,
-    @Req() req: Request,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
   ) {
-    const userId = (req as any).user.id;
-    const role = (req as any).user.role;
     return this.faqsService.update(id, userId, role, dto);
   }
 
@@ -121,9 +120,11 @@ export class FaqsController {
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor – delete FAQ' })
   @ApiParam({ name: 'id', description: 'FAQ id' })
-  delete(@Param('id') id: string, @Req() req: Request) {
-    const userId = (req as any).user.id;
-    const role = (req as any).user.role;
+  delete(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
     return this.faqsService.delete(id, userId, role);
   }
 
@@ -136,8 +137,7 @@ export class FaqsController {
     summary: 'Logged-in user – toggle like on a FAQ (call again to unlike)',
   })
   @ApiParam({ name: 'id', description: 'FAQ id' })
-  like(@Param('id') id: string, @Req() req: Request) {
-    const userId = (req as any).user.id;
+  like(@Param('id') id: string, @CurrentUser('id') userId: string) {
     return this.faqsService.like(id, userId);
   }
 
@@ -149,8 +149,7 @@ export class FaqsController {
       'Logged-in user – toggle dislike on a FAQ (call again to un-dislike)',
   })
   @ApiParam({ name: 'id', description: 'FAQ id' })
-  dislike(@Param('id') id: string, @Req() req: Request) {
-    const userId = (req as any).user.id;
+  dislike(@Param('id') id: string, @CurrentUser('id') userId: string) {
     return this.faqsService.dislike(id, userId);
   }
 

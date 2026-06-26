@@ -35,6 +35,7 @@ import {
 
 import { NewsService } from './news.service';
 import { Role } from '../../utils/role/role';
+import { CurrentUser } from '../../users/auth/decorators/current-user.decorator';
 
 import { CreateNewsDto } from './dto/create-news.req';
 import { UpdateNewsDto } from './dto/update-news.req';
@@ -161,9 +162,8 @@ export class NewsController {
   createComment(
     @Param('id') id: string,
     @Query() createNewsCommentDto: CreateNewsCommentDto,
-    @Req() request: Request,
+    @CurrentUser('id') userId: string,
   ) {
-    const userId = (request as any).user.id;
     return this.newsService.createComment(id, userId, createNewsCommentDto);
   }
 
@@ -176,11 +176,9 @@ export class NewsController {
   updateComment(
     @Param('commentId') commentId: string,
     @Body() updateNewsCommentDto: UpdateNewsCommentDto,
-    @Req() request: Request,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
   ) {
-    const userId = (request as any).user.id;
-    const role = (request as any).user.role;
-
     return this.newsService.updateComment(
       commentId,
       userId,
@@ -196,11 +194,9 @@ export class NewsController {
   @ApiParam({ name: 'commentId', description: 'Comment id' })
   deleteComment(
     @Param('commentId') commentId: string,
-    @Req() request: Request,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
   ) {
-    const userId = (request as any).user.id;
-    const role = (request as any).user.role;
-
     return this.newsService.deleteComment(commentId, userId, role);
   }
 
@@ -249,9 +245,8 @@ export class NewsController {
       thumbnail?: Express.Multer.File[];
       images?: Express.Multer.File[];
     },
-    @Req() request: Request,
+    @CurrentUser('id') userId: string,
   ) {
-    const userId = (request as any).user.id;
     const thumbnail = files?.thumbnail?.[0];
     const images = files?.images;
     return this.newsService.create(userId, createNewsDto, thumbnail, images);
@@ -267,11 +262,9 @@ export class NewsController {
   update(
     @Param('id') id: string,
     @Body() updateNewsDto: UpdateNewsDto,
-    @Req() request: Request,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
   ) {
-    const userId = (request as any).user.id;
-    const role = (request as any).user.role;
-
     return this.newsService.update(id, userId, role, updateNewsDto);
   }
 
@@ -306,11 +299,9 @@ export class NewsController {
   uploadThumbnail(
     @Param('id') id: string,
     @UploadedFile() thumbnail: Express.Multer.File,
-    @Req() request: Request,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
   ) {
-    const userId = (request as any).user.id;
-    const role = (request as any).user.role;
-
     return this.newsService.uploadThumbnail(id, userId, role, thumbnail);
   }
 
@@ -348,11 +339,9 @@ export class NewsController {
   uploadImages(
     @Param('id') id: string,
     @UploadedFiles() images: Express.Multer.File[],
-    @Req() request: Request,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
   ) {
-    const userId = (request as any).user.id;
-    const role = (request as any).user.role;
-
     return this.newsService.uploadImages(id, userId, role, images);
   }
 
@@ -362,10 +351,11 @@ export class NewsController {
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor delete news thumbnail from MinIO' })
   @ApiParam({ name: 'id', description: 'News id' })
-  deleteThumbnail(@Param('id') id: string, @Req() request: Request) {
-    const userId = (request as any).user.id;
-    const role = (request as any).user.role;
-
+  deleteThumbnail(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
     return this.newsService.deleteThumbnail(id, userId, role);
   }
 
@@ -383,11 +373,9 @@ export class NewsController {
   deleteImage(
     @Param('id') id: string,
     @Query('objectName') objectName: string,
-    @Req() request: Request,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
   ) {
-    const userId = (request as any).user.id;
-    const role = (request as any).user.role;
-
     return this.newsService.deleteImage(id, userId, role, objectName);
   }
 
@@ -417,10 +405,11 @@ export class NewsController {
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor delete news' })
   @ApiParam({ name: 'id', description: 'News id' })
-  delete(@Param('id') id: string, @Req() request: Request) {
-    const userId = (request as any).user.id;
-    const role = (request as any).user.role;
-
+  delete(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
     return this.newsService.delete(id, userId, role);
   }
 

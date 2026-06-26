@@ -34,6 +34,7 @@ import { CreateDocumentDto } from './dto/create-document.req';
 import { UpdateDocumentDto } from './dto/update-document.req';
 import { QueryDocumentDto } from './dto/query-document.req';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
+import { CurrentUser } from '../../users/auth/decorators/current-user.decorator';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 import { Role } from '../../utils/role/role';
@@ -102,7 +103,7 @@ export class DocumentsController {
   async download(
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<StreamableFile | object> {
+  ): Promise<StreamableFile> {
     return this.documentsService.downloadFile(id, res);
   }
 
@@ -136,9 +137,8 @@ export class DocumentsController {
   create(
     @Body() dto: CreateDocumentDto,
     @UploadedFile() file: Express.Multer.File,
-    @Req() req: Request,
+    @CurrentUser('id') userId: string,
   ) {
-    const userId = (req as any).user.id;
     return this.documentsService.create(userId, dto, file);
   }
 
@@ -152,10 +152,9 @@ export class DocumentsController {
   update(
     @Param('id') id: string,
     @Body() dto: UpdateDocumentDto,
-    @Req() req: Request,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
   ) {
-    const userId = (req as any).user.id;
-    const role = (req as any).user.role;
     return this.documentsService.update(id, userId, role, dto);
   }
 
@@ -185,9 +184,11 @@ export class DocumentsController {
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor – soft-delete document' })
   @ApiParam({ name: 'id', description: 'Document id' })
-  delete(@Param('id') id: string, @Req() req: Request) {
-    const userId = (req as any).user.id;
-    const role = (req as any).user.role;
+  delete(
+    @Param('id') id: string,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
+  ) {
     return this.documentsService.delete(id, userId, role);
   }
 
@@ -213,10 +214,9 @@ export class DocumentsController {
   uploadFile(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
-    @Req() req: Request,
+    @CurrentUser('id') userId: string,
+    @CurrentUser('role') role: Role,
   ) {
-    const userId = (req as any).user.id;
-    const role = (req as any).user.role;
     return this.documentsService.uploadFile(id, userId, role, file);
   }
 }
