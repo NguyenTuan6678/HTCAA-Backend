@@ -41,7 +41,7 @@ export class LegalDocsService {
     private readonly userModel: Model<User>,
 
     private readonly minioService: MinioService,
-  ) { }
+  ) {}
 
   // =========================
   // HELPERS
