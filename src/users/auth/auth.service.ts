@@ -1,6 +1,14 @@
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+  UnauthorizedException,
+  ForbiddenException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
@@ -22,13 +30,12 @@ import { MailService } from '../../module/mail/mail.service';
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel(User.name) private userModal: Model<User>,
+    @InjectModel(User.name) private readonly userModel: Model<User>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
+    private readonly logger: LoggerService,
   ) { }
-
-  logger = new LoggerService(AuthService.name);
 
   private readonly refreshCookieName = 'refreshToken';
 
@@ -67,7 +74,7 @@ export class AuthService {
     response.cookie(
       this.refreshCookieName,
       refreshToken,
-      this.getCookieOptions(15 * 60 * 1000),
+      this.getCookieOptions(7 * 24 * 60 * 60 * 1000), // 7 days
     );
   }
 
@@ -88,7 +95,7 @@ export class AuthService {
   }
 
   async generateToken(userInfo: User) {
-    const existingUser = await this.userModal.findOne({
+    const existingUser = await this.userModel.findOne({
       email: userInfo.email,
     });
 
@@ -106,19 +113,19 @@ export class AuthService {
 
     const accessToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
-      expiresIn: '10m',
+      expiresIn: '15m',
     });
 
     const refreshToken = this.jwtService.sign(payload, {
       secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-      expiresIn: '15m',
+      expiresIn: '7d',
     });
 
     return {
       accessToken,
       refreshToken,
       accessTokenExpiresIn: Date.now() + 15 * 60 * 1000,
-      refreshTokenExpiresIn: Date.now() + 15 * 60 * 1000,
+      refreshTokenExpiresIn: Date.now() + 7 * 24 * 60 * 60 * 1000,
     };
   }
 
@@ -128,39 +135,23 @@ export class AuthService {
     try {
       const { name, email, password } = registerAccountDTO;
 
-      if (!name || !email || !password) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid input',
-        };
-      }
-
-      const existingAdmin = await this.userModal.countDocuments({
+      const existingAdmin = await this.userModel.countDocuments({
         role: Role.ADMIN,
       });
 
-      this.logger.log(`Existing admin count: ${existingAdmin}`);
+      this.logger.log(`Existing admin count: ${existingAdmin}`, AuthService.name);
 
       if (existingAdmin > 0) {
-        return {
-          code: ERROR_RES.CONFLICT_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Admin account already exists',
-        };
+        throw new ConflictException('Admin account already exists');
       }
 
-      const duplicateEmail = await this.userModal.findOne({ email });
+      const duplicateEmail = await this.userModel.findOne({ email });
 
       if (duplicateEmail) {
-        return {
-          code: ERROR_RES.CONFLICT_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Email already exists',
-        };
+        throw new ConflictException('Email already exists');
       }
 
-      const newAdmin = new this.userModal({
+      const newAdmin = new this.userModel({
         name,
         email,
         password,
@@ -176,19 +167,16 @@ export class AuthService {
         message: 'Register admin successfully',
       };
     } catch (error: any) {
+      if (error instanceof ConflictException) {
+        throw error;
+      }
       if (error.code === 11000) {
-        return {
-          code: ERROR_RES.CONFLICT_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Email already exists',
-        };
+        throw new ConflictException('Email already exists');
       }
 
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while registering account: ${error.message}`,
-      };
+      throw new InternalServerErrorException(
+        `There is a problem while registering account: ${error.message}`,
+      );
     }
   }
 
@@ -199,37 +187,18 @@ export class AuthService {
     try {
       const { email, password } = loginDto;
 
-      if (!email || !password) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid input missing require: email or password',
-          content: null,
-        };
-      }
-
-      const user = await this.userModal
+      const user = await this.userModel
         .findOne({ email })
         .select(
           '+password +refreshTokenHash +failedLoginAttempts +loginLockedUntil',
         );
 
       if (!user) {
-        return {
-          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Account not exist!',
-          content: null,
-        };
+        throw new NotFoundException('Account not exist!');
       }
 
       if (!(user as any).isActive) {
-        return {
-          code: ERROR_RES.UNAUTHORIZED_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Account is inactive',
-          content: null,
-        };
+        throw new UnauthorizedException('Account is inactive');
       }
 
       const lockExpired =
@@ -243,14 +212,11 @@ export class AuthService {
       }
 
       if (this.isLoginLocked(user)) {
-        return {
-          code: ERROR_RES.FORBIDDEN_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: `Too many failed login attempts. Please try again in ${this.getRemainingLockMinutes(
+        throw new ForbiddenException(
+          `Too many failed login attempts. Please try again in ${this.getRemainingLockMinutes(
             user,
           )} minutes.`,
-          content: null,
-        };
+        );
       }
 
       const isMatch = await comparePassword(password, (user as any).password);
@@ -271,23 +237,17 @@ export class AuthService {
 
           await user.save();
 
-          return {
-            code: ERROR_RES.FORBIDDEN_ERROR.statusCode,
-            info: ERROR_INFO.FAIL,
-            message: `Too many failed login attempts. Account is locked for ${this.loginLockMinutes} minutes.`,
-            content: null,
-          };
+          throw new ForbiddenException(
+            `Too many failed login attempts. Account is locked for ${this.loginLockMinutes} minutes.`,
+          );
         }
 
         await user.save();
 
-        return {
-          code: ERROR_RES.INVALID_CREDENTIALS_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: `Password is incorrect. You have ${this.maxFailedLoginAttempts - failedLoginAttempts
-            } attempt(s) remaining.`,
-          content: null,
-        };
+        throw new UnauthorizedException(
+          `Password is incorrect. You have ${this.maxFailedLoginAttempts - failedLoginAttempts
+          } attempt(s) remaining.`,
+        );
       }
 
       const token = await this.generateToken(user);
@@ -313,26 +273,26 @@ export class AuthService {
         },
       };
     } catch (error: any) {
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while login: ${error.message}`,
-        content: null,
-      };
+      if (
+        error instanceof NotFoundException ||
+        error instanceof UnauthorizedException ||
+        error instanceof ForbiddenException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        `There is a problem while login: ${error.message}`,
+      );
     }
   }
 
   async logout(userId: string, response: Response): Promise<MessageResponse> {
     try {
       if (!Types.ObjectId.isValid(userId)) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid user id',
-        };
+        throw new BadRequestException('Invalid user id');
       }
 
-      await this.userModal.findByIdAndUpdate(userId, {
+      await this.userModel.findByIdAndUpdate(userId, {
         refreshTokenHash: null,
         $inc: { tokenVersion: 1 },
       });
@@ -345,23 +305,19 @@ export class AuthService {
         message: 'Logout successfully',
       };
     } catch (error: any) {
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while logout: ${error.message}`,
-      };
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        `There is a problem while logout: ${error.message}`,
+      );
     }
   }
 
   async refreshToken(refreshToken: string | undefined, response: Response) {
     try {
       if (!refreshToken) {
-        return {
-          code: ERROR_RES.UNAUTHORIZED_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Refresh token is required',
-          content: null,
-        };
+        throw new UnauthorizedException('Refresh token is required');
       }
 
       const payload = this.jwtService.verify(refreshToken, {
@@ -369,43 +325,23 @@ export class AuthService {
       });
 
       if (!payload?.id) {
-        return {
-          code: ERROR_RES.UNAUTHORIZED_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid refresh token',
-          content: null,
-        };
+        throw new UnauthorizedException('Invalid refresh token');
       }
 
-      const user = await this.userModal
+      const user = await this.userModel
         .findById(payload.id)
         .select('+refreshTokenHash');
 
       if (!user || !(user as any).isActive) {
-        return {
-          code: ERROR_RES.UNAUTHORIZED_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'User not found or inactive',
-          content: null,
-        };
+        throw new UnauthorizedException('User not found or inactive');
       }
 
       if ((user as any).tokenVersion !== payload.tokenVersion) {
-        return {
-          code: ERROR_RES.UNAUTHORIZED_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Refresh token has been revoked',
-          content: null,
-        };
+        throw new UnauthorizedException('Refresh token has been revoked');
       }
 
       if (!(user as any).refreshTokenHash) {
-        return {
-          code: ERROR_RES.UNAUTHORIZED_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Refresh token not found',
-          content: null,
-        };
+        throw new UnauthorizedException('Refresh token not found');
       }
 
       const isRefreshTokenValid = await bcrypt.compare(
@@ -418,12 +354,7 @@ export class AuthService {
         (user as any).tokenVersion = ((user as any).tokenVersion ?? 0) + 1;
         await user.save();
 
-        return {
-          code: ERROR_RES.UNAUTHORIZED_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid refresh token',
-          content: null,
-        };
+        throw new UnauthorizedException('Invalid refresh token');
       }
 
       const { accessToken, refreshToken: newRefreshToken } =
@@ -434,13 +365,7 @@ export class AuthService {
       (user as any).refreshTokenHash = refreshTokenHash;
       await user.save();
 
-      response.cookie('refreshToken', newRefreshToken, {
-        httpOnly: true,
-        secure: this.configService.get<string>('NODE_ENV') === 'production',
-        sameSite: 'lax',
-        maxAge: 15 * 60 * 1000,
-        path: '/api/auth',
-      });
+      this.setRefreshTokenCookie(response, newRefreshToken);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
@@ -458,35 +383,23 @@ export class AuthService {
         },
       };
     } catch (error: any) {
-      return {
-        code: ERROR_RES.UNAUTHORIZED_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: 'Refresh token invalid or expired',
-        content: null,
-      };
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Refresh token invalid or expired');
     }
   }
 
   async me(userId: string): Promise<any> {
     try {
       if (!Types.ObjectId.isValid(userId)) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid user id',
-          content: null,
-        };
+        throw new BadRequestException('Invalid user id');
       }
 
-      const user = await this.userModal.findById(userId);
+      const user = await this.userModel.findById(userId);
 
       if (!user || !(user as any).isActive) {
-        return {
-          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'User not found or inactive',
-          content: null,
-        };
+        throw new NotFoundException('User not found or inactive');
       }
 
       return {
@@ -498,56 +411,49 @@ export class AuthService {
         },
       };
     } catch (error: any) {
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while getting current user: ${error.message}`,
-        content: null,
-      };
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        `There is a problem while getting current user: ${error.message}`,
+      );
     }
   }
 
   async forgotPassword(email: string): Promise<MessageResponse> {
-    console.log("email", email)
     try {
       if (!email) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Email is required',
-        };
+        throw new BadRequestException('Email is required');
       }
 
       const decodedEmail = decodeURIComponent(email).toLowerCase().trim();
 
-      const user = await this.userModal.findOne({ email: decodedEmail });
+      const user = await this.userModel.findOne({ email: decodedEmail });
 
-      if (!user) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Can not send email',
-        };
+      if (user) {
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        // SHA-256 is fast O(1) query-able and highly secure for high-entropy tokens
+        const resetTokenHash = crypto
+          .createHash('sha256')
+          .update(resetToken)
+          .digest('hex');
+
+        const expiresAt = new Date();
+        expiresAt.setMinutes(expiresAt.getMinutes() + 10);
+
+        (user as any).resetPasswordTokenHash = resetTokenHash;
+        (user as any).resetPasswordExpiresAt = expiresAt;
+
+        await user.save();
+
+        const frontendUrl =
+          this.configService.get<string>('FRONTEND_URL') ??
+          'http://localhost:3000';
+
+        const resetLink = `${frontendUrl}/reset-password/${resetToken}`;
+
+        await this.mailService.sendResetPasswordEmail(decodedEmail, resetLink);
       }
-
-      const resetToken = crypto.randomBytes(32).toString('hex');
-      const resetTokenHash = await bcrypt.hash(resetToken, 10);
-
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 10);
-
-      (user as any).resetPasswordTokenHash = resetTokenHash;
-      (user as any).resetPasswordExpiresAt = expiresAt;
-
-      await user.save();
-
-      const frontendUrl =
-        this.configService.get<string>('FRONTEND_URL') ??
-        'http://localhost:3000';
-
-      const resetLink = `${frontendUrl}/reset-password/${resetToken}`;
-
-      await this.mailService.sendResetPasswordEmail(decodedEmail, resetLink);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
@@ -555,11 +461,12 @@ export class AuthService {
         message: 'Reset password link has been sent successfully',
       };
     } catch (error: any) {
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while forgot password: ${error.message}`,
-      };
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        `There is a problem while forgot password: ${error.message}`,
+      );
     }
   }
 
@@ -570,41 +477,25 @@ export class AuthService {
     try {
       const { newPassword } = resetPasswordDto;
 
-      if (!token || !newPassword) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Token and new password are required',
-        };
+      if (!token) {
+        throw new BadRequestException('Token is required');
       }
 
-      const users = await this.userModal
-         .find({
-          resetPasswordTokenHash: { $ne: null },
+      // SHA-256 lookup token
+      const tokenHash = crypto
+        .createHash('sha256')
+        .update(token)
+        .digest('hex');
+
+      const matchedUser = await this.userModel
+        .findOne({
+          resetPasswordTokenHash: tokenHash,
           resetPasswordExpiresAt: { $gt: new Date() },
         })
         .select('+resetPasswordTokenHash +resetPasswordExpiresAt +password');
 
-      let matchedUser: any = null;
-
-      for (const user of users) {
-        const isMatch = await bcrypt.compare(
-          token,
-          (user as any).resetPasswordTokenHash,
-        );
-
-        if (isMatch) {
-          matchedUser = user;
-          break;
-        }
-      }
-
       if (!matchedUser) {
-        return {
-          code: ERROR_RES.INVALID_CREDENTIALS_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Reset password token is invalid or expired',
-        };
+        throw new UnauthorizedException('Reset password token is invalid or expired');
       }
 
       matchedUser.password = newPassword;
@@ -619,16 +510,14 @@ export class AuthService {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Reset password successfully',
-        content: {
-          newPassword: newPassword,
-        },
       };
     } catch (error: any) {
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while reset password: ${error.message}`,
-      };
+      if (error instanceof BadRequestException || error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        `There is a problem while reset password: ${error.message}`,
+      );
     }
   }
 
@@ -639,30 +528,14 @@ export class AuthService {
     try {
       const { newPassword, oldPassword } = changePasswordDto;
 
-      if (!newPassword || !oldPassword) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Old password and new password is required',
-        };
-      }
-
       if (!Types.ObjectId.isValid(userId)) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid user id',
-        };
+        throw new BadRequestException('Invalid user id');
       }
 
-      const user = await this.userModal.findById(userId).select('+password');
+      const user = await this.userModel.findById(userId).select('+password');
 
       if (!user) {
-        return {
-          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'User not found',
-        };
+        throw new NotFoundException('User not found');
       }
 
       const isMatch = await comparePassword(
@@ -671,11 +544,7 @@ export class AuthService {
       );
 
       if (!isMatch) {
-        return {
-          code: ERROR_RES.INVALID_CREDENTIALS_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Old password is incorrect',
-        };
+        throw new UnauthorizedException('Old password is incorrect');
       }
 
       (user as any).password = newPassword;
@@ -690,11 +559,16 @@ export class AuthService {
         message: 'Change password successfully',
       };
     } catch (error: any) {
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while changing password: ${error.message}`,
-      };
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException ||
+        error instanceof UnauthorizedException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        `There is a problem while changing password: ${error.message}`,
+      );
     }
   }
 
