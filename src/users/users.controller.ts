@@ -36,7 +36,8 @@ export class UsersController {
 
   @Post()
   @ApiOperation({ summary: 'Admin – create a new user account' })
-  createUser(@Query() dto: CreateUserDto) {
+  @ApiBody({ type: CreateUserDto })
+  createUser(@Body() dto: CreateUserDto) {
     return this.usersService.create(dto);
   }
 
@@ -62,9 +63,9 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Admin – soft delete a user account' })
+  @ApiOperation({ summary: 'Admin – soft delete (deactivate) a user account' })
   @ApiParam({ name: 'id', description: 'User ID' })
-  delete(@Param('id') id: string) {
-    return this.usersService.delete(id);
+  deactivate(@Param('id') id: string) {
+    return this.usersService.deactivate(id);
   }
 }

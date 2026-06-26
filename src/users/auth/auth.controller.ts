@@ -5,7 +5,6 @@ import {
   Param,
   Post,
   Put,
-  Query,
   Req,
   Res,
   UseGuards,
@@ -25,9 +24,11 @@ import { LoginReqType } from './dto/login.req';
 import { LoginRes } from './dto/login.res';
 import { RegisterAccountDto } from './dto/register.req';
 import { ResetPasswordDto } from './dto/reset-password.req';
+import { ForgotPasswordDto } from './dto/forgot-password.req';
 import { JwtAuthGuard } from './guards/auth.guard';
 import { Throttle } from '@nestjs/throttler';
 import { RefreshTokenDto } from './dto/refresh-token.req';
+import { CurrentUser } from './decorators/current-user.decorator';
 
 type RequestWithCookies = Request & {
   cookies?: {
@@ -42,25 +43,27 @@ export class AuthController {
 
   @Post('register')
   @ApiOperation({ summary: 'register account' })
+  @ApiBody({ type: RegisterAccountDto })
   @ApiResponse({
     status: ERROR_RES.SUCCESS.statusCode,
     description: 'Register successfully',
     type: MessageResponse,
   })
-  register(@Query() registerAccountDto: RegisterAccountDto) {
+  register(@Body() registerAccountDto: RegisterAccountDto) {
     return this.authService.register(registerAccountDto);
   }
 
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post('login')
   @ApiOperation({ summary: 'login account' })
+  @ApiBody({ type: LoginReqType })
   @ApiResponse({
     status: ERROR_RES.SUCCESS.statusCode,
     description: 'Login successfully',
     type: LoginRes,
   })
   login(
-    @Query() loginDto: LoginReqType,
+    @Body() loginDto: LoginReqType,
     @Res({ passthrough: true }) response: Response,
   ) {
     return this.authService.login(loginDto, response);
@@ -71,10 +74,9 @@ export class AuthController {
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'logout account' })
   logout(
-    @Req() request: Request,
+    @CurrentUser('id') userId: string,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const userId = (request as any).user.id;
     return this.authService.logout(userId, response);
   }
 
@@ -82,8 +84,9 @@ export class AuthController {
   @ApiOperation({
     summary: 'Refresh access token by refresh token from body or cookie',
   })
+  @ApiBody({ type: RefreshTokenDto })
   refreshToken(
-    @Query() refreshTokenDto: RefreshTokenDto,
+    @Body() refreshTokenDto: RefreshTokenDto,
     @Req() request: RequestWithCookies,
     @Res({ passthrough: true }) response: Response,
   ) {
@@ -95,17 +98,19 @@ export class AuthController {
     return this.authService.refreshToken(refreshToken, response);
   }
 
-  @Post('forgot-password/:email')
+  @Post('forgot-password')
   @ApiOperation({ summary: 'forgot password' })
-  forgotPassword(@Param('email') email: string) {
-    return this.authService.forgotPassword(email);
+  @ApiBody({ type: ForgotPasswordDto })
+  forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(forgotPasswordDto.email);
   }
 
   @Post('reset-password/:token')
   @ApiOperation({ summary: 'reset password' })
+  @ApiBody({ type: ResetPasswordDto })
   resetPassword(
     @Param('token') token: string,
-    @Query() resetPasswordDto: ResetPasswordDto,
+    @Body() resetPasswordDto: ResetPasswordDto,
   ) {
     return this.authService.resetPassword(token, resetPasswordDto);
   }
@@ -114,8 +119,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'get current user' })
-  me(@Req() request: Request) {
-    const userId = (request as any).user.id;
+  me(@CurrentUser('id') userId: string) {
     return this.authService.me(userId);
   }
 
@@ -131,9 +135,8 @@ export class AuthController {
   @ApiBody({ type: ChangePasswordDto, description: 'Change password request' })
   changePassword(
     @Body() changePasswordDto: ChangePasswordDto,
-    @Req() request: Request,
+    @CurrentUser('id') userId: string,
   ) {
-    const userId = (request as any).user.id;
     return this.authService.changePassword(changePasswordDto, userId);
   }
 }
