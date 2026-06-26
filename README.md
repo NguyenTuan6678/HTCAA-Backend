@@ -1,99 +1,139 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# HTCAA Backend API 🚀
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A robust, enterprise-grade RESTful API built with **NestJS**, **MongoDB**, and **MinIO Object Storage**, designed to handle content management, secure document streaming, user authentication, and system communications.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## 🌟 Features
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+* **Authentication & Authorization**: Role-based access control with secure JWT access/refresh token rotation.
+* **Document & Content Management**: Publish/unpublish flows for Legal Documents, FAQ categories, and general publications.
+* **Secure File Storage**: Deeply integrated with **MinIO** storage to handle streaming file downloads, custom previews, and media asset hosting.
+* **User Communications**: Newsletter/Contact submissions with automated status validation and admin review queues.
+* **Security Hardening**:
+  * **Helmet** header protection integrated.
+  * Robust, dynamic CORS mapping supporting credentialed origins.
+  * Input sanitization and Regular Expression Denial of Service (ReDoS) protection on search parameters.
+  * Mongoose output filters to prevent PII exposure (e.g., hiding password hashes and refresh token signatures).
+  * Pure-JS `bcryptjs` migration to ensure compile-free portability.
+* **Documentation**: Automated, live endpoint docs powered by **Swagger UI**.
 
-## Project setup
+---
 
+## 🛠️ Technology Stack
+
+* **Core Framework**: NestJS (TypeScript)
+* **Database**: MongoDB (via Mongoose ODM)
+* **Caching**: Redis (available for key/value cache queues)
+* **Object Storage**: MinIO (S3-compatible)
+* **Security & Auth**: Passport JWT, Helmet, bcryptjs
+* **Email Dispatcher**: Resend API Integration
+
+---
+
+## 📦 Prerequisite Services
+
+Ensure you have the following installed locally or accessible in your cloud setup:
+1. **Node.js**: `v18+` (LTS recommended)
+2. **MongoDB**: A running instance (local or Atlas cloud cluster)
+3. **Docker**: (Optional, for running local MinIO/Redis instances)
+
+---
+
+## ⚙️ Environment Configuration
+
+1. Copy the environment configuration template:
+   ```bash
+   cp .env-example .env
+   ```
+2. Open `.env` and fill in your connection details:
+   - **`PORT`**: Server port (default: `4000`)
+   - **`MONGODB_URI`**: MongoDB Connection string
+   - **`JWT_ACCESS_SECRET` & `JWT_REFRESH_SECRET`**: High-entropy strings for securing tokens
+   - **`MINIO_*`**: Configuration for accessing S3 buckets (host endpoint, credentials, bucket name)
+   - **`RESEND_API_KEY`**: API token for email capabilities
+
+---
+
+## 🚀 Getting Started
+
+### 1. Install Dependencies
 ```bash
-$ npm install
+npm install
 ```
 
-## Compile and run the project
-
+### 2. Start Supporting Services (Docker)
+A basic `docker-compose.yml` is provided for running MinIO locally:
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+docker-compose up -d
+# If your MinIO container is stopped, wake it up:
+docker start minio
 ```
 
-## Run tests
-
+### 3. Run the Application
 ```bash
-# unit tests
-$ npm run test
+# Development / Hot-Reload mode
+npm run start:dev
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+# Production build and run
+npm run build
+npm run start:prod
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+Once running successfully, the cute ASCII startup card will print:
+```text
+ █   █  █████  █   █  █████  █   █   ██   ██
+ ██ ██    █    █  █   █   █  ██  █  ████ ████
+ █ █ █    █    ███    █████  █ █ █  █████████
+ █   █    █    █  █   █   █  █  ██   ███████
+ █   █  █████  █   █  █   █  █   █    █████
+                                        ███
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+---
 
-## Resources
+## 📚 API Documentation
 
-Check out a few resources that may come in handy when working with NestJS:
+Once the server has started, navigate to:
+* **Swagger API UI**: [http://localhost:4000/api/docs](http://localhost:4000/api/docs)
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+This page provides interactive testing tools for all controllers, payloads, schemas, and response validation.
 
-## Support
+---
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## 📁 Directory Structure
 
-## Stay in touch
+```text
+src/
+├── app.module.ts           # Central root module registering database, helmet, & feature domains
+├── main.ts                 # Bootstrap server script setting up CORS, Helmet, and global interceptors
+├── banner/                 # Core server banner and ASCII console status cards
+├── utils/                  # Shared helper utilities (e.g. regex safety filters)
+├── schema/                 # Mongoose database models & entity hooks
+├── module/                 # Feature components
+│   ├── news/               # Publications, slugs, and thumbnail media bindings
+│   ├── legal-docs/         # Categorized documents, downloads, and preview builders
+│   ├── faqs/               # Help center questions, rating modules, and categories
+│   ├── minio/              # Upload adapters and pre-signed S3 stream generators
+│   └── contact/            # Support ticket submissions and status queues
+└── users/                  # User accounts, CurrentUser types, and Authentication modules
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+---
 
-## License
+## 🔒 Security Practices & Conventions
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
-# HTCAA-Backend
+When editing or creating new components in this codebase, ensure you maintain these standards:
+1. **Password Hashing**: Always import `bcryptjs` (do NOT use native `bcrypt` as it fails cross-compiling in CI pipelines).
+2. **Decorator Injection**: Use the `@CurrentUser('id')` and `@CurrentUser('role')` parameters instead of manual parsing from the Express Request object.
+3. **Database Queries**: Sanitize all incoming client search strings using the regex-escaping helper to avoid ReDoS vulnerability issues:
+   ```typescript
+   import { escapeRegex } from '../../utils/escape-regex';
+   const safeQuery = escapeRegex(userInputString);
+   ```
+4. **File Streams**: Never return a raw JSON structure directly inside stream response routes. In case of access errors, throw standard Nest HTTP exceptions so the error middleware handles response headers correctly.
+
+---
+
+## 📄 License
+This codebase is [MIT licensed](LICENSE).
