@@ -1,4 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CreateUserDto } from './dto/create-user.req';
@@ -13,34 +19,24 @@ import { Role } from '../utils/role/role';
 export class UsersService {
   constructor(
     @InjectModel(User.name)
-    private readonly userModal: Model<User>,
+    private readonly userModel: Model<User>,
     private readonly logger: LoggerService,
   ) {}
 
   async create(dto: CreateUserDto) {
     try {
       if (dto.role === Role.ADMIN) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Cannot create admin user',
-          content: null,
-        };
+        throw new BadRequestException('Cannot create admin user');
       }
 
       const email = dto.email.toLowerCase().trim();
-      const existing = await this.userModal.findOne({ email });
+      const existing = await this.userModel.findOne({ email });
 
       if (existing) {
-        return {
-          code: ERROR_RES.CONFLICT_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Email already exists',
-          content: null,
-        };
+        throw new ConflictException('Email already exists');
       }
 
-      const user = new this.userModal({
+      const user = new this.userModel({
         name: dto.name,
         email,
         password: dto.password,
@@ -68,12 +64,12 @@ export class UsersService {
       };
     } catch (error: any) {
       this.logger.error(`Error creating user: ${error.message}`);
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while creating user: ${error.message}`,
-        content: null,
-      };
+      if (error instanceof BadRequestException || error instanceof ConflictException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        `There is a problem while creating user: ${error.message}`,
+      );
     }
   }
 
@@ -99,12 +95,13 @@ export class UsersService {
       }
 
       const [items, total] = await Promise.all([
-        this.userModal
+        this.userModel
           .find(filter)
+          .select('name email role memberType isActive createdAt updatedAt')
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit),
-        this.userModal.countDocuments(filter),
+        this.userModel.countDocuments(filter),
       ]);
 
       return {
@@ -121,35 +118,24 @@ export class UsersService {
       };
     } catch (error: any) {
       this.logger.error(`Error fetching users: ${error.message}`);
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while getting users: ${error.message}`,
-        content: null,
-      };
+      throw new InternalServerErrorException(
+        `There is a problem while getting users: ${error.message}`,
+      );
     }
   }
 
   async findOne(id: string) {
     try {
       if (!Types.ObjectId.isValid(id)) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid user ID',
-          content: null,
-        };
+        throw new BadRequestException('Invalid user ID');
       }
 
-      const user = await this.userModal.findById(id);
+      const user = await this.userModel
+        .findById(id)
+        .select('name email role memberType isActive createdAt updatedAt');
 
       if (!user) {
-        return {
-          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'User not found',
-          content: null,
-        };
+        throw new NotFoundException('User not found');
       }
 
       return {
@@ -160,48 +146,33 @@ export class UsersService {
       };
     } catch (error: any) {
       this.logger.error(`Error fetching user details: ${error.message}`);
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while getting user details: ${error.message}`,
-        content: null,
-      };
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        `There is a problem while getting user details: ${error.message}`,
+      );
     }
   }
 
   async update(id: string, dto: UpdateUserDto) {
     try {
       if (!Types.ObjectId.isValid(id)) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid user ID',
-          content: null,
-        };
+        throw new BadRequestException('Invalid user ID');
       }
 
-      const user = await this.userModal.findById(id).select('+password');
+      const user = await this.userModel.findById(id).select('+password');
 
       if (!user) {
-        return {
-          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'User not found',
-          content: null,
-        };
+        throw new NotFoundException('User not found');
       }
 
       if (dto.email !== undefined) {
         const email = dto.email.toLowerCase().trim();
         if (email !== user.email) {
-          const conflict = await this.userModal.findOne({ email });
+          const conflict = await this.userModel.findOne({ email });
           if (conflict) {
-            return {
-              code: ERROR_RES.CONFLICT_ERROR.statusCode,
-              info: ERROR_INFO.FAIL,
-              message: 'Email already exists',
-              content: null,
-            };
+            throw new ConflictException('Email already exists');
           }
           user.email = email;
         }
@@ -217,12 +188,7 @@ export class UsersService {
 
       if (dto.role !== undefined) {
         if (dto.role === Role.ADMIN) {
-          return {
-            code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-            info: ERROR_INFO.FAIL,
-            message: 'Cannot assign admin role to user',
-            content: null,
-          };
+          throw new BadRequestException('Cannot assign admin role to user');
         }
         user.role = dto.role;
       }
@@ -254,35 +220,29 @@ export class UsersService {
       };
     } catch (error: any) {
       this.logger.error(`Error updating user: ${error.message}`);
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while updating user: ${error.message}`,
-        content: null,
-      };
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException ||
+        error instanceof ConflictException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        `There is a problem while updating user: ${error.message}`,
+      );
     }
   }
 
-  async delete(id: string) {
+  async deactivate(id: string) {
     try {
       if (!Types.ObjectId.isValid(id)) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid user ID',
-          content: null,
-        };
+        throw new BadRequestException('Invalid user ID');
       }
 
-      const user = await this.userModal.findById(id);
+      const user = await this.userModel.findById(id);
 
       if (!user) {
-        return {
-          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'User not found',
-          content: null,
-        };
+        throw new NotFoundException('User not found');
       }
 
       user.isActive = false;
@@ -296,12 +256,12 @@ export class UsersService {
       };
     } catch (error: any) {
       this.logger.error(`Error deleting user: ${error.message}`);
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while deleting user: ${error.message}`,
-        content: null,
-      };
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        `There is a problem while deleting user: ${error.message}`,
+      );
     }
   }
 }
