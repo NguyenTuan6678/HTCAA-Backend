@@ -10,7 +10,7 @@ export class AboutUsService {
   constructor(
     @InjectModel(AboutUs.name)
     private readonly aboutUsModel: Model<AboutUs>,
-  ) {}
+  ) { }
 
   // Always work with a single document (singleton pattern, same as your original)
   private async getOrCreate(): Promise<AboutUs> {
