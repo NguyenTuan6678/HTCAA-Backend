@@ -72,7 +72,7 @@ const uploadDocInterceptor = FileInterceptor('file', {
 @ApiTags('Legal Docs')
 @Controller('legal-docs')
 export class LegalDocsController {
-  constructor(private readonly legalDocsService: LegalDocsService) { }
+  constructor(private readonly legalDocsService: LegalDocsService) {}
 
   // ─── PUBLIC ────────────────────────────────────────────────────────────────
 
@@ -102,7 +102,9 @@ export class LegalDocsController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor create legal doc category' })
-  createCategory(@Query() createLegalDocCategoryDto: CreateLegalDocCategoryDto) {
+  createCategory(
+    @Body() createLegalDocCategoryDto: CreateLegalDocCategoryDto,
+  ) {
     return this.legalDocsService.createCategory(createLegalDocCategoryDto);
   }
 
@@ -143,7 +145,7 @@ export class LegalDocsController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor create legal doc category' })
-  createTypeCategory(@Query() createTypeCategoryDto: CreateTypeCategoryDto) {
+  createTypeCategory(@Body() createTypeCategoryDto: CreateTypeCategoryDto) {
     return this.legalDocsService.createTypeCategory(createTypeCategoryDto);
   }
 
@@ -207,36 +209,12 @@ export class LegalDocsController {
   @ApiOperation({
     summary: 'Admin/editor – create legal doc with optional file',
   })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      required: ['title', 'type'],
-      properties: {
-        categoryId: {
-          type: 'string',
-          example: '665f1e8d7c1b2a0012a12345',
-          description: 'Category id (from legal_docs_categories)',
-        },
-        title: { type: 'string', example: 'Hợp đồng lao động 2026' },
-        type: { type: 'string', example: 'Hợp đồng' },
-        file: { type: 'string', format: 'binary' },
-      },
-    },
-  })
-  @UseInterceptors(
-    FileInterceptor('file', {
-      storage: memoryStorage(),
-      limits: { fileSize: 20 * 1024 * 1024 },
-      fileFilter: docFileFilter,
-    }),
-  )
+  @ApiBody({ type: CreateLegalDocDto })
   create(
     @Body() dto: CreateLegalDocDto,
-    @UploadedFile() file: Express.Multer.File,
     @CurrentUser('id') userId: string,
   ) {
-    return this.legalDocsService.create(userId, dto, file);
+    return this.legalDocsService.create(userId, dto);
   }
 
   @Put(':id')
@@ -297,23 +275,29 @@ export class LegalDocsController {
   @ApiBearerAuth('authorization')
   @ApiOperation({
     summary:
-      'Admin/editor – upload (or replace) the document file (PDF/DOC/DOCX)',
+      'Admin/editor – replace the document file (PDF/DOC/DOCX)',
   })
-  @ApiConsumes('multipart/form-data')
   @ApiParam({ name: 'id', description: 'Legal doc id' })
   @ApiBody({
     schema: {
       type: 'object',
       required: ['file'],
       properties: {
-        file: { type: 'string', format: 'binary' },
+        file: {
+          type: 'object',
+          properties: {
+            objectName: { type: 'string' },
+            originalName: { type: 'string' },
+            mimeType: { type: 'string' },
+            size: { type: 'number' },
+          },
+        },
       },
     },
   })
-  @UseInterceptors(uploadDocInterceptor)
   uploadFile(
     @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File,
+    @Body('file') file: any,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: Role,
   ) {

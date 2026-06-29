@@ -145,9 +145,9 @@ export class DocumentsService {
   async create(
     userId: string,
     dto: CreateDocumentDto,
-    file?: Express.Multer.File,
   ) {
     try {
+      const file = dto.file;
       if (!file) {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
@@ -157,7 +157,8 @@ export class DocumentsService {
         };
       }
 
-      if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+      const mimeType = file.mimeType || file.mimetype;
+      if (!mimeType || !ALLOWED_MIME_TYPES.includes(mimeType)) {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
@@ -171,14 +172,10 @@ export class DocumentsService {
       );
       if (categoryError) return categoryError;
 
-      const uploaded = await this.minioService.uploadFile(
-        file,
-        'documents/files',
-      );
       const fileMetadata = {
-        ...uploaded,
-        originalName: file.originalname,
-        mimeType: file.mimetype,
+        objectName: file.objectName,
+        originalName: file.originalName,
+        mimeType: mimeType,
         size: file.size,
       };
 
@@ -488,7 +485,7 @@ export class DocumentsService {
     id: string,
     userId: string,
     role: Role,
-    file?: Express.Multer.File,
+    file?: any,
   ) {
     try {
       if (!file) {
@@ -500,7 +497,8 @@ export class DocumentsService {
         };
       }
 
-      if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+      const mimeType = file.mimeType || file.mimetype;
+      if (!mimeType || !ALLOWED_MIME_TYPES.includes(mimeType)) {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
@@ -516,18 +514,14 @@ export class DocumentsService {
       );
       if (error) return error;
 
-      if ((doc as any).file?.objectName) {
+      if ((doc as any).file?.objectName && (doc as any).file.objectName !== file.objectName) {
         await this.minioService.removeFile((doc as any).file.objectName);
       }
 
-      const uploaded = await this.minioService.uploadFile(
-        file,
-        'documents/files',
-      );
       const fileMetadata = {
-        ...uploaded,
-        originalName: file.originalname,
-        mimeType: file.mimetype,
+        objectName: file.objectName,
+        originalName: file.originalName,
+        mimeType: mimeType,
         size: file.size,
       };
 

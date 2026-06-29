@@ -20,7 +20,15 @@ export class CreateLegalDocDto {
   @IsNotEmpty()
   type: string;
 
-  @ApiPropertyOptional({ type: 'string', format: 'binary' })
+  @ApiPropertyOptional({
+    type: 'object',
+    properties: {
+      objectName: { type: 'string' },
+      originalName: { type: 'string' },
+      mimeType: { type: 'string' },
+      size: { type: 'number' },
+    },
+  })
   @IsOptional()
   file?: any;
 }

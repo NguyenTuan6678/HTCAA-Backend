@@ -22,16 +22,16 @@ export class MemberService {
     @InjectModel(Counter.name) private readonly counterModel: Model<Counter>,
   ) {}
 
-  private toPublicFile(file?: Express.Multer.File) {
+  private toPublicFile(file?: any) {
     if (!file) {
       return null;
     }
 
     return {
-      originalName: file.originalname,
-      filename: file.filename,
-      path: `/uploads/members/${file.filename}`,
-      mimetype: file.mimetype,
+      originalName: file.originalName,
+      filename: file.objectName || file.filename,
+      path: file.url || file.path,
+      mimetype: file.mimeType || file.mimetype,
       size: file.size,
     };
   }
@@ -39,7 +39,6 @@ export class MemberService {
   async register(
     userId: string,
     registerDto: RegisterMemberDto,
-    profileFile?: Express.Multer.File,
   ) {
     try {
       if (!Types.ObjectId.isValid(userId)) {
@@ -100,7 +99,7 @@ export class MemberService {
         memberType: registerDto.memberType,
         organization,
         paymentMethod: registerDto.paymentMethod,
-        profileFile: this.toPublicFile(profileFile),
+        profileFile: this.toPublicFile(registerDto.profileFile),
         status: MemberStatus.PENDING,
         isActive: true,
       });

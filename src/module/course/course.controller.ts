@@ -47,7 +47,7 @@ export class CourseController {
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor create course' })
   create(
-    @Query() createCourseDto: CreateCourseDto,
+    @Body() createCourseDto: CreateCourseDto,
     @CurrentUser('id') userId: string,
   ) {
     return this.courseService.create(userId, createCourseDto);

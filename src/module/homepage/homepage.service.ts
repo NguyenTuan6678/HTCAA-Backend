@@ -472,9 +472,9 @@ export class HomepageService {
     }
   }
 
-  async uploadHeroImage(file?: Express.Multer.File) {
+  async uploadHeroImage(image?: any) {
     try {
-      if (!file) {
+      if (!image) {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
@@ -486,11 +486,16 @@ export class HomepageService {
       const setting = await this.getOrCreateHomepageSetting();
       const currentImage = this.getNestedValue(setting, 'hero.visual.image');
 
-      const uploadedFile = await this.replaceHomepageMedia(
-        currentImage,
-        file,
-        'homepage/hero',
-      );
+      if (currentImage?.objectName && currentImage.objectName !== image.objectName) {
+        await this.minioService.removeFile(currentImage.objectName);
+      }
+
+      const fileMetadata = {
+        objectName: image.objectName,
+        originalName: image.originalName || '',
+        mimeType: image.mimeType || image.mimetype || '',
+        size: image.size || 0,
+      };
 
       const updatedSetting = await this.homepageSettingModel.findOneAndUpdate(
         {
@@ -498,7 +503,7 @@ export class HomepageService {
         },
         {
           $set: {
-            'hero.visual.image': uploadedFile,
+            'hero.visual.image': fileMetadata,
           },
         },
         {
@@ -528,9 +533,9 @@ export class HomepageService {
     }
   }
 
-  async uploadPresidentAvatar(file?: Express.Multer.File) {
+  async uploadPresidentAvatar(image?: any) {
     try {
-      if (!file) {
+      if (!image) {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
@@ -545,11 +550,16 @@ export class HomepageService {
         'presidentQuote.avatar',
       );
 
-      const uploadedFile = await this.replaceHomepageMedia(
-        currentAvatar,
-        file,
-        'homepage/president',
-      );
+      if (currentAvatar?.objectName && currentAvatar.objectName !== image.objectName) {
+        await this.minioService.removeFile(currentAvatar.objectName);
+      }
+
+      const fileMetadata = {
+        objectName: image.objectName,
+        originalName: image.originalName || '',
+        mimeType: image.mimeType || image.mimetype || '',
+        size: image.size || 0,
+      };
 
       const updatedSetting = await this.homepageSettingModel.findOneAndUpdate(
         {
@@ -557,7 +567,7 @@ export class HomepageService {
         },
         {
           $set: {
-            'presidentQuote.avatar': uploadedFile,
+            'presidentQuote.avatar': fileMetadata,
           },
         },
         {
@@ -584,9 +594,9 @@ export class HomepageService {
     }
   }
 
-  async uploadZaloQr(file?: Express.Multer.File) {
+  async uploadZaloQr(image?: any) {
     try {
-      if (!file) {
+      if (!image) {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
@@ -613,13 +623,18 @@ export class HomepageService {
 
       const currentQrCode = channels[zaloIndex]?.qrCode;
 
-      const uploadedFile = await this.replaceHomepageMedia(
-        currentQrCode,
-        file,
-        'homepage/social',
-      );
+      if (currentQrCode?.objectName && currentQrCode.objectName !== image.objectName) {
+        await this.minioService.removeFile(currentQrCode.objectName);
+      }
 
-      channels[zaloIndex].qrCode = uploadedFile;
+      const fileMetadata = {
+        objectName: image.objectName,
+        originalName: image.originalName || '',
+        mimeType: image.mimeType || image.mimetype || '',
+        size: image.size || 0,
+      };
+
+      channels[zaloIndex].qrCode = fileMetadata;
 
       const updatedSetting = await this.homepageSettingModel.findOneAndUpdate(
         {

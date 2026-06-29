@@ -114,32 +114,12 @@ export class DocumentsController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor – create document with .xlsx file' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      required: ['title', 'file'],
-      properties: {
-        categoryId: {
-          type: 'string',
-          example: '665f1e8d7c1b2a0012a12345',
-        },
-        title: { type: 'string', example: 'Báo cáo tài chính quý 1 2026' },
-        description: {
-          type: 'string',
-          example: 'Báo cáo tổng hợp doanh thu và chi phí quý 1',
-        },
-        file: { type: 'string', format: 'binary' },
-      },
-    },
-  })
-  @UseInterceptors(uploadXlsxInterceptor)
+  @ApiBody({ type: CreateDocumentDto })
   create(
     @Body() dto: CreateDocumentDto,
-    @UploadedFile() file: Express.Multer.File,
     @CurrentUser('id') userId: string,
   ) {
-    return this.documentsService.create(userId, dto, file);
+    return this.documentsService.create(userId, dto);
   }
 
   @Put(':id')
@@ -199,21 +179,27 @@ export class DocumentsController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor – replace the .xlsx file' })
-  @ApiConsumes('multipart/form-data')
   @ApiParam({ name: 'id', description: 'Document id' })
   @ApiBody({
     schema: {
       type: 'object',
       required: ['file'],
       properties: {
-        file: { type: 'string', format: 'binary' },
+        file: {
+          type: 'object',
+          properties: {
+            objectName: { type: 'string' },
+            originalName: { type: 'string' },
+            mimeType: { type: 'string' },
+            size: { type: 'number' },
+          },
+        },
       },
     },
   })
-  @UseInterceptors(uploadXlsxInterceptor)
   uploadFile(
     @Param('id') id: string,
-    @UploadedFile() file: Express.Multer.File,
+    @Body('file') file: any,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: Role,
   ) {

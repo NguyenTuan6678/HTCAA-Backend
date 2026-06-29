@@ -22,7 +22,15 @@ export class CreateDocumentDto {
   @IsOptional()
   description?: string;
 
-  @ApiPropertyOptional({ type: 'string', format: 'binary' })
+  @ApiPropertyOptional({
+    type: 'object',
+    properties: {
+      objectName: { type: 'string' },
+      originalName: { type: 'string' },
+      mimeType: { type: 'string' },
+      size: { type: 'number' },
+    },
+  })
   @IsOptional()
-  file?: any; // handled by Multer, whitelisted here
+  file?: any;
 }

@@ -66,11 +66,30 @@ export class CreateNewsDto {
   @IsOptional()
   isFeatured?: boolean;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    type: 'object',
+    properties: {
+      objectName: { type: 'string' },
+      originalName: { type: 'string' },
+      mimeType: { type: 'string' },
+      size: { type: 'number' },
+    },
+  })
   @IsOptional()
   thumbnail?: any;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        objectName: { type: 'string' },
+        originalName: { type: 'string' },
+        mimeType: { type: 'string' },
+        size: { type: 'number' },
+      },
+    },
+  })
   @IsOptional()
   images?: any;
 }

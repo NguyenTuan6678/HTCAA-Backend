@@ -116,7 +116,7 @@ export class NewsController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor create news category' })
-  createCategory(@Query() createNewsCategoryDto: CreateNewsCategoryDto) {
+  createCategory(@Body() createNewsCategoryDto: CreateNewsCategoryDto) {
     return this.newsService.createCategory(createNewsCategoryDto);
   }
 
@@ -161,7 +161,7 @@ export class NewsController {
   @ApiParam({ name: 'id', description: 'News id' })
   createComment(
     @Param('id') id: string,
-    @Query() createNewsCommentDto: CreateNewsCommentDto,
+    @Body() createNewsCommentDto: CreateNewsCommentDto,
     @CurrentUser('id') userId: string,
   ) {
     return this.newsService.createComment(id, userId, createNewsCommentDto);
@@ -205,51 +205,12 @@ export class NewsController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor create news' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      required: ['categoryId', 'title'],
-      properties: {
-        categoryId: { type: 'string', example: '665f1e8d7c1b2a0012a12345' },
-        title: { type: 'string', example: 'Cập nhật chính sách thuế 2026' },
-        summary: { type: 'string', example: 'Tóm tắt ngắn...' },
-        content: { type: 'string', example: '<p>Nội dung bài viết...</p>' },
-        tags: { type: 'array', items: { type: 'string' } },
-        isFeatured: { type: 'boolean' },
-        thumbnail: { type: 'string', format: 'binary' },
-        images: {
-          type: 'array',
-          items: { type: 'string', format: 'binary' },
-        },
-      },
-    },
-  })
-  @UseInterceptors(
-    FileFieldsInterceptor(
-      [
-        { name: 'thumbnail', maxCount: 1 },
-        { name: 'images', maxCount: 10 },
-      ],
-      {
-        storage: memoryStorage(),
-        limits: { fileSize: 5 * 1024 * 1024 },
-        fileFilter: imageFileFilter,
-      },
-    ),
-  )
+  @ApiBody({ type: CreateNewsDto })
   create(
     @Body() createNewsDto: CreateNewsDto,
-    @UploadedFiles()
-    files: {
-      thumbnail?: Express.Multer.File[];
-      images?: Express.Multer.File[];
-    },
     @CurrentUser('id') userId: string,
   ) {
-    const thumbnail = files?.thumbnail?.[0];
-    const images = files?.images;
-    return this.newsService.create(userId, createNewsDto, thumbnail, images);
+    return this.newsService.create(userId, createNewsDto);
   }
 
   @Put(':id')
@@ -272,33 +233,28 @@ export class NewsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
-  @ApiOperation({ summary: 'Admin/editor upload news thumbnail to MinIO' })
-  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Admin/editor replace news thumbnail' })
   @ApiParam({ name: 'id', description: 'News id' })
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
         thumbnail: {
-          type: 'string',
-          format: 'binary',
+          type: 'object',
+          properties: {
+            objectName: { type: 'string' },
+            originalName: { type: 'string' },
+            mimeType: { type: 'string' },
+            size: { type: 'number' },
+          },
         },
       },
       required: ['thumbnail'],
     },
   })
-  @UseInterceptors(
-    FileInterceptor('thumbnail', {
-      storage: memoryStorage(),
-      limits: {
-        fileSize: 5 * 1024 * 1024,
-      },
-      fileFilter: imageFileFilter,
-    }),
-  )
   uploadThumbnail(
     @Param('id') id: string,
-    @UploadedFile() thumbnail: Express.Multer.File,
+    @Body('thumbnail') thumbnail: any,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: Role,
   ) {
@@ -309,8 +265,7 @@ export class NewsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
-  @ApiOperation({ summary: 'Admin/editor upload news images to MinIO' })
-  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Admin/editor upload news images' })
   @ApiParam({ name: 'id', description: 'News id' })
   @ApiBody({
     schema: {
@@ -319,26 +274,22 @@ export class NewsController {
         images: {
           type: 'array',
           items: {
-            type: 'string',
-            format: 'binary',
+            type: 'object',
+            properties: {
+              objectName: { type: 'string' },
+              originalName: { type: 'string' },
+              mimeType: { type: 'string' },
+              size: { type: 'number' },
+            },
           },
         },
       },
       required: ['images'],
     },
   })
-  @UseInterceptors(
-    FilesInterceptor('images', 10, {
-      storage: memoryStorage(),
-      limits: {
-        fileSize: 5 * 1024 * 1024,
-      },
-      fileFilter: imageFileFilter,
-    }),
-  )
   uploadImages(
     @Param('id') id: string,
-    @UploadedFiles() images: Express.Multer.File[],
+    @Body('images') images: any[],
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: Role,
   ) {

@@ -475,8 +475,6 @@ export class NewsService {
   async create(
     userId: string,
     createNewsDto: CreateNewsDto,
-    thumbnail?: Express.Multer.File,
-    images?: Express.Multer.File[],
   ) {
     try {
       if (!Types.ObjectId.isValid(userId)) {
@@ -514,19 +512,28 @@ export class NewsService {
 
       const slug = await this.generateUniqueNewsSlug(createNewsDto.title);
 
-      // Upload thumbnail and images in parallel if provided
-      const [uploadedThumbnail, uploadedImages] = await Promise.all([
-        thumbnail
-          ? this.minioService.uploadFile(thumbnail, 'news/thumbnails')
-          : Promise.resolve(null),
-        images && images.length > 0
-          ? Promise.all(
-              images.map((img) =>
-                this.minioService.uploadFile(img, 'news/images'),
-              ),
-            )
-          : Promise.resolve([]),
-      ]);
+      let uploadedThumbnail: any = null;
+      if (createNewsDto.thumbnail) {
+        const t = createNewsDto.thumbnail;
+        uploadedThumbnail = {
+          objectName: t.objectName,
+          originalName: t.originalName,
+          bucket: t.bucket || 'htcaa',
+          mimetype: t.mimeType || t.mimetype,
+          size: t.size,
+        };
+      }
+
+      let uploadedImages: any[] = [];
+      if (createNewsDto.images && createNewsDto.images.length > 0) {
+        uploadedImages = createNewsDto.images.map((img: any) => ({
+          objectName: img.objectName,
+          originalName: img.originalName,
+          bucket: img.bucket || 'htcaa',
+          mimetype: img.mimeType || img.mimetype,
+          size: img.size,
+        }));
+      }
 
       const news = await this.newsModel.create({
         createdBy: new Types.ObjectId(userId),
@@ -1362,7 +1369,7 @@ export class NewsService {
     id: string,
     userId: string,
     role: Role,
-    thumbnail?: Express.Multer.File,
+    thumbnail?: any,
   ) {
     try {
       if (!thumbnail) {
@@ -1384,20 +1391,23 @@ export class NewsService {
         return error;
       }
 
-      if ((news as any).thumbnail?.objectName) {
+      if ((news as any).thumbnail?.objectName && (news as any).thumbnail.objectName !== thumbnail.objectName) {
         await this.minioService.removeFile((news as any).thumbnail.objectName);
       }
 
-      const uploadedFile = await this.minioService.uploadFile(
-        thumbnail,
-        'news/thumbnails',
-      );
+      const fileMetadata = {
+        objectName: thumbnail.objectName,
+        originalName: thumbnail.originalName,
+        bucket: thumbnail.bucket || 'htcaa',
+        mimetype: thumbnail.mimeType || thumbnail.mimetype,
+        size: thumbnail.size,
+      };
 
       const updatedNews = await this.newsModel
         .findByIdAndUpdate(
           id,
           {
-            thumbnail: uploadedFile,
+            thumbnail: fileMetadata,
           },
           {
             returnDocument: 'after',
@@ -1477,7 +1487,7 @@ export class NewsService {
     id: string,
     userId: string,
     role: Role,
-    images?: Express.Multer.File[],
+    images?: any[],
   ) {
     try {
       if (!images || images.length === 0) {
@@ -1495,11 +1505,13 @@ export class NewsService {
         return error;
       }
 
-      const uploadedFiles = await Promise.all(
-        images.map((image) =>
-          this.minioService.uploadFile(image, 'news/images'),
-        ),
-      );
+      const fileMetadatas = images.map((img: any) => ({
+        objectName: img.objectName,
+        originalName: img.originalName,
+        bucket: img.bucket || 'htcaa',
+        mimetype: img.mimeType || img.mimetype,
+        size: img.size,
+      }));
 
       const updatedNews = await this.newsModel
         .findByIdAndUpdate(
@@ -1507,7 +1519,7 @@ export class NewsService {
           {
             $push: {
               images: {
-                $each: uploadedFiles,
+                $each: fileMetadatas,
               },
             },
           },

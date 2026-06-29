@@ -127,29 +127,24 @@ export class HomepageController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor upload homepage hero image' })
-  @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
         image: {
-          type: 'string',
-          format: 'binary',
+          type: 'object',
+          properties: {
+            objectName: { type: 'string' },
+            originalName: { type: 'string' },
+            mimeType: { type: 'string' },
+            size: { type: 'number' },
+          },
         },
       },
       required: ['image'],
     },
   })
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: memoryStorage(),
-      limits: {
-        fileSize: 5 * 1024 * 1024,
-      },
-      fileFilter: imageFileFilter,
-    }),
-  )
-  uploadHeroImage(@UploadedFile() image: Express.Multer.File) {
+  uploadHeroImage(@Body('image') image: any) {
     return this.homepageService.uploadHeroImage(image);
   }
 
@@ -158,29 +153,24 @@ export class HomepageController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor upload president avatar' })
-  @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
         image: {
-          type: 'string',
-          format: 'binary',
+          type: 'object',
+          properties: {
+            objectName: { type: 'string' },
+            originalName: { type: 'string' },
+            mimeType: { type: 'string' },
+            size: { type: 'number' },
+          },
         },
       },
       required: ['image'],
     },
   })
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: memoryStorage(),
-      limits: {
-        fileSize: 5 * 1024 * 1024,
-      },
-      fileFilter: imageFileFilter,
-    }),
-  )
-  uploadPresidentAvatar(@UploadedFile() image: Express.Multer.File) {
+  uploadPresidentAvatar(@Body('image') image: any) {
     return this.homepageService.uploadPresidentAvatar(image);
   }
 
@@ -189,29 +179,24 @@ export class HomepageController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor upload Zalo QR image' })
-  @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
         image: {
-          type: 'string',
-          format: 'binary',
+          type: 'object',
+          properties: {
+            objectName: { type: 'string' },
+            originalName: { type: 'string' },
+            mimeType: { type: 'string' },
+            size: { type: 'number' },
+          },
         },
       },
       required: ['image'],
     },
   })
-  @UseInterceptors(
-    FileInterceptor('image', {
-      storage: memoryStorage(),
-      limits: {
-        fileSize: 5 * 1024 * 1024,
-      },
-      fileFilter: imageFileFilter,
-    }),
-  )
-  uploadZaloQr(@UploadedFile() image: Express.Multer.File) {
+  uploadZaloQr(@Body('image') image: any) {
     return this.homepageService.uploadZaloQr(image);
   }
 }

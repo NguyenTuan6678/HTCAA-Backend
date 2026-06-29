@@ -124,30 +124,11 @@ export class MemberController {
       ],
     },
   })
-  @UseInterceptors(
-    FileInterceptor('profileFile', {
-      storage: diskStorage({
-        destination: memberUploadDir,
-        filename: (req, file, callback) => {
-          const uniqueSuffix = `${Date.now()}-${Math.round(
-            Math.random() * 1e9,
-          )}`;
-
-          callback(null, `member-${uniqueSuffix}${extname(file.originalname)}`);
-        },
-      }),
-      limits: {
-        fileSize: 5 * 1024 * 1024,
-      },
-      fileFilter: pdfFileFilter,
-    }),
-  )
   register(
     @Body() registerMemberDto: RegisterMemberDto,
-    @UploadedFile() profileFile: Express.Multer.File | undefined,
     @CurrentUser('id') userId: string,
   ) {
-    return this.memberService.register(userId, registerMemberDto, profileFile);
+    return this.memberService.register(userId, registerMemberDto);
   }
 
   @Get('me')

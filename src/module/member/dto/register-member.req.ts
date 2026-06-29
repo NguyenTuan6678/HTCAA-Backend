@@ -113,9 +113,14 @@ export class RegisterMemberDto {
   organizationEmployeeScale?: string;
 
   @ApiPropertyOptional({
-    type: 'string',
-    format: 'binary',
-    description: 'Optional PDF file, max 5MB',
+    type: 'object',
+    properties: {
+      objectName: { type: 'string' },
+      originalName: { type: 'string' },
+      mimeType: { type: 'string' },
+      size: { type: 'number' },
+      url: { type: 'string' },
+    },
   })
   @IsOptional()
   profileFile?: any;

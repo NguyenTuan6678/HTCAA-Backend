@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException, StreamableFile } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  StreamableFile,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Response } from 'express';
@@ -678,7 +684,6 @@ export class LegalDocsService {
   async create(
     userId: string,
     dto: CreateLegalDocDto,
-    file?: Express.Multer.File,
   ) {
     try {
       if (!(await this.ensureCategoryExists(dto.categoryId))) {
@@ -691,15 +696,13 @@ export class LegalDocsService {
       }
 
       let fileMetadata: any = null;
+      const file = dto.file;
       if (file) {
-        const uploaded = await this.minioService.uploadFile(
-          file,
-          'legal-docs/files',
-        );
+        const mimeType = file.mimeType || file.mimetype;
         fileMetadata = {
-          ...uploaded,
-          originalName: file.originalname,
-          mimeType: file.mimetype,
+          objectName: file.objectName,
+          originalName: file.originalName,
+          mimeType: mimeType,
           size: file.size,
         };
       }
@@ -1019,7 +1022,7 @@ export class LegalDocsService {
     id: string,
     userId: string,
     role: Role,
-    file?: Express.Multer.File,
+    file?: any,
   ) {
     try {
       if (!file) {
@@ -1031,7 +1034,8 @@ export class LegalDocsService {
         };
       }
 
-      if (!ALLOWED_DOC_MIME_TYPES.includes(file.mimetype)) {
+      const mimeType = file.mimeType || file.mimetype;
+      if (!mimeType || !ALLOWED_DOC_MIME_TYPES.includes(mimeType)) {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
@@ -1047,19 +1051,14 @@ export class LegalDocsService {
       );
       if (error) return error;
 
-      if ((doc as any).file?.objectName) {
+      if ((doc as any).file?.objectName && (doc as any).file.objectName !== file.objectName) {
         await this.minioService.removeFile((doc as any).file.objectName);
       }
 
-      const uploadedFile = await this.minioService.uploadFile(
-        file,
-        'legal-docs/files',
-      );
-
       const fileMetadata = {
-        ...uploadedFile,
-        originalName: file.originalname,
-        mimeType: file.mimetype,
+        objectName: file.objectName,
+        originalName: file.originalName,
+        mimeType: mimeType,
         size: file.size,
       };
 

@@ -74,7 +74,7 @@ export class FaqsController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor – create FAQ' })
-  create(@Query() dto: CreateFaqDto, @CurrentUser('id') userId: string) {
+  create(@Body() dto: CreateFaqDto, @CurrentUser('id') userId: string) {
     return this.faqsService.create(userId, dto);
   }
 
@@ -160,7 +160,7 @@ export class FaqsController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor – create FAQ category' })
-  createCategory(@Query() dto: CreateFaqCategoryDto) {
+  createCategory(@Body() dto: CreateFaqCategoryDto) {
     return this.faqsService.createCategory(dto);
   }
 
