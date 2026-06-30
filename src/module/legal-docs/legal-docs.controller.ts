@@ -209,12 +209,15 @@ export class LegalDocsController {
   @ApiOperation({
     summary: 'Admin/editor – create legal doc with optional file',
   })
+  @ApiConsumes('multipart/form-data')
   @ApiBody({ type: CreateLegalDocDto })
+  @UseInterceptors(uploadDocInterceptor)
   create(
     @Body() dto: CreateLegalDocDto,
+    @UploadedFile() file: Express.Multer.File,
     @CurrentUser('id') userId: string,
   ) {
-    return this.legalDocsService.create(userId, dto);
+    return this.legalDocsService.create(userId, dto, file);
   }
 
   @Put(':id')
@@ -278,26 +281,23 @@ export class LegalDocsController {
       'Admin/editor – replace the document file (PDF/DOC/DOCX)',
   })
   @ApiParam({ name: 'id', description: 'Legal doc id' })
+  @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
       type: 'object',
       required: ['file'],
       properties: {
         file: {
-          type: 'object',
-          properties: {
-            objectName: { type: 'string' },
-            originalName: { type: 'string' },
-            mimeType: { type: 'string' },
-            size: { type: 'number' },
-          },
+          type: 'string',
+          format: 'binary',
         },
       },
     },
   })
+  @UseInterceptors(uploadDocInterceptor)
   uploadFile(
     @Param('id') id: string,
-    @Body('file') file: any,
+    @UploadedFile() file: Express.Multer.File,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: Role,
   ) {

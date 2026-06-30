@@ -23,13 +23,9 @@ export class CreateDocumentDto {
   description?: string;
 
   @ApiPropertyOptional({
-    type: 'object',
-    properties: {
-      objectName: { type: 'string' },
-      originalName: { type: 'string' },
-      mimeType: { type: 'string' },
-      size: { type: 'number' },
-    },
+    type: 'string',
+    format: 'binary',
+    description: 'The .xlsx file to upload',
   })
   @IsOptional()
   file?: any;

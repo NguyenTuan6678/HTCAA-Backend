@@ -21,13 +21,9 @@ export class CreateLegalDocDto {
   type: string;
 
   @ApiPropertyOptional({
-    type: 'object',
-    properties: {
-      objectName: { type: 'string' },
-      originalName: { type: 'string' },
-      mimeType: { type: 'string' },
-      size: { type: 'number' },
-    },
+    type: 'string',
+    format: 'binary',
+    description: 'The PDF file to upload',
   })
   @IsOptional()
   file?: any;

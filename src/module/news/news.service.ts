@@ -1369,10 +1369,10 @@ export class NewsService {
     id: string,
     userId: string,
     role: Role,
-    thumbnail?: any,
+    file?: Express.Multer.File,
   ) {
     try {
-      if (!thumbnail) {
+      if (!file) {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
@@ -1391,16 +1391,19 @@ export class NewsService {
         return error;
       }
 
-      if ((news as any).thumbnail?.objectName && (news as any).thumbnail.objectName !== thumbnail.objectName) {
+      // Upload to MinIO
+      const result = await this.minioService.uploadFile(file, 'news/images');
+
+      if ((news as any).thumbnail?.objectName) {
         await this.minioService.removeFile((news as any).thumbnail.objectName);
       }
 
       const fileMetadata = {
-        objectName: thumbnail.objectName,
-        originalName: thumbnail.originalName,
-        bucket: thumbnail.bucket || 'htcaa',
-        mimetype: thumbnail.mimeType || thumbnail.mimetype,
-        size: thumbnail.size,
+        objectName: result.objectName,
+        originalName: result.originalName,
+        bucket: result.bucket || 'htcaa',
+        mimetype: result.mimetype,
+        size: result.size,
       };
 
       const updatedNews = await this.newsModel
@@ -1487,10 +1490,10 @@ export class NewsService {
     id: string,
     userId: string,
     role: Role,
-    images?: any[],
+    files?: Express.Multer.File[],
   ) {
     try {
-      if (!images || images.length === 0) {
+      if (!files || files.length === 0) {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
@@ -1505,13 +1508,19 @@ export class NewsService {
         return error;
       }
 
-      const fileMetadatas = images.map((img: any) => ({
-        objectName: img.objectName,
-        originalName: img.originalName,
-        bucket: img.bucket || 'htcaa',
-        mimetype: img.mimeType || img.mimetype,
-        size: img.size,
-      }));
+      // Upload files to MinIO in parallel
+      const fileMetadatas = await Promise.all(
+        files.map(async (file) => {
+          const result = await this.minioService.uploadFile(file, 'news/images');
+          return {
+            objectName: result.objectName,
+            originalName: result.originalName,
+            bucket: result.bucket || 'htcaa',
+            mimetype: result.mimetype,
+            size: result.size,
+          };
+        }),
+      );
 
       const updatedNews = await this.newsModel
         .findByIdAndUpdate(

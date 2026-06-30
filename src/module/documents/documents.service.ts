@@ -145,9 +145,9 @@ export class DocumentsService {
   async create(
     userId: string,
     dto: CreateDocumentDto,
+    file?: Express.Multer.File,
   ) {
     try {
-      const file = dto.file;
       if (!file) {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
@@ -157,7 +157,7 @@ export class DocumentsService {
         };
       }
 
-      const mimeType = file.mimeType || file.mimetype;
+      const mimeType = file.mimetype;
       if (!mimeType || !ALLOWED_MIME_TYPES.includes(mimeType)) {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
@@ -172,11 +172,14 @@ export class DocumentsService {
       );
       if (categoryError) return categoryError;
 
+      // Upload file directly to MinIO
+      const result = await this.minioService.uploadFile(file, 'legal-docs/files');
+
       const fileMetadata = {
-        objectName: file.objectName,
-        originalName: file.originalName,
-        mimeType: mimeType,
-        size: file.size,
+        objectName: result.objectName,
+        originalName: result.originalName,
+        mimeType: result.mimetype,
+        size: result.size,
       };
 
       const doc = await this.documentModel.create({
@@ -485,7 +488,7 @@ export class DocumentsService {
     id: string,
     userId: string,
     role: Role,
-    file?: any,
+    file?: Express.Multer.File,
   ) {
     try {
       if (!file) {
@@ -497,7 +500,7 @@ export class DocumentsService {
         };
       }
 
-      const mimeType = file.mimeType || file.mimetype;
+      const mimeType = file.mimetype;
       if (!mimeType || !ALLOWED_MIME_TYPES.includes(mimeType)) {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
@@ -514,15 +517,18 @@ export class DocumentsService {
       );
       if (error) return error;
 
-      if ((doc as any).file?.objectName && (doc as any).file.objectName !== file.objectName) {
+      // Upload file directly to MinIO
+      const result = await this.minioService.uploadFile(file, 'legal-docs/files');
+
+      if ((doc as any).file?.objectName) {
         await this.minioService.removeFile((doc as any).file.objectName);
       }
 
       const fileMetadata = {
-        objectName: file.objectName,
-        originalName: file.originalName,
-        mimeType: mimeType,
-        size: file.size,
+        objectName: result.objectName,
+        originalName: result.originalName,
+        mimeType: result.mimetype,
+        size: result.size,
       };
 
       const updatedDoc = await this.documentModel

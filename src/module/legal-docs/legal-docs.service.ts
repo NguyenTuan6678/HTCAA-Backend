@@ -684,6 +684,7 @@ export class LegalDocsService {
   async create(
     userId: string,
     dto: CreateLegalDocDto,
+    file?: Express.Multer.File,
   ) {
     try {
       if (!(await this.ensureCategoryExists(dto.categoryId))) {
@@ -696,14 +697,24 @@ export class LegalDocsService {
       }
 
       let fileMetadata: any = null;
-      const file = dto.file;
       if (file) {
-        const mimeType = file.mimeType || file.mimetype;
+        const mimeType = file.mimetype;
+        if (!mimeType || !ALLOWED_DOC_MIME_TYPES.includes(mimeType)) {
+          return {
+            code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+            info: ERROR_INFO.FAIL,
+            message: 'Only PDF, DOC and DOCX files are allowed',
+            content: null,
+          };
+        }
+
+        // Upload to MinIO
+        const result = await this.minioService.uploadFile(file, 'legal-docs/files');
         fileMetadata = {
-          objectName: file.objectName,
-          originalName: file.originalName,
-          mimeType: mimeType,
-          size: file.size,
+          objectName: result.objectName,
+          originalName: result.originalName,
+          mimeType: result.mimetype,
+          size: result.size,
         };
       }
 
@@ -1022,7 +1033,7 @@ export class LegalDocsService {
     id: string,
     userId: string,
     role: Role,
-    file?: any,
+    file?: Express.Multer.File,
   ) {
     try {
       if (!file) {
@@ -1034,7 +1045,7 @@ export class LegalDocsService {
         };
       }
 
-      const mimeType = file.mimeType || file.mimetype;
+      const mimeType = file.mimetype;
       if (!mimeType || !ALLOWED_DOC_MIME_TYPES.includes(mimeType)) {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
@@ -1051,15 +1062,18 @@ export class LegalDocsService {
       );
       if (error) return error;
 
-      if ((doc as any).file?.objectName && (doc as any).file.objectName !== file.objectName) {
+      // Upload to MinIO
+      const result = await this.minioService.uploadFile(file, 'legal-docs/files');
+
+      if ((doc as any).file?.objectName) {
         await this.minioService.removeFile((doc as any).file.objectName);
       }
 
       const fileMetadata = {
-        objectName: file.objectName,
-        originalName: file.originalName,
-        mimeType: mimeType,
-        size: file.size,
+        objectName: result.objectName,
+        originalName: result.originalName,
+        mimeType: result.mimetype,
+        size: result.size,
       };
 
       const updatedDoc = await this.legalDocModel

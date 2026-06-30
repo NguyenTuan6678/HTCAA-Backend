@@ -28,9 +28,11 @@ export class MemberService {
     }
 
     return {
-      originalName: file.originalName,
+      originalName: file.originalName || file.originalname,
       filename: file.objectName || file.filename,
-      path: file.url || file.path,
+      path:
+        file.url ||
+        (file.filename ? `/uploads/members/${file.filename}` : file.path),
       mimetype: file.mimeType || file.mimetype,
       size: file.size,
     };

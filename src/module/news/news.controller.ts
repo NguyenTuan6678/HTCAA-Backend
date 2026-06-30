@@ -235,30 +235,33 @@ export class NewsController {
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor replace news thumbnail' })
   @ApiParam({ name: 'id', description: 'News id' })
+  @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
       type: 'object',
       properties: {
         thumbnail: {
-          type: 'object',
-          properties: {
-            objectName: { type: 'string' },
-            originalName: { type: 'string' },
-            mimeType: { type: 'string' },
-            size: { type: 'number' },
-          },
+          type: 'string',
+          format: 'binary',
         },
       },
       required: ['thumbnail'],
     },
   })
+  @UseInterceptors(
+    FileInterceptor('thumbnail', {
+      storage: memoryStorage(),
+      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+      fileFilter: imageFileFilter,
+    }),
+  )
   uploadThumbnail(
     @Param('id') id: string,
-    @Body('thumbnail') thumbnail: any,
+    @UploadedFile() file: Express.Multer.File,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: Role,
   ) {
-    return this.newsService.uploadThumbnail(id, userId, role, thumbnail);
+    return this.newsService.uploadThumbnail(id, userId, role, file);
   }
 
   @Post(':id/images')
@@ -267,6 +270,7 @@ export class NewsController {
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor upload news images' })
   @ApiParam({ name: 'id', description: 'News id' })
+  @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
       type: 'object',
@@ -274,26 +278,28 @@ export class NewsController {
         images: {
           type: 'array',
           items: {
-            type: 'object',
-            properties: {
-              objectName: { type: 'string' },
-              originalName: { type: 'string' },
-              mimeType: { type: 'string' },
-              size: { type: 'number' },
-            },
+            type: 'string',
+            format: 'binary',
           },
         },
       },
       required: ['images'],
     },
   })
+  @UseInterceptors(
+    FilesInterceptor('images', 20, {
+      storage: memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB per file
+      fileFilter: imageFileFilter,
+    }),
+  )
   uploadImages(
     @Param('id') id: string,
-    @Body('images') images: any[],
+    @UploadedFiles() files: Express.Multer.File[],
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: Role,
   ) {
-    return this.newsService.uploadImages(id, userId, role, images);
+    return this.newsService.uploadImages(id, userId, role, files);
   }
 
   @Delete(':id/thumbnail')

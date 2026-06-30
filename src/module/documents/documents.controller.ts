@@ -114,12 +114,15 @@ export class DocumentsController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor – create document with .xlsx file' })
+  @ApiConsumes('multipart/form-data')
   @ApiBody({ type: CreateDocumentDto })
+  @UseInterceptors(uploadXlsxInterceptor)
   create(
     @Body() dto: CreateDocumentDto,
+    @UploadedFile() file: Express.Multer.File,
     @CurrentUser('id') userId: string,
   ) {
-    return this.documentsService.create(userId, dto);
+    return this.documentsService.create(userId, dto, file);
   }
 
   @Put(':id')
@@ -180,26 +183,23 @@ export class DocumentsController {
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor – replace the .xlsx file' })
   @ApiParam({ name: 'id', description: 'Document id' })
+  @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
       type: 'object',
       required: ['file'],
       properties: {
         file: {
-          type: 'object',
-          properties: {
-            objectName: { type: 'string' },
-            originalName: { type: 'string' },
-            mimeType: { type: 'string' },
-            size: { type: 'number' },
-          },
+          type: 'string',
+          format: 'binary',
         },
       },
     },
   })
+  @UseInterceptors(uploadXlsxInterceptor)
   uploadFile(
     @Param('id') id: string,
-    @Body('file') file: any,
+    @UploadedFile() file: Express.Multer.File,
     @CurrentUser('id') userId: string,
     @CurrentUser('role') role: Role,
   ) {

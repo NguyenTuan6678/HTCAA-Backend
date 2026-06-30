@@ -472,9 +472,9 @@ export class HomepageService {
     }
   }
 
-  async uploadHeroImage(image?: any) {
+  async uploadHeroImage(file?: Express.Multer.File) {
     try {
-      if (!image) {
+      if (!file) {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
@@ -486,15 +486,18 @@ export class HomepageService {
       const setting = await this.getOrCreateHomepageSetting();
       const currentImage = this.getNestedValue(setting, 'hero.visual.image');
 
-      if (currentImage?.objectName && currentImage.objectName !== image.objectName) {
+      // Upload new file directly to MinIO
+      const result = await this.minioService.uploadFile(file, 'about-us/images');
+
+      if (currentImage?.objectName) {
         await this.minioService.removeFile(currentImage.objectName);
       }
 
       const fileMetadata = {
-        objectName: image.objectName,
-        originalName: image.originalName || '',
-        mimeType: image.mimeType || image.mimetype || '',
-        size: image.size || 0,
+        objectName: result.objectName,
+        originalName: result.originalName || '',
+        mimeType: result.mimetype || '',
+        size: result.size || 0,
       };
 
       const updatedSetting = await this.homepageSettingModel.findOneAndUpdate(
@@ -533,9 +536,9 @@ export class HomepageService {
     }
   }
 
-  async uploadPresidentAvatar(image?: any) {
+  async uploadPresidentAvatar(file?: Express.Multer.File) {
     try {
-      if (!image) {
+      if (!file) {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
@@ -550,15 +553,18 @@ export class HomepageService {
         'presidentQuote.avatar',
       );
 
-      if (currentAvatar?.objectName && currentAvatar.objectName !== image.objectName) {
+      // Upload new file directly to MinIO
+      const result = await this.minioService.uploadFile(file, 'about-us/images');
+
+      if (currentAvatar?.objectName) {
         await this.minioService.removeFile(currentAvatar.objectName);
       }
 
       const fileMetadata = {
-        objectName: image.objectName,
-        originalName: image.originalName || '',
-        mimeType: image.mimeType || image.mimetype || '',
-        size: image.size || 0,
+        objectName: result.objectName,
+        originalName: result.originalName || '',
+        mimeType: result.mimetype || '',
+        size: result.size || 0,
       };
 
       const updatedSetting = await this.homepageSettingModel.findOneAndUpdate(
@@ -594,9 +600,9 @@ export class HomepageService {
     }
   }
 
-  async uploadZaloQr(image?: any) {
+  async uploadZaloQr(file?: Express.Multer.File) {
     try {
-      if (!image) {
+      if (!file) {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
@@ -623,15 +629,18 @@ export class HomepageService {
 
       const currentQrCode = channels[zaloIndex]?.qrCode;
 
-      if (currentQrCode?.objectName && currentQrCode.objectName !== image.objectName) {
+      // Upload new file directly to MinIO
+      const result = await this.minioService.uploadFile(file, 'about-us/images');
+
+      if (currentQrCode?.objectName) {
         await this.minioService.removeFile(currentQrCode.objectName);
       }
 
       const fileMetadata = {
-        objectName: image.objectName,
-        originalName: image.originalName || '',
-        mimeType: image.mimeType || image.mimetype || '',
-        size: image.size || 0,
+        objectName: result.objectName,
+        originalName: result.originalName || '',
+        mimeType: result.mimetype || '',
+        size: result.size || 0,
       };
 
       channels[zaloIndex].qrCode = fileMetadata;
