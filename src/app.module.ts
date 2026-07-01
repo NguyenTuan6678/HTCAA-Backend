@@ -18,6 +18,7 @@ import { MinioModule } from './module/minio/minio.module';
 import { FaqsModule } from './module/faqs/faqs.module';
 import { DocumentsModule } from './module/documents/documents.module';
 import { ContactModule } from './module/contact/contact.module';
+import { NewsletterSubscriberModule } from './module/newsletter-subscriber/newsletter-subscriber.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { ContactModule } from './module/contact/contact.module';
     FaqsModule,
     DocumentsModule,
     ContactModule,
+    NewsletterSubscriberModule,
   ],
   controllers: [AppController],
   providers: [AppService],
