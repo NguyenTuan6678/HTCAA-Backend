@@ -472,10 +472,7 @@ export class NewsService {
   // NEWS
   // =========================
 
-  async create(
-    userId: string,
-    createNewsDto: CreateNewsDto,
-  ) {
+  async create(userId: string, createNewsDto: CreateNewsDto) {
     try {
       if (!Types.ObjectId.isValid(userId)) {
         return {
@@ -1511,7 +1508,10 @@ export class NewsService {
       // Upload files to MinIO in parallel
       const fileMetadatas = await Promise.all(
         files.map(async (file) => {
-          const result = await this.minioService.uploadFile(file, 'news/images');
+          const result = await this.minioService.uploadFile(
+            file,
+            'news/images',
+          );
           return {
             objectName: result.objectName,
             originalName: result.originalName,

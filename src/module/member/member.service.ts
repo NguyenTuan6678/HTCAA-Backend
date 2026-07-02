@@ -38,10 +38,7 @@ export class MemberService {
     };
   }
 
-  async register(
-    userId: string,
-    registerDto: RegisterMemberDto,
-  ) {
+  async register(userId: string, registerDto: RegisterMemberDto) {
     try {
       if (!Types.ObjectId.isValid(userId)) {
         return {
@@ -280,6 +277,9 @@ export class MemberService {
 
       const filter: any = {
         isActive: true,
+        // Danh bạ chỉ hiện hội viên đã được duyệt (API này giờ yêu cầu đăng nhập
+        // ở tầng controller, nhưng vẫn nên lọc PENDING/REJECTED ở đây).
+        status: MemberStatus.ACTIVE,
       };
 
       if (query.district) {
@@ -297,6 +297,7 @@ export class MemberService {
           { certificateNumber: regex },
           { workplace: regex },
           { district: regex },
+          // Tìm theo MST (taxId) - theo yêu cầu "Danh bạ & Tìm kiếm" của client.
           { 'organization.name': regex },
           { 'organization.taxCode': regex },
         ];
@@ -353,6 +354,26 @@ export class MemberService {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
           message: 'Invalid admin id',
+          content: null,
+        };
+      }
+
+      const existing = await this.memberModel.findById(id);
+
+      if (!existing) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Member profile not found',
+          content: null,
+        };
+      }
+
+      if (existing.status !== MemberStatus.PENDING) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: `Cannot approve a member with status "${existing.status}". Only PENDING profiles can be approved.`,
           content: null,
         };
       }
@@ -429,6 +450,26 @@ export class MemberService {
         };
       }
 
+      const existing = await this.memberModel.findById(id);
+
+      if (!existing) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Member profile not found',
+          content: null,
+        };
+      }
+
+      if (existing.status !== MemberStatus.PENDING) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: `Cannot reject a member with status "${existing.status}". Only PENDING profiles can be rejected.`,
+          content: null,
+        };
+      }
+
       const member = await this.memberModel
         .findByIdAndUpdate(
           id,
@@ -438,7 +479,7 @@ export class MemberService {
             rejectedAt: new Date(),
             rejectReason: rejectMemberDto.reason,
             approvedBy: null,
-            approvedAt: new Date(),
+            approvedAt: null, // Bug cũ: set = new Date() khi từ chối là sai
           },
           {
             returnDocument: 'after',

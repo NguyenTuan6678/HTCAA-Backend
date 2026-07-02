@@ -170,7 +170,9 @@ export class MemberController {
   }
 
   @Get('directory')
-  @ApiOperation({ summary: 'Get member directory' })
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Get member directory (requires login)' })
   @ApiQuery({ name: 'q', required: false })
   @ApiQuery({ name: 'district', required: false })
   @ApiQuery({ name: 'page', required: false, example: 1 })

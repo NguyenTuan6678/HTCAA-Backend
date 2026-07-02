@@ -23,6 +23,18 @@ export class Course {
   @Prop({ type: String, default: null, trim: true })
   learningType?: string | null;
 
+  // Thời lượng khóa học tính bằng phút (VD: 240 = 4 tiếng)
+  @Prop({ type: Number, default: null })
+  duration?: number | null;
+
+  // Học phí, đơn vị VND. null/0 = miễn phí
+  @Prop({ type: Number, default: 0 })
+  price: number;
+
+  // Tên giảng viên (free text), VD: "TS. Nguyễn Văn A" hoặc nhiều tên cách nhau bằng dấu phẩy
+  @Prop({ type: String, default: null, trim: true })
+  lecturer?: string | null;
+
   @Prop({ type: Number, default: 0 })
   cpeHours: number;
 

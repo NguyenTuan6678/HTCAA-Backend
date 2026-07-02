@@ -34,6 +34,14 @@ export class LegalDoc extends Document {
   @Prop({ required: true, trim: true })
   type: string;
 
+  // Ngày văn bản được ban hành (VD: ngày ký nghị định/thông tư)
+  @Prop({ type: Date, default: null })
+  issuedAt?: Date | null;
+
+  // Ngày văn bản có hiệu lực thi hành
+  @Prop({ type: Date, default: null })
+  effectiveAt?: Date | null;
+
   @Prop({
     type: String,
     enum: LegalDocStatus,
@@ -50,3 +58,9 @@ export class LegalDoc extends Document {
 }
 
 export const LegalDocSchema = SchemaFactory.createForClass(LegalDoc);
+
+LegalDocSchema.index({ categoryId: 1 });
+LegalDocSchema.index({ status: 1 });
+LegalDocSchema.index({ issuedAt: -1 });
+LegalDocSchema.index({ effectiveAt: -1 });
+LegalDocSchema.index({ createdAt: -1 });
