@@ -1,6 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsEnum, IsMongoId, IsNumber, IsOptional, Min } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsMongoId,
+  IsNumber,
+  IsOptional,
+  Min,
+} from 'class-validator';
 import { RegistrationStatus } from '../../../utils/registration-status.enum';
 
 export class QueryAdminRegistrationDto {
@@ -18,6 +25,15 @@ export class QueryAdminRegistrationDto {
   @IsMongoId()
   @IsOptional()
   memberId?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Lọc đơn của guest đang chờ xác thực hội viên (false) hoặc đã xác thực (true)',
+  })
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  @IsOptional()
+  membershipVerified?: boolean;
 
   @ApiPropertyOptional({ example: 1 })
   @Transform(({ value }) => Number(value ?? 1))

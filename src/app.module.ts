@@ -20,6 +20,7 @@ import { DocumentsModule } from './module/documents/documents.module';
 import { ContactModule } from './module/contact/contact.module';
 import { NewsletterSubscriberModule } from './module/newsletter-subscriber/newsletter-subscriber.module';
 import { RegistrationModule } from './module/registration/registration.module';
+import { MembershipRegistrationModule } from './module/membership-registration/membership-registration.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { RegistrationModule } from './module/registration/registration.module';
     ContactModule,
     NewsletterSubscriberModule,
     RegistrationModule,
+    MembershipRegistrationModule,
   ],
   controllers: [AppController],
   providers: [AppService],

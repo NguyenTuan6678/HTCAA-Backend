@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsDateString,
   IsEmail,
   IsMongoId,
@@ -8,7 +9,7 @@ import {
   IsString,
 } from 'class-validator';
 
-export class RegisterCourseDto {
+export class GuestRegisterCourseDto {
   @ApiProperty({
     example: '665f1a2b3c4d5e6f7a8b9c0d',
     description: 'Course id to register',
@@ -16,6 +17,16 @@ export class RegisterCourseDto {
   @IsMongoId()
   @IsNotEmpty()
   courseId: string;
+
+  @ApiProperty({ example: 'Nguyễn Văn A' })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+
+  @ApiProperty({ example: 'nguyenvana@gmail.com' })
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
 
   @ApiProperty({ example: '1990-05-20' })
   @IsDateString()
@@ -39,6 +50,15 @@ export class RegisterCourseDto {
   @IsDateString()
   @IsNotEmpty()
   taxCodeActiveDate: string;
+
+  @ApiProperty({
+    example: true,
+    description:
+      'Khách tự khai mình có phải hội viên không. Admin sẽ đối chiếu và xác thực lại trước khi tính giá.',
+  })
+  @IsBoolean()
+  @IsNotEmpty()
+  claimedIsMember: boolean;
 
   @ApiProperty({ example: 'Công ty TNHH Kế toán ABC' })
   @IsString()
@@ -65,9 +85,8 @@ export class RegisterCourseDto {
 
   @ApiPropertyOptional({
     example: 'Đăng ký thay cho đồng nghiệp trong công ty',
-    description: 'Optional note from member',
   })
-  @IsString()
   @IsOptional()
+  @IsString()
   note?: string;
 }

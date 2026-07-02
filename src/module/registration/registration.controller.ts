@@ -17,7 +17,6 @@ import {
 } from '@nestjs/swagger';
 
 import { Role } from '../../utils/role/role';
-import { RegistrationService } from './registration.service';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { CurrentUser } from '../../users/auth/decorators/current-user.decorator';
@@ -25,6 +24,9 @@ import { RolesGuard } from '../../users/auth/guards/roles.guard';
 import { CancelRegistrationDto } from './dto/cancel-registration.req';
 import { QueryAdminRegistrationDto } from './dto/query-admin-registration.req';
 import { RegisterCourseDto } from './dto/registration-course.req';
+import { RegistrationService } from './registration.service';
+import { GuestRegisterCourseDto } from './dto/guest-registration-course.req';
+import { VerifyMembershipDto } from './dto/verify-membership.req';
 
 @ApiTags('Registration')
 @Controller('registration')
@@ -40,6 +42,13 @@ export class RegistrationController {
     @CurrentUser('id') userId: string,
   ) {
     return this.registrationService.register(userId, registerDto);
+  }
+
+  // Public — không cần đăng nhập, dành cho khách vãng lai
+  @Post('guest-register')
+  @ApiOperation({ summary: 'Public: register for a course as a guest' })
+  guestRegister(@Body() guestRegisterDto: GuestRegisterCourseDto) {
+    return this.registrationService.guestRegister(guestRegisterDto);
   }
 
   @Get('me')
@@ -71,6 +80,7 @@ export class RegistrationController {
   @ApiQuery({ name: 'status', required: false })
   @ApiQuery({ name: 'courseId', required: false })
   @ApiQuery({ name: 'memberId', required: false })
+  @ApiQuery({ name: 'membershipVerified', required: false })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
   adminFindAll(@Query() query: QueryAdminRegistrationDto) {
@@ -85,5 +95,21 @@ export class RegistrationController {
   @ApiParam({ name: 'id', description: 'Registration id' })
   confirm(@Param('id') id: string) {
     return this.registrationService.confirm(id);
+  }
+
+  @Patch(':id/verify-membership')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({
+    summary:
+      "Admin: verify a guest registration's claimed membership status and compute price",
+  })
+  @ApiParam({ name: 'id', description: 'Registration id' })
+  verifyMembership(
+    @Param('id') id: string,
+    @Body() verifyMembershipDto: VerifyMembershipDto,
+  ) {
+    return this.registrationService.verifyMembership(id, verifyMembershipDto);
   }
 }

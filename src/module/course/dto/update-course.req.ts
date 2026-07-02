@@ -42,13 +42,12 @@ export class UpdateCourseDto {
   learningType?: string;
 
   @ApiPropertyOptional({
-    example: 4,
+    example: '4 giờ',
+    description: 'Thời lượng khóa học (free-text)',
   })
   @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
-  @Min(0)
-  cpeHours?: number;
+  @IsString()
+  duration?: string;
 
   @ApiPropertyOptional({
     example: 4,
@@ -67,6 +66,27 @@ export class UpdateCourseDto {
   @IsNumber()
   @Min(0)
   accountingHours?: number;
+
+  @ApiPropertyOptional({
+    example: 500000,
+    description: 'Học phí cho người chưa là hội viên (VND)',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  price?: number;
+
+  @ApiPropertyOptional({
+    example: 350000,
+    description:
+      'Học phí ưu đãi cho hội viên (VND). Bỏ trống nếu không có giá riêng',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  memberPrice?: number;
 
   @ApiPropertyOptional({
     example: 60,

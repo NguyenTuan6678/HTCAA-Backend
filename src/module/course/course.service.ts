@@ -61,10 +61,12 @@ export class CourseService {
         date: new Date(createCourseDto.date),
         location: createCourseDto.location ?? null,
         learningType: createCourseDto.learningType ?? null,
-        cpeHours: createCourseDto.cpeHours ?? 0,
+        duration: createCourseDto.duration ?? null,
         taxHours: createCourseDto.taxHours ?? 0,
         accountingHours: createCourseDto.accountingHours ?? 0,
         totalSeats: createCourseDto.totalSeats ?? null,
+        price: createCourseDto.price ?? 0,
+        memberPrice: createCourseDto.memberPrice,
         registeredSeats: 0,
         status: createCourseDto.status ?? CourseStatus.DRAFT,
         isActive: true,
@@ -188,8 +190,8 @@ export class CourseService {
         updateData.learningType = updateCourseDto.learningType;
       }
 
-      if (updateCourseDto.cpeHours !== undefined) {
-        updateData.cpeHours = updateCourseDto.cpeHours;
+      if (updateCourseDto.duration !== undefined) {
+        updateData.duration = updateCourseDto.duration;
       }
 
       if (updateCourseDto.taxHours !== undefined) {
@@ -202,6 +204,14 @@ export class CourseService {
 
       if (updateCourseDto.totalSeats !== undefined) {
         updateData.totalSeats = updateCourseDto.totalSeats;
+      }
+
+      if (updateCourseDto.price !== undefined) {
+        updateData.price = updateCourseDto.price;
+      }
+
+      if (updateCourseDto.memberPrice !== undefined) {
+        updateData.memberPrice = updateCourseDto.memberPrice;
       }
 
       if (updateCourseDto.status !== undefined) {

@@ -23,20 +23,22 @@ export class Course {
   @Prop({ type: String, default: null, trim: true })
   learningType?: string | null;
 
-  // Thời lượng khóa học tính bằng phút (VD: 240 = 4 tiếng)
-  @Prop({ type: Number, default: null })
-  duration?: number | null;
+  // Thời lượng khóa học, dạng free-text (VD: "4 giờ", "2 ngày", "08:00 - 17:00")
+  @Prop({ type: String, default: null, trim: true })
+  duration?: string | null;
 
-  // Học phí, đơn vị VND. null/0 = miễn phí
+  // Học phí cho người CHƯA là hội viên, đơn vị VND. null/0 = miễn phí
   @Prop({ type: Number, default: 0 })
   price: number;
+
+  // Học phí ưu đãi cho hội viên, đơn vị VND. Bắt buộc phải nhập khi tạo course
+  // để tránh trường hợp quên set giá hội viên
+  @Prop({ type: Number, required: true })
+  memberPrice: number;
 
   // Tên giảng viên (free text), VD: "TS. Nguyễn Văn A" hoặc nhiều tên cách nhau bằng dấu phẩy
   @Prop({ type: String, default: null, trim: true })
   lecturer?: string | null;
-
-  @Prop({ type: Number, default: 0 })
-  cpeHours: number;
 
   @Prop({ type: Number, default: 0 })
   taxHours: number;
