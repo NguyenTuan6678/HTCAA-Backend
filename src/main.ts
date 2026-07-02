@@ -15,11 +15,43 @@ import helmet from 'helmet';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  app.use(
-    helmet({
-      contentSecurityPolicy: false,
-    }),
-  );
+  if (process.env.NODE_ENV === 'production') {
+    app.use(
+      helmet({
+        contentSecurityPolicy: {
+          directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", 'data:'],
+            objectSrc: ["'none'"],
+            frameAncestors: ["'self'", process.env.FRONTEND_URL || "'self'"],
+          },
+        },
+        crossOriginResourcePolicy: {
+          policy: 'cross-origin',
+        },
+        strictTransportSecurity: {
+          maxAge: 31536000,
+          includeSubDomains: true,
+        },
+        xFrameOptions: false,
+      }),
+    );
+  } else {
+    app.use(
+      helmet({
+        contentSecurityPolicy: false,
+        crossOriginEmbedderPolicy: false,
+        crossOriginOpenerPolicy: false,
+        crossOriginResourcePolicy: {
+          policy: 'cross-origin',
+        },
+        strictTransportSecurity: false,
+        xFrameOptions: false,
+      }),
+    );
+  }
 
   const logger = new LoggerService();
 
@@ -43,37 +75,7 @@ async function bootstrap() {
   app.use(cookieParser());
 
   app.enableCors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, postman)
-      if (!origin) return callback(null, true);
-
-      const allowedOrigins = [
-        'http://localhost:3000',
-        'http://localhost:5173',
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:5173',
-      ];
-
-      const envFrontend = process.env.FRONTEND_URL;
-      if (envFrontend) {
-        // Normalize: prefix with http:// if missing protocol
-        const normalized = envFrontend.startsWith('http') ? envFrontend : `http://${envFrontend}`;
-        allowedOrigins.push(normalized);
-        allowedOrigins.push(normalized.replace('http://', 'https://'));
-      }
-
-      const isAllowed =
-        allowedOrigins.indexOf(origin) !== -1 ||
-        origin.startsWith('http://localhost') ||
-        origin.startsWith('http://127.0.0.1') ||
-        origin.startsWith('http://192.168.');
-
-      if (isAllowed) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: '*',
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     preflightContinue: false,
     credentials: true,
