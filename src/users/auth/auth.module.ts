@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
-import { jwtConstants } from '../../constants/jwt.const';
 import { User, UserSchema } from '../../schema/user.schema';
 import { UsersModule } from '../users.module';
 import { AuthController } from './auth.controller';
@@ -19,12 +18,18 @@ import { LoggerService } from '../../common/loggers/logger.service';
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     JwtModule.register({
       global: true,
-      secret: jwtConstants.secret,
+      secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '60s' },
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LoggerService, JwtStrategy, JwtAuthGuard, RolesGuard],
+  providers: [
+    AuthService,
+    LoggerService,
+    JwtStrategy,
+    JwtAuthGuard,
+    RolesGuard,
+  ],
   exports: [AuthService, JwtAuthGuard, RolesGuard],
 })
 export class AuthModule {}

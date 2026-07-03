@@ -40,4 +40,3 @@ export default registerAs<AppConfig>('app', () => {
     },
   };
 });
-
