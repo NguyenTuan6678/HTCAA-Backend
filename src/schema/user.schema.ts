@@ -48,6 +48,12 @@ export class User {
   refreshTokenHash?: string | null;
 
   @Prop({ type: String, default: null, select: false })
+  previousRefreshTokenHash?: string | null;
+
+  @Prop({ type: Date, default: null, select: false })
+  previousRefreshTokenExpiresAt?: Date | null;
+
+  @Prop({ type: String, default: null, select: false })
   resetPasswordTokenHash?: string | null;
 
   @Prop({ type: Date, default: null, select: false })

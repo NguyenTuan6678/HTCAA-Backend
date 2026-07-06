@@ -8,7 +8,7 @@ export class CourseCategory {
   @Prop({ type: String, required: true, trim: true })
   name: string;
 
-  @Prop({ type: String, required: true, unique: true, trim: true })
+  @Prop({ type: String, required: true, trim: true })
   slug: string;
 
   @Prop({ type: String, default: null, trim: true })

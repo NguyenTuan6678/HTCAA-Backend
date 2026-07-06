@@ -41,6 +41,7 @@ export class AuthService {
 
   private readonly maxFailedLoginAttempts = 5;
   private readonly loginLockMinutes = 15;
+  private readonly refreshTokenGrave = process.env.REFRESH_TOKEN_GRACE_MS;
 
   private isLoginLocked(user: any): boolean {
     return (
@@ -322,7 +323,9 @@ export class AuthService {
 
       const user = await this.userModel
         .findById(payload.id)
-        .select('+refreshTokenHash');
+        .select(
+          '+refreshTokenHash +previousRefreshTokenHash +previousRefreshTokenExpiresAt',
+        );
 
       if (!user || !(user as any).isActive) {
         throw new UnauthorizedException('User not found or inactive');
@@ -336,25 +339,64 @@ export class AuthService {
         throw new UnauthorizedException('Refresh token not found');
       }
 
-      const isRefreshTokenValid = await this.compareRefreshToken(
+      const matchesCurrent = await this.compareRefreshToken(
         refreshToken,
         (user as any).refreshTokenHash,
       );
 
-      if (!isRefreshTokenValid) {
-        (user as any).refreshTokenHash = null;
-        (user as any).tokenVersion = ((user as any).tokenVersion ?? 0) + 1;
-        await user.save();
+      let isGraceReuse = false;
 
-        throw new UnauthorizedException('Invalid refresh token');
+      if (!matchesCurrent) {
+        // Không khớp token hiện hành -> kiểm tra xem có phải là token NGAY
+        // TRƯỚC lần rotate gần nhất, và còn trong khoảng grace hay không.
+        const previousHash = (user as any).previousRefreshTokenHash;
+        const previousExpiresAt = (user as any).previousRefreshTokenExpiresAt;
+
+        const stillInGraceWindow =
+          !!previousHash &&
+          !!previousExpiresAt &&
+          new Date(previousExpiresAt).getTime() > Date.now();
+
+        if (stillInGraceWindow) {
+          isGraceReuse = await this.compareRefreshToken(
+            refreshToken,
+            previousHash,
+          );
+        }
+
+        if (!isGraceReuse) {
+          // Token không khớp current, cũng không khớp previous-trong-grace
+          // -> đây là dấu hiệu reuse-attack thật sự. Revoke toàn bộ session.
+          (user as any).refreshTokenHash = null;
+          (user as any).previousRefreshTokenHash = null;
+          (user as any).previousRefreshTokenExpiresAt = null;
+          (user as any).tokenVersion = ((user as any).tokenVersion ?? 0) + 1;
+          await user.save();
+
+          throw new UnauthorizedException('Invalid refresh token');
+        }
       }
 
+      // Hợp lệ (khớp current, hoặc khớp previous trong grace window) -> rotate.
       const { accessToken, refreshToken: newRefreshToken } =
         await this.generateToken(user);
 
-      const refreshTokenHash = await this.hashRefreshToken(newRefreshToken);
+      const newRefreshTokenHash = await this.hashRefreshToken(newRefreshToken);
 
-      (user as any).refreshTokenHash = refreshTokenHash;
+      if (matchesCurrent) {
+        // Rotate bình thường: hash hiện hành lùi thành "previous", mở grace
+        // window mới cho nó — phòng trường hợp còn request song song khác
+        // đang cầm đúng token này.
+        (user as any).previousRefreshTokenHash = (user as any).refreshTokenHash;
+        (user as any).previousRefreshTokenExpiresAt = new Date(
+          Date.now() + Number(this.refreshTokenGrave),
+        );
+      }
+      // Nếu là isGraceReuse: đây là request "sinh sau" của cùng 1 lần rotate,
+      // KHÔNG động vào previousRefreshTokenHash hiện có — giữ nguyên grace
+      // window ban đầu để các request song song khác (nếu còn) vẫn qua được.
+
+      (user as any).refreshTokenHash = newRefreshTokenHash;
       await user.save();
 
       this.setRefreshTokenCookie(response, newRefreshToken);
