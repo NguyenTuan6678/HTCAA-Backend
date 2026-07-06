@@ -3,6 +3,7 @@ import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 import { CourseStatus } from '../../../utils/course-status.enum';
+import { CourseType } from '../../../utils/course-type.enum';
 
 export class QueryCourseDto {
   @ApiPropertyOptional()
@@ -14,6 +15,23 @@ export class QueryCourseDto {
   @IsOptional()
   @IsEnum(CourseStatus)
   status?: CourseStatus;
+
+  @ApiPropertyOptional({
+    example: '60d5ec49f83f213b18cc2a91',
+    description: 'Lọc theo danh mục',
+  })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiPropertyOptional({
+    enum: CourseType,
+    example: CourseType.OFFLINE,
+    description: 'Lọc theo loại khóa học',
+  })
+  @IsOptional()
+  @IsEnum(CourseType)
+  type?: CourseType;
 
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()

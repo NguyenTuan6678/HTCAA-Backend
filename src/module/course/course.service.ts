@@ -4,12 +4,17 @@ import { Model, Types } from 'mongoose';
 
 import { Course } from '../../schema/course.schema';
 import { User } from '../../schema/user.schema';
+import { CourseCategory } from '../../schema/course-category.schema';
 import { ERROR_INFO, ERROR_RES } from '../../constants/error.const';
 
 import { CreateCourseDto } from './dto/create-course.req';
 import { QueryCourseDto } from './dto/query-course.req';
 import { CourseStatus } from '../../utils/course-status.enum';
+import { CourseType } from '../../utils/course-type.enum';
 import { UpdateCourseDto } from './dto/update-course.req';
+import { CreateCourseCategoryDto } from './dto/create-course-category.req';
+import { UpdateCourseCategoryDto } from './dto/update-course-category.req';
+import { QueryCourseCategoryDto } from './dto/query-course-category.req';
 import { escapeRegex } from '../../utils/escape-regex';
 
 @Injectable()
@@ -20,14 +25,24 @@ export class CourseService {
 
     @InjectModel(User.name)
     private readonly userModel: Model<User>,
+
+    @InjectModel(CourseCategory.name)
+    private readonly courseCategoryModel: Model<CourseCategory>,
   ) {}
 
-  private getPopulateQuery() {
-    return {
-      path: 'createdBy',
-      model: User.name,
-      select: 'name email role',
-    };
+  private getPopulateQueries() {
+    return [
+      {
+        path: 'createdBy',
+        model: User.name,
+        select: 'name email role',
+      },
+      {
+        path: 'categoryId',
+        model: CourseCategory.name,
+        select: 'name slug description',
+      },
+    ];
   }
 
   async create(userId: string, createCourseDto: CreateCourseDto) {
@@ -55,6 +70,31 @@ export class CourseService {
         };
       }
 
+      let categoryIdObj: Types.ObjectId | null = null;
+      if (createCourseDto.categoryId) {
+        if (!Types.ObjectId.isValid(createCourseDto.categoryId)) {
+          return {
+            code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+            info: ERROR_INFO.FAIL,
+            message: 'Danh mục khóa học không hợp lệ',
+            content: null,
+          };
+        }
+        const categoryExists = await this.courseCategoryModel.findOne({
+          _id: new Types.ObjectId(createCourseDto.categoryId),
+          isActive: true,
+        });
+        if (!categoryExists) {
+          return {
+            code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+            info: ERROR_INFO.FAIL,
+            message: 'Danh mục khóa học không tồn tại hoặc đã bị ẩn',
+            content: null,
+          };
+        }
+        categoryIdObj = categoryExists._id;
+      }
+
       const course = await this.courseModel.create({
         createdBy: new Types.ObjectId(userId),
         title: createCourseDto.title,
@@ -69,12 +109,14 @@ export class CourseService {
         memberPrice: createCourseDto.memberPrice,
         registeredSeats: 0,
         status: createCourseDto.status ?? CourseStatus.DRAFT,
+        categoryId: categoryIdObj,
+        type: createCourseDto.type ?? CourseType.OFFLINE,
         isActive: true,
       });
 
       const populatedCourse = await this.courseModel
         .findById(course._id)
-        .populate(this.getPopulateQuery());
+        .populate(this.getPopulateQueries());
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
@@ -108,6 +150,14 @@ export class CourseService {
         filter.status = query.status;
       }
 
+      if (query.categoryId) {
+        filter.categoryId = new Types.ObjectId(query.categoryId);
+      }
+
+      if (query.type) {
+        filter.type = query.type;
+      }
+
       if (query.q) {
         const escaped = escapeRegex(query.q);
         const regex = new RegExp(escaped, 'i');
@@ -118,7 +168,7 @@ export class CourseService {
       const [items, total] = await Promise.all([
         this.courseModel
           .find(filter)
-          .populate(this.getPopulateQuery())
+          .populate(this.getPopulateQueries())
           .sort({ date: 1, createdAt: -1 })
           .skip(skip)
           .limit(limit),
@@ -218,12 +268,44 @@ export class CourseService {
         updateData.status = updateCourseDto.status;
       }
 
+      if (updateCourseDto.categoryId !== undefined) {
+        if (!updateCourseDto.categoryId) {
+          updateData.categoryId = null;
+        } else {
+          if (!Types.ObjectId.isValid(updateCourseDto.categoryId)) {
+            return {
+              code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+              info: ERROR_INFO.FAIL,
+              message: 'Danh mục khóa học không hợp lệ',
+              content: null,
+            };
+          }
+          const categoryExists = await this.courseCategoryModel.findOne({
+            _id: new Types.ObjectId(updateCourseDto.categoryId),
+            isActive: true,
+          });
+          if (!categoryExists) {
+            return {
+              code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+              info: ERROR_INFO.FAIL,
+              message: 'Danh mục khóa học không tồn tại hoặc đã bị ẩn',
+              content: null,
+            };
+          }
+          updateData.categoryId = categoryExists._id;
+        }
+      }
+
+      if (updateCourseDto.type !== undefined) {
+        updateData.type = updateCourseDto.type;
+      }
+
       const updatedCourse = await this.courseModel
         .findByIdAndUpdate(id, updateData, {
           returnDocument: 'after',
           runValidators: true,
         })
-        .populate(this.getPopulateQuery());
+        .populate(this.getPopulateQueries());
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
@@ -267,7 +349,7 @@ export class CourseService {
             returnDocument: 'after',
           },
         )
-        .populate(this.getPopulateQuery());
+        .populate(this.getPopulateQueries());
 
       if (!deletedCourse) {
         return {
@@ -291,6 +373,199 @@ export class CourseService {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
         message: `There is a problem while deleting course: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  // ==========================================
+  // COURSE CATEGORY METHODS
+  // ==========================================
+
+  async createCategory(dto: CreateCourseCategoryDto) {
+    try {
+      const existing = await this.courseCategoryModel.findOne({ slug: dto.slug });
+      if (existing) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Slug danh mục đã tồn tại',
+          content: null,
+        };
+      }
+
+      const category = await this.courseCategoryModel.create({
+        name: dto.name,
+        slug: dto.slug,
+        description: dto.description ?? null,
+        isActive: dto.isActive ?? true,
+      });
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Tạo danh mục khóa học thành công',
+        content: { category },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `Lỗi khi tạo danh mục: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async findCategories(query: QueryCourseCategoryDto) {
+    try {
+      const page = Number(query.page ?? 1);
+      const limit = Number(query.limit ?? 10);
+      const skip = (page - 1) * limit;
+
+      const filter: any = {};
+      if (query.isActive !== undefined) {
+        filter.isActive = query.isActive;
+      }
+
+      if (query.q) {
+        const escaped = escapeRegex(query.q);
+        const regex = new RegExp(escaped, 'i');
+        filter.$or = [{ name: regex }, { slug: regex }];
+      }
+
+      const [items, total] = await Promise.all([
+        this.courseCategoryModel
+          .find(filter)
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit),
+        this.courseCategoryModel.countDocuments(filter),
+      ]);
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Lấy danh sách danh mục khóa học thành công',
+        content: {
+          items,
+          total,
+          page,
+          limit,
+          pages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `Lỗi khi lấy danh sách danh mục: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async updateCategory(id: string, dto: UpdateCourseCategoryDto) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'ID danh mục không hợp lệ',
+          content: null,
+        };
+      }
+
+      const updateData: any = {};
+      if (dto.name !== undefined) updateData.name = dto.name;
+      if (dto.slug !== undefined) {
+        // check unique slug
+        const existing = await this.courseCategoryModel.findOne({
+          slug: dto.slug,
+          _id: { $ne: new Types.ObjectId(id) },
+        });
+        if (existing) {
+          return {
+            code: ERROR_RES.CONFLICT_ERROR.statusCode,
+            info: ERROR_INFO.FAIL,
+            message: 'Slug danh mục đã tồn tại',
+            content: null,
+          };
+        }
+        updateData.slug = dto.slug;
+      }
+      if (dto.description !== undefined) updateData.description = dto.description;
+      if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
+
+      const category = await this.courseCategoryModel.findByIdAndUpdate(
+        id,
+        updateData,
+        { new: true, runValidators: true },
+      );
+
+      if (!category) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Không tìm thấy danh mục khóa học',
+          content: null,
+        };
+      }
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Cập nhật danh mục khóa học thành công',
+        content: { category },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `Lỗi khi cập nhật danh mục: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async deleteCategory(id: string) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'ID danh mục không hợp lệ',
+          content: null,
+        };
+      }
+
+      // Soft delete category by setting isActive = false
+      const category = await this.courseCategoryModel.findByIdAndUpdate(
+        id,
+        { isActive: false },
+        { new: true },
+      );
+
+      if (!category) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Không tìm thấy danh mục khóa học',
+          content: null,
+        };
+      }
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Xóa danh mục khóa học thành công',
+        content: null,
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `Lỗi khi xóa danh mục: ${error.message}`,
         content: null,
       };
     }

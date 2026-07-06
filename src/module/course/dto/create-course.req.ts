@@ -10,6 +10,7 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { CourseStatus } from '../../../utils/course-status.enum';
+import { CourseType } from '../../../utils/course-type.enum';
 
 export class CreateCourseDto {
   @ApiProperty({
@@ -96,4 +97,20 @@ export class CreateCourseDto {
   @IsOptional()
   @IsEnum(CourseStatus)
   status?: CourseStatus;
+
+  @ApiPropertyOptional({
+    example: '60d5ec49f83f213b18cc2a91',
+    description: 'Danh mục khóa học',
+  })
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @ApiPropertyOptional({
+    enum: CourseType,
+    example: CourseType.OFFLINE,
+  })
+  @IsOptional()
+  @IsEnum(CourseType)
+  type?: CourseType;
 }

@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Patch,
   Query,
   Req,
   UseGuards,
@@ -22,6 +23,9 @@ import { Request } from 'express';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.req';
 import { QueryCourseDto } from './dto/query-course.req';
+import { CreateCourseCategoryDto } from './dto/create-course-category.req';
+import { UpdateCourseCategoryDto } from './dto/update-course-category.req';
+import { QueryCourseCategoryDto } from './dto/query-course-category.req';
 
 import { Role } from '../../utils/role/role';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
@@ -39,6 +43,48 @@ export class CourseController {
   @ApiOperation({ summary: 'Get courses' })
   findAll(@Query() query: QueryCourseDto) {
     return this.courseService.findAll(query);
+  }
+
+  // ==========================================
+  // COURSE CATEGORY ENDPOINTS
+  // ==========================================
+
+  @Get('categories')
+  @ApiOperation({ summary: 'Get course categories' })
+  findCategories(@Query() query: QueryCourseCategoryDto) {
+    return this.courseService.findCategories(query);
+  }
+
+  @Post('categories')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin/editor create course category' })
+  createCategory(@Body() dto: CreateCourseCategoryDto) {
+    return this.courseService.createCategory(dto);
+  }
+
+  @Patch('categories/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin/editor update course category' })
+  @ApiParam({ name: 'id', description: 'Category id' })
+  updateCategory(
+    @Param('id') id: string,
+    @Body() dto: UpdateCourseCategoryDto,
+  ) {
+    return this.courseService.updateCategory(id, dto);
+  }
+
+  @Delete('categories/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({ summary: 'Admin/editor delete course category' })
+  @ApiParam({ name: 'id', description: 'Category id' })
+  deleteCategory(@Param('id') id: string) {
+    return this.courseService.deleteCategory(id);
   }
 
   @Post()

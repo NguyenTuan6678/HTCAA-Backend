@@ -3,6 +3,8 @@ import { HydratedDocument, Types } from 'mongoose';
 
 import { User } from './user.schema';
 import { CourseStatus } from '../utils/course-status.enum';
+import { CourseType } from '../utils/course-type.enum';
+import { CourseCategory } from './course-category.schema';
 
 export type CourseDocument = HydratedDocument<Course>;
 
@@ -59,6 +61,18 @@ export class Course {
     required: true,
   })
   status: CourseStatus;
+
+  @Prop({ type: Types.ObjectId, ref: 'CourseCategory', default: null, index: true })
+  categoryId: Types.ObjectId | null;
+
+  @Prop({
+    type: String,
+    enum: CourseType,
+    default: CourseType.OFFLINE,
+    required: true,
+    index: true,
+  })
+  type: CourseType;
 
   @Prop({ type: Boolean, default: true })
   isActive: boolean;
