@@ -14,12 +14,15 @@ import { Counter } from '../../schema/counter.schema';
 import { QueryAdminMemberDto } from './dto/query-admin-member.req';
 import { escapeRegex } from '../../utils/escape-regex';
 
+import { MinioService } from '../minio/minio.service';
+
 @Injectable()
 export class MemberService {
   constructor(
     @InjectModel(Member.name) private readonly memberModel: Model<Member>,
     @InjectModel(User.name) private readonly userModel: Model<User>,
     @InjectModel(Counter.name) private readonly counterModel: Model<Counter>,
+    private readonly minioService: MinioService,
   ) {}
 
   private toPublicFile(file?: any) {
@@ -27,15 +30,37 @@ export class MemberService {
       return null;
     }
 
+    const filename = file.objectName || file.filename;
+
     return {
       originalName: file.originalName || file.originalname,
-      filename: file.objectName || file.filename,
+      filename,
       path:
         file.url ||
-        (file.filename ? `/uploads/members/${file.filename}` : file.path),
+        (file.objectName
+          ? `/uploads/members/${file.objectName}`
+          : file.filename
+            ? `/uploads/members/${file.filename}`
+            : file.path),
       mimetype: file.mimeType || file.mimetype,
       size: file.size,
     };
+  }
+
+  private async attachPresignedUrl(member: any) {
+    if (!member) return member;
+    const obj = typeof member.toObject === 'function' ? member.toObject() : member;
+    if (obj.profileFile?.filename) {
+      if (obj.profileFile.filename.includes('/')) {
+        const presignedUrl = await this.minioService.getPresignedUrl(obj.profileFile.filename);
+        obj.profileFile.path = presignedUrl;
+      }
+    }
+    return obj;
+  }
+
+  private async attachPresignedUrlToList(members: any[]) {
+    return Promise.all(members.map((m) => this.attachPresignedUrl(m)));
   }
 
   async register(userId: string, registerDto: RegisterMemberDto) {
@@ -85,6 +110,15 @@ export class MemberService {
 
       const memberCode = await this.generateMemberCode();
 
+      let profileFile = null;
+      if (registerDto.profileFile) {
+        const uploadResult = await this.minioService.uploadFile(
+          registerDto.profileFile,
+          'members/files',
+        );
+        profileFile = this.toPublicFile(uploadResult);
+      }
+
       const member = await this.memberModel.create({
         userId: new Types.ObjectId(userId),
         memberCode,
@@ -98,7 +132,7 @@ export class MemberService {
         memberType: registerDto.memberType,
         organization,
         paymentMethod: registerDto.paymentMethod,
-        profileFile: this.toPublicFile(registerDto.profileFile),
+        profileFile,
         status: MemberStatus.PENDING,
         isActive: true,
       });
@@ -162,12 +196,14 @@ export class MemberService {
         };
       }
 
+      const memberWithUrl = await this.attachPresignedUrl(member);
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Get member profile successfully',
         content: {
-          member,
+          member: memberWithUrl,
           membership: {
             status: member.status,
             memberType: member.memberType,
@@ -251,12 +287,14 @@ export class MemberService {
         };
       }
 
+      const memberWithUrl = await this.attachPresignedUrl(member);
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Update member profile successfully',
         content: {
-          member,
+          member: memberWithUrl,
         },
       };
     } catch (error: any) {
@@ -316,12 +354,14 @@ export class MemberService {
         this.memberModel.countDocuments(filter),
       ]);
 
+      const itemsWithUrls = await this.attachPresignedUrlToList(items);
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Get member directory successfully',
         content: {
-          items,
+          items: itemsWithUrls,
           total,
           page,
           limit,
@@ -412,12 +452,14 @@ export class MemberService {
         };
       }
 
+      const memberWithUrl = await this.attachPresignedUrl(member);
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Approve member successfully',
         content: {
-          member,
+          member: memberWithUrl,
         },
       };
     } catch (error: any) {
@@ -504,12 +546,14 @@ export class MemberService {
         };
       }
 
+      const memberWithUrl = await this.attachPresignedUrl(member);
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Reject member successfully',
         content: {
-          member,
+          member: memberWithUrl,
         },
       };
     } catch (error: any) {
@@ -559,12 +603,14 @@ export class MemberService {
         };
       }
 
+      const memberWithUrl = await this.attachPresignedUrl(member);
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Expire member successfully',
         content: {
-          member,
+          member: memberWithUrl,
         },
       };
     } catch (error: any) {
@@ -633,12 +679,14 @@ export class MemberService {
         this.memberModel.countDocuments(filter),
       ]);
 
+      const itemsWithUrls = await this.attachPresignedUrlToList(items);
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Get admin member list successfully',
         content: {
-          items,
+          items: itemsWithUrls,
           total,
           page,
           limit,

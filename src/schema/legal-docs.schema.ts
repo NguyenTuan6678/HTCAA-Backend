@@ -6,6 +6,7 @@ export enum LegalDocStatus {
   PUBLISHED = 'Published',
 }
 
+@Schema({ _id: false })
 export class LegalDocFile {
   @Prop({ required: true })
   objectName: string; // MinIO object key, e.g. "legal-docs/files/1700000000-123456-contract.pdf"
@@ -18,7 +19,11 @@ export class LegalDocFile {
 
   @Prop({ required: true })
   size: number; // file size in bytes
+
+  url?: string | null;
 }
+
+export const LegalDocFileSchema = SchemaFactory.createForClass(LegalDocFile);
 
 @Schema({ timestamps: true })
 export class LegalDoc extends Document {
@@ -50,7 +55,7 @@ export class LegalDoc extends Document {
   status: LegalDocStatus;
 
   // Stores the uploaded file metadata (PDF, DOCX, etc.)
-  @Prop({ type: LegalDocFile, default: null })
+  @Prop({ type: LegalDocFileSchema, default: null })
   file: LegalDocFile | null;
 
   @Prop({ default: true })

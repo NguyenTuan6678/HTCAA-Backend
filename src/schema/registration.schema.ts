@@ -92,7 +92,7 @@ export class Registration {
 
   // Số tiền phải trả, BE tự tính = course.price hoặc course.memberPrice.
   // null với guest cho tới khi admin xác thực claim hội viên (verify-membership)
-  @Prop({ type: Number, default: null })
+  @Prop({ type: Number, default: null, min: 0 })
   price?: number | null;
 
   // true: đã xác định isMember chắc chắn (flow user login luôn true ngay khi tạo).
@@ -101,7 +101,7 @@ export class Registration {
   membershipVerified: boolean;
 
   // Số tiền đã thực nhận, có thể khác price nếu thanh toán từng phần
-  @Prop({ type: Number, default: null })
+  @Prop({ type: Number, default: null, min: 0 })
   amountPaid?: number | null;
 
   @Prop({ type: Date, default: null })

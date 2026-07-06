@@ -16,6 +16,8 @@ export class FileMeta {
   @Prop({ required: true }) size: number;
 }
 
+export const FileMetaSchema = SchemaFactory.createForClass(FileMeta);
+
 @Schema({ timestamps: true, collection: 'documents' })
 export class DocumentFile {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
@@ -33,7 +35,7 @@ export class DocumentFile {
   @Prop({ type: String, enum: DocumentStatus, default: DocumentStatus.DRAFT })
   status: DocumentStatus;
 
-  @Prop({ type: FileMeta, default: null })
+  @Prop({ type: FileMetaSchema, default: null })
   file: FileMeta | null;
 
   @Prop({ default: true })

@@ -131,8 +131,8 @@ export class FaqsController {
   // ─── LIKES / DISLIKES (logged-in users) ───────────────────────────────────
 
   @Patch(':id/like')
-  // @UseGuards(JwtAuthGuard)
-  // @ApiBearerAuth('authorization')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('authorization')
   @ApiOperation({
     summary: 'Logged-in user – toggle like on a FAQ (call again to unlike)',
   })
@@ -142,8 +142,8 @@ export class FaqsController {
   }
 
   @Patch(':id/dislike')
-  // @UseGuards(JwtAuthGuard)
-  // @ApiBearerAuth('authorization')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('authorization')
   @ApiOperation({
     summary:
       'Logged-in user – toggle dislike on a FAQ (call again to un-dislike)',

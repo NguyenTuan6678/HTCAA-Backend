@@ -70,9 +70,10 @@ export class NewsletterSubscriberController {
   @ApiOperation({ summary: 'Public – unsubscribe from the newsletter' })
   async unsubscribe(
     @Query('email') email: string,
+    @Query('token') token: string,
     @Res() res: Response,
   ) {
-    const result = await this.subscriberService.unsubscribe(email);
+    const result = await this.subscriberService.unsubscribe(email, token);
     const isSuccess = result.code === 200;
     const title = isSuccess ? 'Hủy đăng ký nhận tin' : 'Hủy đăng ký thất bại';
     const heading = isSuccess ? 'Hủy đăng ký nhận tin tức thành công!' : 'Hủy đăng ký thất bại';
@@ -85,8 +86,9 @@ export class NewsletterSubscriberController {
   @ApiOperation({ summary: 'Public – unsubscribe from the newsletter via POST (Gmail RFC 8058)' })
   async unsubscribePost(
     @Query('email') email: string,
+    @Query('token') token: string,
   ) {
-    return this.subscriberService.unsubscribe(email);
+    return this.subscriberService.unsubscribe(email, token);
   }
 
   // ─── ADMIN ENDPOINTS ───────────────────────────────────────────────────────

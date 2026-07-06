@@ -53,7 +53,7 @@ export class User {
   @Prop({ type: Date, default: null, select: false })
   resetPasswordExpiresAt?: Date | null;
 
-  @Prop({ type: Number, default: 0 })
+  @Prop({ type: Number, default: 0, select: false })
   tokenVersion: number;
 
   @Prop({ type: Number, default: 0, select: false })

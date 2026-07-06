@@ -104,64 +104,93 @@ export class RegistrationService {
         };
       }
 
-      // Chỉ tính là hội viên khi có Member với status ACTIVE.
-      // PENDING/REJECTED/EXPIRED hoặc không có profile Member -> isMember = false
-      const member = await this.memberModel.findOne({
-        userId: new Types.ObjectId(userId),
+      // Atomic increment: only increment if registeredSeats < totalSeats (or if totalSeats is null)
+      let courseUpdateCondition: any = {
+        _id: course._id,
         isActive: true,
-      });
-
-      const isMember = !!member && member.status === MemberStatus.ACTIVE;
-
-      // memberPrice là field bắt buộc trên Course kể từ giờ, nhưng vẫn fallback
-      // về `price` cho các course cũ (tạo trước khi có field này) để tránh lỗi
-      const price = isMember
-        ? (course.memberPrice ?? course.price)
-        : course.price;
-
-      const registration = await this.registrationModel.create({
-        userId: new Types.ObjectId(userId),
-        memberId: isMember ? member!._id : null,
-        courseId: course._id,
-        status: RegistrationStatus.PENDING,
-        paymentStatus: RegistrationPaymentStatus.UNPAID,
-        price,
-        note: registerDto.note ?? null,
-        registrant: {
-          // name/email lấy trực tiếp từ hồ sơ User, không bắt nhập lại
-          name: user.name,
-          email: user.email,
-          dateOfBirth: new Date(registerDto.dateOfBirth),
-          phoneNumber: registerDto.phoneNumber,
-          taxCodeActive: registerDto.taxCodeActive,
-          taxCodeActiveDate: new Date(registerDto.taxCodeActiveDate),
-          isMember,
-          companyName: registerDto.companyName,
-          taxId: registerDto.taxId,
-          addressExportBill: registerDto.addressExportBill,
-          emailExportBill: registerDto.emailExportBill,
-        },
-        isActive: true,
-      });
-
-      // Giữ chỗ ngay khi đăng ký (PENDING) để tránh oversell trong lúc chờ
-      // admin xác nhận. Nếu nghiệp vụ chỉ muốn giữ chỗ khi CONFIRMED thì
-      // chuyển đoạn $inc này sang hàm confirm() bên dưới.
-      await this.courseModel.findByIdAndUpdate(course._id, {
-        $inc: { registeredSeats: 1 },
-      });
-
-      return {
-        code: ERROR_RES.SUCCESS.statusCode,
-        info: ERROR_INFO.SUCCESS,
-        message: 'Register course successfully',
-        content: {
-          registrationId: registration._id.toString(),
-          status: registration.status,
-          price: registration.price,
-          isMember,
-        },
       };
+
+      if (course.totalSeats != null) {
+        courseUpdateCondition.registeredSeats = { $lt: course.totalSeats };
+      }
+
+      const updatedCourse = await this.courseModel.findOneAndUpdate(
+        courseUpdateCondition,
+        { $inc: { registeredSeats: 1 } },
+        { new: true },
+      );
+
+      if (!updatedCourse) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Course is full',
+          content: null,
+        };
+      }
+
+      let hasIncremented = true;
+
+      try {
+        // Chỉ tính là hội viên khi có Member với status ACTIVE.
+        // PENDING/REJECTED/EXPIRED hoặc không có profile Member -> isMember = false
+        const member = await this.memberModel.findOne({
+          userId: new Types.ObjectId(userId),
+          isActive: true,
+        });
+
+        const isMember = !!member && member.status === MemberStatus.ACTIVE;
+
+        // memberPrice là field bắt buộc trên Course kể từ giờ, nhưng vẫn fallback
+        // về `price` cho các course cũ (tạo trước khi có field này) để tránh lỗi
+        const price = isMember
+          ? (course.memberPrice ?? course.price)
+          : course.price;
+
+        const registration = await this.registrationModel.create({
+          userId: new Types.ObjectId(userId),
+          memberId: isMember ? member!._id : null,
+          courseId: course._id,
+          status: RegistrationStatus.PENDING,
+          paymentStatus: RegistrationPaymentStatus.UNPAID,
+          price,
+          note: registerDto.note ?? null,
+          registrant: {
+            // name/email lấy trực tiếp từ hồ sơ User, không bắt nhập lại
+            name: user.name,
+            email: user.email,
+            dateOfBirth: new Date(registerDto.dateOfBirth),
+            phoneNumber: registerDto.phoneNumber,
+            taxCodeActive: registerDto.taxCodeActive,
+            taxCodeActiveDate: new Date(registerDto.taxCodeActiveDate),
+            isMember,
+            companyName: registerDto.companyName,
+            taxId: registerDto.taxId,
+            addressExportBill: registerDto.addressExportBill,
+            emailExportBill: registerDto.emailExportBill,
+          },
+          isActive: true,
+        });
+
+        return {
+          code: ERROR_RES.SUCCESS.statusCode,
+          info: ERROR_INFO.SUCCESS,
+          message: 'Register course successfully',
+          content: {
+            registrationId: registration._id.toString(),
+            status: registration.status,
+            price: registration.price,
+            isMember,
+          },
+        };
+      } catch (innerError) {
+        if (hasIncremented) {
+          await this.courseModel.findByIdAndUpdate(course._id, {
+            $inc: { registeredSeats: -1 },
+          });
+        }
+        throw innerError;
+      }
     } catch (error: any) {
       if (error?.code === 11000) {
         return {
@@ -209,18 +238,6 @@ export class RegistrationService {
         };
       }
 
-      if (
-        course.totalSeats != null &&
-        course.registeredSeats >= course.totalSeats
-      ) {
-        return {
-          code: ERROR_RES.CONFLICT_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Course is full',
-          content: null,
-        };
-      }
-
       const email = dto.email.trim().toLowerCase();
 
       // Guest không có userId nên check trùng ở tầng application theo email
@@ -239,48 +256,79 @@ export class RegistrationService {
         };
       }
 
-      const registration = await this.registrationModel.create({
-        userId: null,
-        memberId: null,
-        courseId: course._id,
-        status: RegistrationStatus.PENDING,
-        paymentStatus: RegistrationPaymentStatus.UNPAID,
-        price: null,
-        membershipVerified: false,
-        note: dto.note ?? null,
-        registrant: {
-          name: dto.name,
-          email,
-          dateOfBirth: new Date(dto.dateOfBirth),
-          phoneNumber: dto.phoneNumber,
-          taxCodeActive: dto.taxCodeActive,
-          taxCodeActiveDate: new Date(dto.taxCodeActiveDate),
-          isMember: null,
-          claimedIsMember: dto.claimedIsMember,
-          companyName: dto.companyName,
-          taxId: dto.taxId,
-          addressExportBill: dto.addressExportBill,
-          emailExportBill: dto.emailExportBill,
-        },
+      // Atomic increment: only increment if registeredSeats < totalSeats (or if totalSeats is null)
+      let courseUpdateCondition: any = {
+        _id: course._id,
         isActive: true,
-      });
-
-      // Giữ chỗ ngay để tránh oversell trong lúc chờ admin xác thực/duyệt
-      await this.courseModel.findByIdAndUpdate(course._id, {
-        $inc: { registeredSeats: 1 },
-      });
-
-      // Theo yêu cầu: chỉ trả về đăng ký thành công hay chưa, không trả giá/
-      // trạng thái hội viên vì còn chờ admin xác thực.
-      return {
-        code: ERROR_RES.SUCCESS.statusCode,
-        info: ERROR_INFO.SUCCESS,
-        message:
-          'Đăng ký thành công. Thông tin của bạn đang chờ được xác thực.',
-        content: {
-          registrationId: registration._id.toString(),
-        },
       };
+
+      if (course.totalSeats != null) {
+        courseUpdateCondition.registeredSeats = { $lt: course.totalSeats };
+      }
+
+      const updatedCourse = await this.courseModel.findOneAndUpdate(
+        courseUpdateCondition,
+        { $inc: { registeredSeats: 1 } },
+        { new: true },
+      );
+
+      if (!updatedCourse) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Course is full',
+          content: null,
+        };
+      }
+
+      let hasIncremented = true;
+
+      try {
+        const registration = await this.registrationModel.create({
+          userId: null,
+          memberId: null,
+          courseId: course._id,
+          status: RegistrationStatus.PENDING,
+          paymentStatus: RegistrationPaymentStatus.UNPAID,
+          price: null,
+          membershipVerified: false,
+          note: dto.note ?? null,
+          registrant: {
+            name: dto.name,
+            email,
+            dateOfBirth: new Date(dto.dateOfBirth),
+            phoneNumber: dto.phoneNumber,
+            taxCodeActive: dto.taxCodeActive,
+            taxCodeActiveDate: new Date(dto.taxCodeActiveDate),
+            isMember: null,
+            claimedIsMember: dto.claimedIsMember,
+            companyName: dto.companyName,
+            taxId: dto.taxId,
+            addressExportBill: dto.addressExportBill,
+            emailExportBill: dto.emailExportBill,
+          },
+          isActive: true,
+        });
+
+        // Theo yêu cầu: chỉ trả về đăng ký thành công hay chưa, không trả giá/
+        // trạng thái hội viên vì còn chờ admin xác thực.
+        return {
+          code: ERROR_RES.SUCCESS.statusCode,
+          info: ERROR_INFO.SUCCESS,
+          message:
+            'Đăng ký thành công. Thông tin của bạn đang chờ được xác thực.',
+          content: {
+            registrationId: registration._id.toString(),
+          },
+        };
+      } catch (innerError) {
+        if (hasIncremented) {
+          await this.courseModel.findByIdAndUpdate(course._id, {
+            $inc: { registeredSeats: -1 },
+          });
+        }
+        throw innerError;
+      }
     } catch (error: any) {
       return {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
@@ -339,24 +387,17 @@ export class RegistrationService {
         };
       }
 
-      const registration = await this.registrationModel.findById(id);
+      const registration = await this.registrationModel.findOne({
+        _id: new Types.ObjectId(id),
+        userId: new Types.ObjectId(userId),
+        isActive: true,
+      });
 
       if (!registration) {
         return {
           code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
-          message: 'Registration not found',
-          content: null,
-        };
-      }
-
-      // Chỉ chủ sở hữu đăng ký mới được tự hủy. Đăng ký của guest (userId = null)
-      // không tự hủy qua API này được — guest liên hệ admin/hotline để hủy.
-      if (!registration.userId || registration.userId.toString() !== userId) {
-        return {
-          code: ERROR_RES.FORBIDDEN_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'You are not allowed to cancel this registration',
+          message: 'Registration not found or unauthorized',
           content: null,
         };
       }

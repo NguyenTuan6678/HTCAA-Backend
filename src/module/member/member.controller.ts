@@ -24,9 +24,8 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import * as fs from 'fs';
+import { memoryStorage } from 'multer';
+import { extname } from 'path';
 import { Role } from '../../utils/role/role';
 import { MemberService } from './member.service';
 import { RegisterMemberDto } from './dto/register-member.req';
@@ -38,12 +37,6 @@ import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { CurrentUser } from '../../users/auth/decorators/current-user.decorator';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 import { QueryAdminMemberDto } from './dto/query-admin-member.req';
-
-const memberUploadDir = join(process.cwd(), 'uploads', 'members');
-
-if (!fs.existsSync(memberUploadDir)) {
-  fs.mkdirSync(memberUploadDir, { recursive: true });
-}
 
 const pdfFileFilter = (
   req: any,
@@ -126,15 +119,7 @@ export class MemberController {
   })
   @UseInterceptors(
     FileInterceptor('profileFile', {
-      storage: diskStorage({
-        destination: memberUploadDir,
-        filename: (req, file, callback) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          callback(null, `${uniqueSuffix}${ext}`);
-        },
-      }),
+      storage: memoryStorage(),
       fileFilter: pdfFileFilter,
       limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
     }),

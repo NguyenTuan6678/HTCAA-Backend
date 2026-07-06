@@ -14,10 +14,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     @InjectModel(User.name)
     private readonly userModal: Model<UserDocument>,
   ) {
+    const jwtAccessSecret = process.env.JWT_ACCESS_SECRET;
+    if (!jwtAccessSecret) {
+      throw new Error('JWT_ACCESS_SECRET is missing. Check your environment variables.');
+    }
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_ACCESS_SECRET ?? 'fallback_secret',
+      secretOrKey: jwtAccessSecret,
     });
   }
 

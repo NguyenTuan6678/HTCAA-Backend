@@ -49,7 +49,7 @@ export class Course {
   @Prop({ type: Number, default: null })
   totalSeats?: number | null;
 
-  @Prop({ type: Number, default: 0 })
+  @Prop({ type: Number, default: 0, min: 0 })
   registeredSeats: number;
 
   @Prop({

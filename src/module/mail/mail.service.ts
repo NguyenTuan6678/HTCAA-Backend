@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class MailService {
@@ -60,7 +61,13 @@ If you did not request this, you can ignore this email.
       'Your App <onboarding@resend.dev>';
 
     const backendUrl = this.configService.get<string>('BACKEND_URL') || 'http://localhost:4000';
-    const unsubscribeLink = `${backendUrl}/api/newsletter-subscriber/unsubscribe?email=${email}`;
+    const secret = this.configService.get<string>('JWT_REFRESH_SECRET') || 'fallback_secret';
+    const targetEmail = email.toLowerCase().trim();
+    const token = crypto
+      .createHmac('sha256', secret)
+      .update(targetEmail)
+      .digest('hex');
+    const unsubscribeLink = `${backendUrl}/api/newsletter-subscriber/unsubscribe?email=${encodeURIComponent(targetEmail)}&token=${token}`;
 
     const { error } = await this.resend.emails.send({
       from,

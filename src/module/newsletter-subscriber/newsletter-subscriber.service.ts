@@ -171,7 +171,7 @@ export class NewsletterSubscriberService {
     }
   }
 
-  async unsubscribe(email: string) {
+  async unsubscribe(email: string, token?: string) {
     try {
       if (!email) {
         return {
@@ -183,6 +183,22 @@ export class NewsletterSubscriberService {
       }
 
       const targetEmail = email.toLowerCase().trim();
+
+      const secret = this.configService.get<string>('JWT_REFRESH_SECRET') || 'fallback_secret';
+      const expectedToken = crypto
+        .createHmac('sha256', secret)
+        .update(targetEmail)
+        .digest('hex');
+
+      if (!token || token !== expectedToken) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Mã xác nhận hủy đăng ký không hợp lệ.',
+          content: null,
+        };
+      }
+
       const subscriber = await this.subscriberModel.findOne({
         email: targetEmail,
         isActive: true,

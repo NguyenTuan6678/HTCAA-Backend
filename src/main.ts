@@ -8,6 +8,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { LoggerService } from './common/loggers/logger.service';
 import { ValidationPipe } from '@nestjs/common/pipes/validation.pipe';
 import { AllExceptionsFilter } from './common/filters/all-exception.filter';
+import { ResponseErrorInterceptor } from './common/interceptors/response-error.interceptor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { printServerBanner } from './banner/server-banner';
 import helmet from 'helmet';
@@ -71,11 +72,15 @@ async function bootstrap() {
 
   const allExceptionsFilter = new AllExceptionsFilter(logger);
   app.useGlobalFilters(allExceptionsFilter);
+  app.useGlobalInterceptors(new ResponseErrorInterceptor());
 
   app.use(cookieParser());
 
   app.enableCors({
-    origin: '*',
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      callback(null, true);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     preflightContinue: false,
     credentials: true,

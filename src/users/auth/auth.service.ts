@@ -59,7 +59,7 @@ export class AuthService {
 
   private getCookieOptions(maxAge: number) {
     const isProduction =
-      this.configService.get<string>('NODE_ENV') === 'production';
+      this.configService.get<string>('app.nodeEnv') === 'production';
 
     return {
       httpOnly: true,
