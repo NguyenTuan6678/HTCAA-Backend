@@ -21,6 +21,8 @@ import { ContactModule } from './module/contact/contact.module';
 import { NewsletterSubscriberModule } from './module/newsletter-subscriber/newsletter-subscriber.module';
 import { RegistrationModule } from './module/registration/registration.module';
 import { MembershipRegistrationModule } from './module/membership-registration/membership-registration.module';
+import { SocialPostModule } from './module/social-post/social-post.module';
+import { PartnerModule } from './module/partner/partner.module';
 
 @Module({
   imports: [
@@ -59,6 +61,8 @@ import { MembershipRegistrationModule } from './module/membership-registration/m
     NewsletterSubscriberModule,
     RegistrationModule,
     MembershipRegistrationModule,
+    SocialPostModule,
+    PartnerModule,
   ],
   controllers: [AppController],
   providers: [AppService],

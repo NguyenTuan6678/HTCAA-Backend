@@ -105,7 +105,7 @@ export class RegistrationService {
       }
 
       // Atomic increment: only increment if registeredSeats < totalSeats (or if totalSeats is null)
-      let courseUpdateCondition: any = {
+      const courseUpdateCondition: any = {
         _id: course._id,
         isActive: true,
       };
@@ -129,7 +129,7 @@ export class RegistrationService {
         };
       }
 
-      let hasIncremented = true;
+      const hasIncremented = true;
 
       try {
         // Chỉ tính là hội viên khi có Member với status ACTIVE.
@@ -257,7 +257,7 @@ export class RegistrationService {
       }
 
       // Atomic increment: only increment if registeredSeats < totalSeats (or if totalSeats is null)
-      let courseUpdateCondition: any = {
+      const courseUpdateCondition: any = {
         _id: course._id,
         isActive: true,
       };
@@ -281,7 +281,7 @@ export class RegistrationService {
         };
       }
 
-      let hasIncremented = true;
+      const hasIncremented = true;
 
       try {
         const registration = await this.registrationModel.create({
