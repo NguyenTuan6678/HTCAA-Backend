@@ -191,7 +191,7 @@ export class AuthService {
       const user = await this.userModel
         .findOne({ email })
         .select(
-          '+password +refreshTokenHash +failedLoginAttempts +loginLockedUntil',
+          '+password +refreshTokenHash +failedLoginAttempts +loginLockedUntil +tokenVersion',
         );
 
       if (!user) {
@@ -340,7 +340,7 @@ export class AuthService {
       const user = await this.userModel
         .findById(payload.id)
         .select(
-          '+refreshTokenHash +previousRefreshTokenHash +previousRefreshTokenExpiresAt',
+          '+refreshTokenHash +previousRefreshTokenHash +previousRefreshTokenExpiresAt +tokenVersion',
         );
 
       if (!user || !(user as any).isActive) {
@@ -554,7 +554,7 @@ export class AuthService {
           resetPasswordTokenHash: tokenHash,
           resetPasswordExpiresAt: { $gt: new Date() },
         })
-        .select('+resetPasswordTokenHash +resetPasswordExpiresAt +password');
+        .select('+resetPasswordTokenHash +resetPasswordExpiresAt +password +tokenVersion');
 
       if (!matchedUser) {
         throw new UnauthorizedException(
@@ -599,7 +599,7 @@ export class AuthService {
         throw new BadRequestException('Invalid user id');
       }
 
-      const user = await this.userModel.findById(userId).select('+password');
+      const user = await this.userModel.findById(userId).select('+password +tokenVersion');
 
       if (!user) {
         throw new NotFoundException('User not found');
@@ -644,7 +644,7 @@ export class AuthService {
       if (!Types.ObjectId.isValid(userId)) {
         return false;
       }
-      const user = await this.userModel.findById(userId).select('tokenVersion isActive');
+      const user = await this.userModel.findById(userId).select('+tokenVersion isActive');
       if (!user || !(user as any).isActive) {
         return false;
       }
