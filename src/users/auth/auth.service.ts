@@ -41,7 +41,12 @@ export class AuthService {
 
   private readonly maxFailedLoginAttempts = 5;
   private readonly loginLockMinutes = 15;
-  private readonly refreshTokenGrave = process.env.REFRESH_TOKEN_GRACE_MS;
+
+  private getRefreshTokenGraceMs(): number {
+    const graceMs = this.configService.get<string>('REFRESH_TOKEN_GRACE_MS');
+    const parsed = Number(graceMs);
+    return isNaN(parsed) ? 10000 : parsed;
+  }
 
   private isLoginLocked(user: any): boolean {
     return (
@@ -255,7 +260,7 @@ export class AuthService {
       if ((user as any).refreshTokenHash) {
         (user as any).previousRefreshTokenHash = (user as any).refreshTokenHash;
         (user as any).previousRefreshTokenExpiresAt = new Date(
-          Date.now() + Number(this.refreshTokenGrave),
+          Date.now() + this.getRefreshTokenGraceMs(),
         );
       }
 
@@ -388,29 +393,41 @@ export class AuthService {
         }
       }
 
-      // Hợp lệ (khớp current, hoặc khớp previous trong grace window) -> rotate.
-      const { accessToken, refreshToken: newRefreshToken } =
-        await this.generateToken(user);
-
-      const newRefreshTokenHash = await this.hashRefreshToken(newRefreshToken);
+      // Hợp lệ (khớp current, hoặc khớp previous trong grace window) -> rotate hoặc trả về access token mới.
+      let accessToken: string;
 
       if (matchesCurrent) {
-        // Rotate bình thường: hash hiện hành lùi thành "previous", mở grace
-        // window mới cho nó — phòng trường hợp còn request song song khác
-        // đang cầm đúng token này.
+        // Rotate bình thường: hash hiện hành lùi thành "previous", mở grace window mới.
+        const token = await this.generateToken(user);
+        accessToken = token.accessToken;
+
         (user as any).previousRefreshTokenHash = (user as any).refreshTokenHash;
         (user as any).previousRefreshTokenExpiresAt = new Date(
-          Date.now() + Number(this.refreshTokenGrave),
+          Date.now() + this.getRefreshTokenGraceMs(),
         );
+        (user as any).refreshTokenHash = await this.hashRefreshToken(
+          token.refreshToken,
+        );
+        await user.save();
+
+        this.setRefreshTokenCookie(response, token.refreshToken);
+      } else {
+        // isGraceReuse === true: đây là request concurrent sử dụng token cũ vừa mới bị rotate.
+        // KHÔNG tạo/ghi đè refresh token mới để tránh làm mất/hủy cookie refresh token mới thực sự (token2).
+        // Chỉ cấp access token mới dựa trên tokenVersion hiện tại của user để các request concurrent tiếp tục thành công.
+        const payload = {
+          id: (user as any)._id?.toString() || (user as any).id,
+          email: user.email,
+          role: user.role,
+          memberType: (user as any).memberType ?? 'member',
+          tokenVersion: (user as any).tokenVersion ?? 0,
+        };
+
+        accessToken = this.jwtService.sign(payload, {
+          secret: this.configService.get<string>('JWT_ACCESS_SECRET'),
+          expiresIn: '15m',
+        });
       }
-      // Nếu là isGraceReuse: đây là request "sinh sau" của cùng 1 lần rotate,
-      // KHÔNG động vào previousRefreshTokenHash hiện có — giữ nguyên grace
-      // window ban đầu để các request song song khác (nếu còn) vẫn qua được.
-
-      (user as any).refreshTokenHash = newRefreshTokenHash;
-      await user.save();
-
-      this.setRefreshTokenCookie(response, newRefreshToken);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
@@ -619,6 +636,22 @@ export class AuthService {
       throw new InternalServerErrorException(
         `There is a problem while changing password: ${error.message}`,
       );
+    }
+  }
+
+  async validateTokenVersion(userId: string, tokenVersion: number): Promise<boolean> {
+    try {
+      if (!Types.ObjectId.isValid(userId)) {
+        return false;
+      }
+      const user = await this.userModel.findById(userId).select('tokenVersion isActive');
+      if (!user || !(user as any).isActive) {
+        return false;
+      }
+      const userTokenVersion = (user as any).tokenVersion ?? 0;
+      return userTokenVersion === (tokenVersion ?? 0);
+    } catch {
+      return false;
     }
   }
 

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '../../schema/user.schema';
@@ -11,6 +11,7 @@ import { MailModule } from '../../module/mail/mail.module';
 import { RolesGuard } from './guards/roles.guard';
 import { LoggerService } from '../../common/loggers/logger.service';
 
+@Global()
 @Module({
   imports: [
     UsersModule,
