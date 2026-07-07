@@ -28,7 +28,9 @@ describe('SocialPostService', () => {
   beforeEach(async () => {
     modelMock = {
       create: jest.fn(),
-      find: jest.fn(),
+      find: jest.fn().mockReturnValue({
+        sort: jest.fn().mockResolvedValue([]),
+      }),
       findById: jest.fn(),
       findByIdAndUpdate: jest.fn(),
       countDocuments: jest.fn(),
@@ -71,14 +73,18 @@ describe('SocialPostService', () => {
         publishedDate: '2026-07-06T00:00:00.000Z',
       };
 
-      modelMock.create.mockResolvedValue({
-        ...mockPost,
-        ...dto,
-        publishedDate: new Date(dto.publishedDate),
+      modelMock.create.mockImplementation((arg) => {
+        return Promise.resolve({
+          ...mockPost,
+          ...arg,
+          publishedDate: new Date(dto.publishedDate),
+        });
       });
 
       const result = await service.create(dto);
       expect(result.title).toBe(dto.title);
+      expect(result.isPinned).toBe(true);
+      expect(result.pinnedOrder).toBe(1);
       expect(modelMock.create).toHaveBeenCalled();
     });
 
@@ -100,6 +106,73 @@ describe('SocialPostService', () => {
       expect(result.publishedDate).toBeDefined();
       expect(result.publishedDate).toBeInstanceOf(Date);
       expect(modelMock.create).toHaveBeenCalled();
+    });
+
+    it('should automatically pin the post and assign next order when less than 3 pinned posts exist', async () => {
+      const dto = {
+        platform: SocialPlatform.FACEBOOK,
+        title: 'Another post',
+        postUrl: 'https://facebook.com/another',
+        isActive: true,
+      };
+
+      modelMock.find.mockReturnValue({
+        sort: jest.fn().mockResolvedValue([
+          { _id: new Types.ObjectId(), platform: SocialPlatform.FACEBOOK, isPinned: true, pinnedOrder: 1 },
+        ]),
+      });
+
+      modelMock.create.mockImplementation((arg) => {
+        return Promise.resolve({
+          ...mockPost,
+          ...arg,
+        });
+      });
+
+      const result = await service.create(dto);
+      expect(result.isPinned).toBe(true);
+      expect(result.pinnedOrder).toBe(2);
+      expect(modelMock.create).toHaveBeenCalledWith(expect.objectContaining({
+        isPinned: true,
+        pinnedOrder: 2,
+      }));
+    });
+
+    it('should automatically unpin the oldest pinned post and pin the new one when 3 pinned posts already exist', async () => {
+      const dto = {
+        platform: SocialPlatform.FACEBOOK,
+        title: 'Forced pin post',
+        postUrl: 'https://facebook.com/forced',
+        isActive: true,
+      };
+
+      const existingPosts = [
+        { _id: new Types.ObjectId(), platform: SocialPlatform.FACEBOOK, isPinned: true, pinnedOrder: 1, save: jest.fn() },
+        { _id: new Types.ObjectId(), platform: SocialPlatform.FACEBOOK, isPinned: true, pinnedOrder: 2, save: jest.fn() },
+        { _id: new Types.ObjectId(), platform: SocialPlatform.FACEBOOK, isPinned: true, pinnedOrder: 3, save: jest.fn() },
+      ];
+
+      modelMock.find.mockReturnValue({
+        sort: jest.fn().mockResolvedValue(existingPosts),
+      });
+
+      modelMock.create.mockImplementation((arg) => {
+        return Promise.resolve({
+          ...mockPost,
+          ...arg,
+        });
+      });
+
+      const result = await service.create(dto);
+      expect(existingPosts[2].isPinned).toBe(false);
+      expect(existingPosts[2].pinnedOrder).toBeNull();
+      expect(existingPosts[2].save).toHaveBeenCalled();
+      expect(result.isPinned).toBe(true);
+      expect(result.pinnedOrder).toBe(3);
+      expect(modelMock.create).toHaveBeenCalledWith(expect.objectContaining({
+        isPinned: true,
+        pinnedOrder: 3,
+      }));
     });
   });
 

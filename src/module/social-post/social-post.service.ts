@@ -62,15 +62,52 @@ export class SocialPostService {
   // =========================
 
   async create(dto: CreateSocialPostDto) {
+    const isActive = dto.isActive ?? true;
+    let isPinned = false;
+    let pinnedOrder: number | null = null;
+
+    if (isActive) {
+      // 1. Get all current active pinned posts on this platform
+      const activePinned = await this.socialPostModel
+        .find({
+          platform: dto.platform,
+          isPinned: true,
+          isActive: true,
+        })
+        .sort({ pinnedOrder: 1, createdAt: -1 });
+
+      // 2. If there are already 3 pinned posts, unpin the oldest/least priority one(s) to make room
+      if (activePinned.length >= 3) {
+        const postsToUnpin = activePinned.slice(2);
+        for (const p of postsToUnpin) {
+          p.isPinned = false;
+          p.pinnedOrder = null;
+          await p.save();
+        }
+      }
+
+      // 3. Determine the next available pinnedOrder for the remaining active pinned posts
+      const remainingPinned = activePinned.slice(0, 2);
+      const taken = remainingPinned
+        .map((p) => p.pinnedOrder)
+        .filter((o) => o != null) as number[];
+      let nextOrder = 1;
+      while (taken.includes(nextOrder)) {
+        nextOrder++;
+      }
+      isPinned = true;
+      pinnedOrder = nextOrder;
+    }
+
     const post = await this.socialPostModel.create({
       platform: dto.platform,
       title: dto.title,
       postUrl: dto.postUrl,
       thumbnailImage: dto.thumbnailImage ?? null,
       publishedDate: dto.publishedDate ? new Date(dto.publishedDate) : new Date(),
-      isPinned: false,
-      pinnedOrder: null,
-      isActive: dto.isActive ?? true,
+      isPinned,
+      pinnedOrder,
+      isActive,
     });
 
     return this.attachThumbnailUrl(post);
