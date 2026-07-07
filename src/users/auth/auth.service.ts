@@ -35,7 +35,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
     private readonly logger: LoggerService,
-  ) { }
+  ) {}
 
   private readonly refreshCookieName = 'refreshToken';
 
@@ -132,7 +132,10 @@ export class AuthService {
         role: Role.ADMIN,
       });
 
-      this.logger.log(`Existing admin count: ${existingAdmin}`, AuthService.name);
+      this.logger.log(
+        `Existing admin count: ${existingAdmin}`,
+        AuthService.name,
+      );
 
       if (existingAdmin > 0) {
         throw new ConflictException('Admin account already exists');
@@ -238,7 +241,8 @@ export class AuthService {
         await user.save();
 
         throw new UnauthorizedException(
-          `Password is incorrect. You have ${this.maxFailedLoginAttempts - failedLoginAttempts
+          `Password is incorrect. You have ${
+            this.maxFailedLoginAttempts - failedLoginAttempts
           } attempt(s) remaining.`,
         );
       }
@@ -247,6 +251,13 @@ export class AuthService {
 
       (user as any).failedLoginAttempts = 0;
       (user as any).loginLockedUntil = null;
+
+      if ((user as any).refreshTokenHash) {
+        (user as any).previousRefreshTokenHash = (user as any).refreshTokenHash;
+        (user as any).previousRefreshTokenExpiresAt = new Date(
+          Date.now() + Number(this.refreshTokenGrave),
+        );
+      }
 
       (user as any).refreshTokenHash = await this.hashRefreshToken(
         token.refreshToken,
@@ -445,7 +456,10 @@ export class AuthService {
         },
       };
     } catch (error: any) {
-      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
         throw error;
       }
       throw new InternalServerErrorException(
@@ -516,10 +530,7 @@ export class AuthService {
       }
 
       // SHA-256 lookup token
-      const tokenHash = crypto
-        .createHash('sha256')
-        .update(token)
-        .digest('hex');
+      const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
       const matchedUser = await this.userModel
         .findOne({
@@ -529,7 +540,9 @@ export class AuthService {
         .select('+resetPasswordTokenHash +resetPasswordExpiresAt +password');
 
       if (!matchedUser) {
-        throw new UnauthorizedException('Reset password token is invalid or expired');
+        throw new UnauthorizedException(
+          'Reset password token is invalid or expired',
+        );
       }
 
       matchedUser.password = newPassword;
@@ -546,7 +559,10 @@ export class AuthService {
         message: 'Reset password successfully',
       };
     } catch (error: any) {
-      if (error instanceof BadRequestException || error instanceof UnauthorizedException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof UnauthorizedException
+      ) {
         throw error;
       }
       throw new InternalServerErrorException(
