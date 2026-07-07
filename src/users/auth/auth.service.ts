@@ -554,7 +554,9 @@ export class AuthService {
           resetPasswordTokenHash: tokenHash,
           resetPasswordExpiresAt: { $gt: new Date() },
         })
-        .select('+resetPasswordTokenHash +resetPasswordExpiresAt +password +tokenVersion');
+        .select(
+          '+resetPasswordTokenHash +resetPasswordExpiresAt +password +tokenVersion',
+        );
 
       if (!matchedUser) {
         throw new UnauthorizedException(
@@ -599,7 +601,9 @@ export class AuthService {
         throw new BadRequestException('Invalid user id');
       }
 
-      const user = await this.userModel.findById(userId).select('+password +tokenVersion');
+      const user = await this.userModel
+        .findById(userId)
+        .select('+password +tokenVersion');
 
       if (!user) {
         throw new NotFoundException('User not found');
@@ -639,12 +643,17 @@ export class AuthService {
     }
   }
 
-  async validateTokenVersion(userId: string, tokenVersion: number): Promise<boolean> {
+  async validateTokenVersion(
+    userId: string,
+    tokenVersion: number,
+  ): Promise<boolean> {
     try {
       if (!Types.ObjectId.isValid(userId)) {
         return false;
       }
-      const user = await this.userModel.findById(userId).select('+tokenVersion isActive');
+      const user = await this.userModel
+        .findById(userId)
+        .select('+tokenVersion isActive');
       if (!user || !(user as any).isActive) {
         return false;
       }

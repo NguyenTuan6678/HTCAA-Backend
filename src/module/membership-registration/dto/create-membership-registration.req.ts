@@ -1,22 +1,24 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
+  IsBoolean,
+  IsDateString,
   IsEmail,
   IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
-  IsUrl,
 } from 'class-validator';
 
 import { MembershipType } from '../../../utils/membership-type.enum';
 
 export class CreateMembershipRegistrationDto {
-  @ApiProperty({ example: 'Công ty TNHH Kế toán ABC' })
+  @ApiProperty({ example: 'Nguyễn Văn An' })
   @IsString()
   @IsNotEmpty()
-  memberName: string;
+  name: string;
 
-  @ApiProperty({ enum: MembershipType, example: MembershipType.ORGANIZATION })
+  @ApiProperty({ enum: MembershipType, example: MembershipType.INDIVIDUAL })
   @IsEnum(MembershipType)
   @IsNotEmpty()
   memberType: MembershipType;
@@ -26,25 +28,89 @@ export class CreateMembershipRegistrationDto {
   @IsNotEmpty()
   address: string;
 
-  @ApiPropertyOptional({
-    example: 'Chuyên cung cấp dịch vụ kế toán, kiểm toán cho SME',
-  })
+  @ApiProperty({ example: '0123456789' })
+  @IsString()
+  @IsNotEmpty()
+  taxCode: string;
+
+  @ApiProperty({ example: '012345678901' })
+  @IsString()
+  @IsNotEmpty()
+  identityCode: string;
+
+  @ApiProperty({ example: 'Kế toán viên' })
+  @IsString()
+  @IsNotEmpty()
+  job: string;
+
+  @ApiProperty({ example: 'Trưởng phòng' })
+  @IsString()
+  @IsNotEmpty()
+  position: string;
+
+  @ApiProperty({ example: '1995-10-15' })
+  @IsDateString()
+  @IsNotEmpty()
+  dateOfBirth: string;
+
+  @ApiProperty({ example: '0900000000' })
+  @IsString()
+  @IsNotEmpty()
+  phoneNumber: string;
+
+  @ApiProperty({ example: 'an.nguyen@example.com' })
+  @IsEmail()
+  @IsNotEmpty()
+  email: string;
+
+  @ApiProperty({ example: true })
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  @IsNotEmpty()
+  isProfessionalCertification: boolean;
+
+  @ApiProperty({ example: 'CCT-123456' })
+  @IsString()
+  @IsNotEmpty()
+  professionalCertificationNumber: string;
+
+  @ApiProperty({ example: 'Công ty TNHH Kế toán ABC' })
+  @IsString()
+  @IsNotEmpty()
+  companyName: string;
+
+  // Optional fields
+  @ApiPropertyOptional({ example: 'http://example.com/license.pdf' })
   @IsOptional()
   @IsString()
-  shortDescription?: string;
+  companyLicense?: string;
 
   @ApiPropertyOptional({ example: 'https://abc-accounting.vn' })
   @IsOptional()
-  @IsUrl()
-  website?: string;
+  @IsString()
+  companyWebsiteUrl?: string;
 
-  @ApiPropertyOptional({ example: '1900 1234' })
+  @ApiPropertyOptional({ example: '02812345678' })
   @IsOptional()
   @IsString()
-  hotline?: string;
+  companyPhoneNumber?: string;
 
-  @ApiPropertyOptional({ example: 'contact@abc-accounting.vn' })
+  @ApiPropertyOptional({ example: 'Dịch vụ Tài chính' })
   @IsOptional()
-  @IsEmail()
-  email?: string;
+  @IsString()
+  companyJobType?: string;
+
+  @ApiPropertyOptional({ example: 'Nơi khởi nguồn thành công' })
+  @IsOptional()
+  @IsString()
+  companySlogan?: string;
+
+  @ApiPropertyOptional({ example: 'Nguyễn Văn B giới thiệu' })
+  @IsOptional()
+  @IsString()
+  introduceBy?: string;
+
+  // Uploaded files mapped by controller
+  avatarFile?: any;
+  logoFile?: any;
 }

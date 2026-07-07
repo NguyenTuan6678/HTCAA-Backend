@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { MinioModule } from '../minio/minio.module';
 
 import {
   MembershipRegistration,
@@ -20,6 +21,7 @@ import { RolesGuard } from '../../users/auth/guards/roles.guard';
         schema: MembershipRegistrationSchema,
       },
     ]),
+    MinioModule,
   ],
   controllers: [MembershipRegistrationController],
   providers: [MembershipRegistrationService, JwtAuthGuard, RolesGuard],
