@@ -111,6 +111,9 @@ export class CreateMembershipRegistrationDto {
   introduceBy?: string;
 
   // Uploaded files mapped by controller
+  @IsNotEmpty()
   avatarFile?: any;
+
+  @IsNotEmpty()
   logoFile?: any;
 }

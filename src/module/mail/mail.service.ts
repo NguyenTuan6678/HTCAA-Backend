@@ -60,8 +60,10 @@ If you did not request this, you can ignore this email.
       this.configService.get<string>('MAIL_FROM') ??
       'Your App <onboarding@resend.dev>';
 
-    const backendUrl = this.configService.get<string>('BACKEND_URL') || 'http://localhost:4000';
-    const secret = this.configService.get<string>('JWT_REFRESH_SECRET') || 'fallback_secret';
+    const backendUrl =
+      this.configService.get<string>('BACKEND_URL') || 'http://localhost:4000';
+    const secret =
+      this.configService.get<string>('JWT_REFRESH_SECRET') || 'fallback_secret';
     const targetEmail = email.toLowerCase().trim();
     const token = crypto
       .createHmac('sha256', secret)
@@ -95,7 +97,10 @@ Nếu bạn không thực hiện yêu cầu này, bạn có thể an tâm bỏ q
     }
   }
 
-  private getNewsletterConfirmationTemplate(appName: string, confirmationLink: string): string {
+  private getNewsletterConfirmationTemplate(
+    appName: string,
+    confirmationLink: string,
+  ): string {
     return `
 <!DOCTYPE html>
 <html lang="vi">

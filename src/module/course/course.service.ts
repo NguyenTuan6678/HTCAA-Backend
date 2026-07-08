@@ -384,7 +384,9 @@ export class CourseService {
 
   async createCategory(dto: CreateCourseCategoryDto) {
     try {
-      const existing = await this.courseCategoryModel.findOne({ slug: dto.slug });
+      const existing = await this.courseCategoryModel.findOne({
+        slug: dto.slug,
+      });
       if (existing) {
         return {
           code: ERROR_RES.CONFLICT_ERROR.statusCode,
@@ -494,7 +496,8 @@ export class CourseService {
         }
         updateData.slug = dto.slug;
       }
-      if (dto.description !== undefined) updateData.description = dto.description;
+      if (dto.description !== undefined)
+        updateData.description = dto.description;
       if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
 
       const category = await this.courseCategoryModel.findByIdAndUpdate(
