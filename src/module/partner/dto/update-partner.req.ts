@@ -24,7 +24,8 @@ export class UpdatePartnerDto {
   tagline?: string;
 
   @ApiPropertyOptional({
-    example: 'Cung cấp giải pháp hóa đơn điện tử thông minh, kết nối trực tiếp cơ quan thuế.',
+    example:
+      'Cung cấp giải pháp hóa đơn điện tử thông minh, kết nối trực tiếp cơ quan thuế.',
   })
   @IsString()
   @IsOptional()

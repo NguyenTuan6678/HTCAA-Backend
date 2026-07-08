@@ -141,7 +141,9 @@ export class FaqsService {
 
   async create(userId: string, dto: CreateFaqDto) {
     try {
-      const { error: categoryError } = await this.validateCategory(dto.categoryId);
+      const { error: categoryError } = await this.validateCategory(
+        dto.categoryId,
+      );
       if (categoryError) return categoryError;
 
       const faq = await this.faqModel.create({
@@ -274,7 +276,9 @@ export class FaqsService {
       }
 
       if (dto.categoryId !== undefined) {
-        const { error: categoryError } = await this.validateCategory(dto.categoryId);
+        const { error: categoryError } = await this.validateCategory(
+          dto.categoryId,
+        );
         if (categoryError) return categoryError;
       }
 

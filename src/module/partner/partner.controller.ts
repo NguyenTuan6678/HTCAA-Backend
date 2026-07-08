@@ -74,7 +74,9 @@ export class PartnerController {
   // =========================
 
   @Get('homepage')
-  @ApiOperation({ summary: 'Public – Get list of active partners for homepage' })
+  @ApiOperation({
+    summary: 'Public – Get list of active partners for homepage',
+  })
   findHomepage() {
     return this.partnerService.findHomepage();
   }
@@ -96,7 +98,9 @@ export class PartnerController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
-  @ApiOperation({ summary: 'Admin/editor – List all partners with pagination & filtering' })
+  @ApiOperation({
+    summary: 'Admin/editor – List all partners with pagination & filtering',
+  })
   findAll(@Query() query: QueryPartnerDto) {
     return this.partnerService.findAll(query);
   }
@@ -105,7 +109,9 @@ export class PartnerController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
-  @ApiOperation({ summary: 'Admin/editor – Reorder partner list (drag & drop)' })
+  @ApiOperation({
+    summary: 'Admin/editor – Reorder partner list (drag & drop)',
+  })
   reorder(@Body() dto: ReorderPartnersDto) {
     return this.partnerService.reorder(dto);
   }

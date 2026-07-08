@@ -23,7 +23,7 @@ export class SocialPostService {
     @InjectModel(SocialPost.name)
     private readonly socialPostModel: Model<SocialPostDocument>,
     private readonly minioService: MinioService,
-  ) { }
+  ) {}
 
   // =========================
   // HELPERS
@@ -104,7 +104,9 @@ export class SocialPostService {
       title: dto.title,
       postUrl: dto.postUrl,
       thumbnailImage: dto.thumbnailImage ?? null,
-      publishedDate: dto.publishedDate ? new Date(dto.publishedDate) : new Date(),
+      publishedDate: dto.publishedDate
+        ? new Date(dto.publishedDate)
+        : new Date(),
       isPinned,
       pinnedOrder,
       isActive,

@@ -45,7 +45,9 @@ export class ContactController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
-  @ApiOperation({ summary: 'Admin/editor – list contact inquiries (paginated)' })
+  @ApiOperation({
+    summary: 'Admin/editor – list contact inquiries (paginated)',
+  })
   findAll(@Query() query: QueryContactDto) {
     return this.contactService.findAll(query);
   }
@@ -67,10 +69,7 @@ export class ContactController {
   @ApiOperation({ summary: 'Admin/editor – update inquiry status' })
   @ApiParam({ name: 'id', description: 'Inquiry ID' })
   @ApiBody({ type: UpdateContactStatusDto })
-  updateStatus(
-    @Param('id') id: string,
-    @Body() dto: UpdateContactStatusDto,
-  ) {
+  updateStatus(@Param('id') id: string, @Body() dto: UpdateContactStatusDto) {
     return this.contactService.updateStatus(id, dto);
   }
 

@@ -181,7 +181,8 @@ export class MembershipRegistrationController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({
-    summary: 'Admin/editor: update a membership registration entry (rating, tenure, tag)',
+    summary:
+      'Admin/editor: update a membership registration entry (rating, tenure, tag)',
   })
   @ApiParam({ name: 'id', description: 'Membership registration id' })
   update(

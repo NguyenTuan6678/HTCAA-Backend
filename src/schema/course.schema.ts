@@ -62,7 +62,12 @@ export class Course {
   })
   status: CourseStatus;
 
-  @Prop({ type: Types.ObjectId, ref: 'CourseCategory', default: null, index: true })
+  @Prop({
+    type: Types.ObjectId,
+    ref: 'CourseCategory',
+    default: null,
+    index: true,
+  })
   categoryId: Types.ObjectId | null;
 
   @Prop({

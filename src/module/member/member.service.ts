@@ -49,10 +49,13 @@ export class MemberService {
 
   private async attachPresignedUrl(member: any) {
     if (!member) return member;
-    const obj = typeof member.toObject === 'function' ? member.toObject() : member;
+    const obj =
+      typeof member.toObject === 'function' ? member.toObject() : member;
     if (obj.profileFile?.filename) {
       if (obj.profileFile.filename.includes('/')) {
-        const presignedUrl = await this.minioService.getPresignedUrl(obj.profileFile.filename);
+        const presignedUrl = await this.minioService.getPresignedUrl(
+          obj.profileFile.filename,
+        );
         obj.profileFile.path = presignedUrl;
       }
     }

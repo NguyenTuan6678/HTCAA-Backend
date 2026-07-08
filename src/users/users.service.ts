@@ -65,7 +65,10 @@ export class UsersService {
       };
     } catch (error: any) {
       this.logger.error(`Error creating user: ${error.message}`);
-      if (error instanceof BadRequestException || error instanceof ConflictException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof ConflictException
+      ) {
         throw error;
       }
       throw new InternalServerErrorException(
@@ -148,7 +151,10 @@ export class UsersService {
       };
     } catch (error: any) {
       this.logger.error(`Error fetching user details: ${error.message}`);
-      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
         throw error;
       }
       throw new InternalServerErrorException(
@@ -258,7 +264,10 @@ export class UsersService {
       };
     } catch (error: any) {
       this.logger.error(`Error deleting user: ${error.message}`);
-      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
         throw error;
       }
       throw new InternalServerErrorException(

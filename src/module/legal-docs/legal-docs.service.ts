@@ -709,7 +709,10 @@ export class LegalDocsService {
         }
 
         // Upload to MinIO
-        const result = await this.minioService.uploadFile(file, 'legal-docs/files');
+        const result = await this.minioService.uploadFile(
+          file,
+          'legal-docs/files',
+        );
         fileMetadata = {
           objectName: result.objectName,
           originalName: result.originalName,
@@ -1063,7 +1066,10 @@ export class LegalDocsService {
       if (error) return error;
 
       // Upload to MinIO
-      const result = await this.minioService.uploadFile(file, 'legal-docs/files');
+      const result = await this.minioService.uploadFile(
+        file,
+        'legal-docs/files',
+      );
 
       if ((doc as any).file?.objectName) {
         await this.minioService.removeFile((doc as any).file.objectName);

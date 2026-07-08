@@ -27,7 +27,8 @@ export class PartnerService {
 
   private async attachLogoUrl(partner: any) {
     if (!partner) return partner;
-    const obj = typeof partner.toObject === 'function' ? partner.toObject() : partner;
+    const obj =
+      typeof partner.toObject === 'function' ? partner.toObject() : partner;
     if (obj.logo) {
       if (!obj.logo.startsWith('http://') && !obj.logo.startsWith('https://')) {
         try {

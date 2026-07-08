@@ -96,14 +96,11 @@ export class MinioService implements OnModuleInit {
     };
   }
 
-  async getPresignedUrl(
-    objectName?: string | null,
-  ): Promise<string | null> {
+  async getPresignedUrl(objectName?: string | null): Promise<string | null> {
     if (!objectName) return null;
 
     const backendUrl =
-      this.configService.get<string>('BACKEND_URL') ||
-      'http://localhost:4000';
+      this.configService.get<string>('BACKEND_URL') || 'http://localhost:4000';
 
     return `${backendUrl}/api/media/${objectName}`;
   }

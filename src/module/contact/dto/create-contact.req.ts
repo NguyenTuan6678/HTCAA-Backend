@@ -35,7 +35,8 @@ export class CreateContactDto {
   email: string;
 
   @ApiProperty({
-    example: 'Tôi muốn tìm hiểu thêm về các quyền lợi khi đăng ký hội viên chính thức.',
+    example:
+      'Tôi muốn tìm hiểu thêm về các quyền lợi khi đăng ký hội viên chính thức.',
     description: 'Detailed content of the question',
   })
   @IsString()

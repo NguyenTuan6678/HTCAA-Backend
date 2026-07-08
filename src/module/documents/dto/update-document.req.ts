@@ -5,7 +5,11 @@ import { DocumentStatus } from '../../../schema/documents.schema';
 
 export class UpdateDocumentDto {
   @ApiPropertyOptional({ example: '665f1e8d7c1b2a0012a12345' })
-  @Transform(({ value }) => (value === '' || value === 'null' || value === 'undefined' ? undefined : value))
+  @Transform(({ value }) =>
+    value === '' || value === 'null' || value === 'undefined'
+      ? undefined
+      : value,
+  )
   @IsMongoId()
   @IsOptional()
   categoryId?: string;

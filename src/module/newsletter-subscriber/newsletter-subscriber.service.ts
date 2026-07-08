@@ -26,7 +26,10 @@ export class NewsletterSubscriberService {
   async subscribe(dto: SubscribeDto) {
     try {
       const email = dto.email.toLowerCase().trim();
-      let subscriber = await this.subscriberModel.findOne({ email, isActive: true });
+      let subscriber = await this.subscriberModel.findOne({
+        email,
+        isActive: true,
+      });
 
       if (subscriber) {
         if (subscriber.confirmed) {
@@ -48,7 +51,8 @@ export class NewsletterSubscriberService {
         return {
           code: ERROR_RES.SUCCESS.statusCode,
           info: ERROR_INFO.SUCCESS,
-          message: 'Email xác nhận đã được gửi lại. Vui lòng kiểm tra hộp thư của bạn.',
+          message:
+            'Email xác nhận đã được gửi lại. Vui lòng kiểm tra hộp thư của bạn.',
           content: { subscriber },
         };
       }
@@ -68,7 +72,8 @@ export class NewsletterSubscriberService {
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
-        message: 'Đăng ký thành công! Vui lòng kiểm tra email của bạn để xác nhận.',
+        message:
+          'Đăng ký thành công! Vui lòng kiểm tra email của bạn để xác nhận.',
         content: { subscriber },
       };
     } catch (error: any) {
@@ -84,7 +89,10 @@ export class NewsletterSubscriberService {
   async resendConfirmation(dto: SubscribeDto) {
     try {
       const email = dto.email.toLowerCase().trim();
-      const subscriber = await this.subscriberModel.findOne({ email, isActive: true });
+      const subscriber = await this.subscriberModel.findOne({
+        email,
+        isActive: true,
+      });
 
       if (!subscriber) {
         return {
@@ -113,7 +121,8 @@ export class NewsletterSubscriberService {
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
-        message: 'Email xác nhận đã được gửi lại thành công. Vui lòng kiểm tra hộp thư.',
+        message:
+          'Email xác nhận đã được gửi lại thành công. Vui lòng kiểm tra hộp thư.',
         content: { subscriber },
       };
     } catch (error: any) {
@@ -184,7 +193,9 @@ export class NewsletterSubscriberService {
 
       const targetEmail = email.toLowerCase().trim();
 
-      const secret = this.configService.get<string>('JWT_REFRESH_SECRET') || 'fallback_secret';
+      const secret =
+        this.configService.get<string>('JWT_REFRESH_SECRET') ||
+        'fallback_secret';
       const expectedToken = crypto
         .createHmac('sha256', secret)
         .update(targetEmail)
@@ -416,11 +427,19 @@ export class NewsletterSubscriberService {
 
   private async sendConfirmationMailSafely(email: string, token: string) {
     try {
-      const backendUrl = this.configService.get<string>('BACKEND_URL') || 'http://localhost:4000';
+      const backendUrl =
+        this.configService.get<string>('BACKEND_URL') ||
+        'http://localhost:4000';
       const confirmLink = `${backendUrl}/api/newsletter-subscriber/confirm?token=${token}`;
-      await this.mailService.sendNewsletterConfirmationEmail(email, confirmLink);
+      await this.mailService.sendNewsletterConfirmationEmail(
+        email,
+        confirmLink,
+      );
     } catch (mailError: any) {
-      console.error('[Newsletter Service] Failed to send newsletter confirmation email:', mailError.message);
+      console.error(
+        '[Newsletter Service] Failed to send newsletter confirmation email:',
+        mailError.message,
+      );
     }
   }
 }

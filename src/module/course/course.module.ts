@@ -3,7 +3,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 
 import { Course, CourseSchema } from '../../schema/course.schema';
 import { User, UserSchema } from '../../schema/user.schema';
-import { CourseCategory, CourseCategorySchema } from '../../schema/course-category.schema';
+import {
+  CourseCategory,
+  CourseCategorySchema,
+} from '../../schema/course-category.schema';
 
 import { CourseController } from './course.controller';
 import { CourseService } from './course.service';

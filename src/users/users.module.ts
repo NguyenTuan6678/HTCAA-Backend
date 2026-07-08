@@ -14,4 +14,4 @@ import { JwtAuthGuard } from './auth/guards/auth.guard';
   providers: [UsersService, LoggerService, JwtAuthGuard],
   exports: [UsersService, MongooseModule],
 })
-export class UsersModule { }
+export class UsersModule {}

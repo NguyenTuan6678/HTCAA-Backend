@@ -18,7 +18,8 @@ export class CourseCategory {
   isActive: boolean;
 }
 
-export const CourseCategorySchema = SchemaFactory.createForClass(CourseCategory);
+export const CourseCategorySchema =
+  SchemaFactory.createForClass(CourseCategory);
 
 CourseCategorySchema.index({ slug: 1 }, { unique: true });
 CourseCategorySchema.index({ name: 1 });

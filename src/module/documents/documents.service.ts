@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException, StreamableFile } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+  StreamableFile,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Response } from 'express';
@@ -173,7 +179,10 @@ export class DocumentsService {
       if (categoryError) return categoryError;
 
       // Upload file directly to MinIO
-      const result = await this.minioService.uploadFile(file, 'legal-docs/files');
+      const result = await this.minioService.uploadFile(
+        file,
+        'legal-docs/files',
+      );
 
       const fileMetadata = {
         objectName: result.objectName,
@@ -518,7 +527,10 @@ export class DocumentsService {
       if (error) return error;
 
       // Upload file directly to MinIO
-      const result = await this.minioService.uploadFile(file, 'legal-docs/files');
+      const result = await this.minioService.uploadFile(
+        file,
+        'legal-docs/files',
+      );
 
       if ((doc as any).file?.objectName) {
         await this.minioService.removeFile((doc as any).file.objectName);
@@ -562,10 +574,7 @@ export class DocumentsService {
   // =========================
 
   /** Streams the .xlsx file as an attachment so FE triggers Save-As */
-  async downloadFile(
-    id: string,
-    res: Response,
-  ): Promise<StreamableFile> {
+  async downloadFile(id: string, res: Response): Promise<StreamableFile> {
     try {
       if (!Types.ObjectId.isValid(id)) {
         throw new BadRequestException('Invalid document id');

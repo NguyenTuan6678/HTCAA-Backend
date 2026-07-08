@@ -52,18 +52,21 @@ export class NewsletterSubscriberController {
   }
 
   @Get('confirm')
-  @ApiOperation({ summary: 'Public – confirm newsletter subscription via email link' })
-  async confirm(
-    @Query('token') token: string,
-    @Res() res: Response,
-  ) {
+  @ApiOperation({
+    summary: 'Public – confirm newsletter subscription via email link',
+  })
+  async confirm(@Query('token') token: string, @Res() res: Response) {
     const result = await this.subscriberService.confirmSubscription(token);
     const isSuccess = result.code === 200;
     const title = isSuccess ? 'Xác nhận đăng ký nhận tin' : 'Xác nhận thất bại';
-    const heading = isSuccess ? 'Đăng ký nhận tin tức thành công!' : 'Xác nhận thất bại';
-    
+    const heading = isSuccess
+      ? 'Đăng ký nhận tin tức thành công!'
+      : 'Xác nhận thất bại';
+
     res.setHeader('Content-Type', 'text/html');
-    return res.send(this.renderHtmlPage(title, heading, result.message, isSuccess));
+    return res.send(
+      this.renderHtmlPage(title, heading, result.message, isSuccess),
+    );
   }
 
   @Get('unsubscribe')
@@ -76,14 +79,21 @@ export class NewsletterSubscriberController {
     const result = await this.subscriberService.unsubscribe(email, token);
     const isSuccess = result.code === 200;
     const title = isSuccess ? 'Hủy đăng ký nhận tin' : 'Hủy đăng ký thất bại';
-    const heading = isSuccess ? 'Hủy đăng ký nhận tin tức thành công!' : 'Hủy đăng ký thất bại';
+    const heading = isSuccess
+      ? 'Hủy đăng ký nhận tin tức thành công!'
+      : 'Hủy đăng ký thất bại';
 
     res.setHeader('Content-Type', 'text/html');
-    return res.send(this.renderHtmlPage(title, heading, result.message, isSuccess));
+    return res.send(
+      this.renderHtmlPage(title, heading, result.message, isSuccess),
+    );
   }
 
   @Post('unsubscribe')
-  @ApiOperation({ summary: 'Public – unsubscribe from the newsletter via POST (Gmail RFC 8058)' })
+  @ApiOperation({
+    summary:
+      'Public – unsubscribe from the newsletter via POST (Gmail RFC 8058)',
+  })
   async unsubscribePost(
     @Query('email') email: string,
     @Query('token') token: string,
@@ -116,7 +126,9 @@ export class NewsletterSubscriberController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
-  @ApiOperation({ summary: 'Admin/editor – toggle confirmation status manually' })
+  @ApiOperation({
+    summary: 'Admin/editor – toggle confirmation status manually',
+  })
   @ApiParam({ name: 'id', description: 'Subscriber ID' })
   toggleConfirm(@Param('id') id: string) {
     return this.subscriberService.toggleConfirm(id);
@@ -132,15 +144,24 @@ export class NewsletterSubscriberController {
     return this.subscriberService.delete(id);
   }
 
-  private renderHtmlPage(title: string, heading: string, message: string, isSuccess: boolean): string {
-    let frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'localhost:3000';
-    if (!frontendUrl.startsWith('http://') && !frontendUrl.startsWith('https://')) {
+  private renderHtmlPage(
+    title: string,
+    heading: string,
+    message: string,
+    isSuccess: boolean,
+  ): string {
+    let frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || 'localhost:3000';
+    if (
+      !frontendUrl.startsWith('http://') &&
+      !frontendUrl.startsWith('https://')
+    ) {
       frontendUrl = `http://${frontendUrl}`;
     }
-    const bgGradient = isSuccess 
-      ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' 
+    const bgGradient = isSuccess
+      ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)'
       : 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)';
-    const icon = isSuccess 
+    const icon = isSuccess
       ? '<svg style="width: 48px; height: 48px; color: #10B981;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>'
       : '<svg style="width: 48px; height: 48px; color: #EF4444;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
 

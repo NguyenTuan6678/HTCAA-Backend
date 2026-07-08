@@ -487,7 +487,10 @@ export class HomepageService {
       const currentImage = this.getNestedValue(setting, 'hero.visual.image');
 
       // Upload new file directly to MinIO
-      const result = await this.minioService.uploadFile(file, 'about-us/images');
+      const result = await this.minioService.uploadFile(
+        file,
+        'about-us/images',
+      );
 
       if (currentImage?.objectName) {
         await this.minioService.removeFile(currentImage.objectName);
@@ -554,7 +557,10 @@ export class HomepageService {
       );
 
       // Upload new file directly to MinIO
-      const result = await this.minioService.uploadFile(file, 'about-us/images');
+      const result = await this.minioService.uploadFile(
+        file,
+        'about-us/images',
+      );
 
       if (currentAvatar?.objectName) {
         await this.minioService.removeFile(currentAvatar.objectName);
@@ -630,7 +636,10 @@ export class HomepageService {
       const currentQrCode = channels[zaloIndex]?.qrCode;
 
       // Upload new file directly to MinIO
-      const result = await this.minioService.uploadFile(file, 'about-us/images');
+      const result = await this.minioService.uploadFile(
+        file,
+        'about-us/images',
+      );
 
       if (currentQrCode?.objectName) {
         await this.minioService.removeFile(currentQrCode.objectName);

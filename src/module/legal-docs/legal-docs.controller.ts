@@ -102,9 +102,7 @@ export class LegalDocsController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({ summary: 'Admin/editor create legal doc category' })
-  createCategory(
-    @Body() createLegalDocCategoryDto: CreateLegalDocCategoryDto,
-  ) {
+  createCategory(@Body() createLegalDocCategoryDto: CreateLegalDocCategoryDto) {
     return this.legalDocsService.createCategory(createLegalDocCategoryDto);
   }
 
@@ -277,8 +275,7 @@ export class LegalDocsController {
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
   @ApiOperation({
-    summary:
-      'Admin/editor – replace the document file (PDF/DOC/DOCX)',
+    summary: 'Admin/editor – replace the document file (PDF/DOC/DOCX)',
   })
   @ApiParam({ name: 'id', description: 'Legal doc id' })
   @ApiConsumes('multipart/form-data')

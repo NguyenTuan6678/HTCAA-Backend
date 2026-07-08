@@ -7,7 +7,11 @@ export class CreateDocumentDto {
     example: '665f1e8d7c1b2a0012a12345',
     description: 'Category id (from legal_docs_categories collection)',
   })
-  @Transform(({ value }) => (value === '' || value === 'null' || value === 'undefined' ? undefined : value))
+  @Transform(({ value }) =>
+    value === '' || value === 'null' || value === 'undefined'
+      ? undefined
+      : value,
+  )
   @IsMongoId()
   @IsOptional()
   categoryId?: string;

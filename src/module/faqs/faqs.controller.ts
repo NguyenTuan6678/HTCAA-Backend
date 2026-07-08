@@ -35,7 +35,7 @@ import { Role } from '../../utils/role/role';
 @ApiTags('FAQs')
 @Controller('faqs')
 export class FaqsController {
-  constructor(private readonly faqsService: FaqsService) { }
+  constructor(private readonly faqsService: FaqsService) {}
 
   // ─── PUBLIC ────────────────────────────────────────────────────────────────
 
@@ -171,10 +171,7 @@ export class FaqsController {
   @ApiOperation({ summary: 'Admin/editor – update FAQ category' })
   @ApiParam({ name: 'id', description: 'FAQ Category id' })
   @ApiBody({ type: UpdateFaqCategoryDto })
-  updateCategory(
-    @Param('id') id: string,
-    @Body() dto: UpdateFaqCategoryDto,
-  ) {
+  updateCategory(@Param('id') id: string, @Body() dto: UpdateFaqCategoryDto) {
     return this.faqsService.updateCategory(id, dto);
   }
 

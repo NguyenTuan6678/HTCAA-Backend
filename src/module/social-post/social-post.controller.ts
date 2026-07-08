@@ -96,7 +96,9 @@ export class SocialPostController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
-  @ApiOperation({ summary: 'Admin/editor – List all social posts with pagination & filtering' })
+  @ApiOperation({
+    summary: 'Admin/editor – List all social posts with pagination & filtering',
+  })
   findAll(@Query() query: QuerySocialPostDto) {
     return this.socialPostService.findAll(query);
   }
@@ -145,7 +147,9 @@ export class SocialPostController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
-  @ApiOperation({ summary: 'Admin/editor – Upload thumbnail for a social post' })
+  @ApiOperation({
+    summary: 'Admin/editor – Upload thumbnail for a social post',
+  })
   @ApiParam({ name: 'id', description: 'Social post ID' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
@@ -171,7 +175,9 @@ export class SocialPostController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     if (!file) {
-      throw new BadRequestException('Vui lòng tải lên file hình ảnh thumbnail.');
+      throw new BadRequestException(
+        'Vui lòng tải lên file hình ảnh thumbnail.',
+      );
     }
     return this.socialPostService.uploadThumbnail(id, file);
   }

@@ -34,7 +34,8 @@ export class UpdateSocialPostDto {
   postUrl?: string;
 
   @ApiPropertyOptional({
-    example: 'https://miniostorage.minvoicehcm.vn/htcaa/social-posts/thumbnail.png',
+    example:
+      'https://miniostorage.minvoicehcm.vn/htcaa/social-posts/thumbnail.png',
   })
   @IsString()
   @IsOptional()

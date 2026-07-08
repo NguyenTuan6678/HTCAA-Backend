@@ -24,7 +24,11 @@ ${reset}
 
   const lines = [
     { label: '🚀 Server', value: `http://localhost:${port}`, color: green },
-    { label: '📚 Swagger', value: `http://localhost:${port}/api/docs`, color: green },
+    {
+      label: '📚 Swagger',
+      value: `http://localhost:${port}/api/docs`,
+      color: green,
+    },
     { label: '🌱 Env', value: env, color: yellow },
     { label: '📦 Node', value: nodeVersion, color: cyan },
     { label: '💻 OS', value: osType, color: cyan },
@@ -42,7 +46,9 @@ ${reset}
     getVisibleLength(header),
     getVisibleLength(footer1),
     getVisibleLength(footer2),
-    ...lines.map((line) => getVisibleLength(line.label) + getVisibleLength(line.value)),
+    ...lines.map(
+      (line) => getVisibleLength(line.label) + getVisibleLength(line.value),
+    ),
   ];
 
   const maxContentLength = Math.max(...visibleLengths);
