@@ -111,7 +111,7 @@ export class CreateMembershipRegistrationDto {
   introduceBy?: string;
 
   // Uploaded files mapped by controller
-  @IsNotEmpty()
+  @IsOptional()
   avatarFile?: any;
 
   @IsOptional()
