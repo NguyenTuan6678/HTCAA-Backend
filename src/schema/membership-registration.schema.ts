@@ -87,6 +87,15 @@ export class MembershipRegistration {
   @Prop({ type: String, default: null, trim: true })
   logo?: string | null;
 
+  @Prop({ type: String, default: null, trim: true })
+  starRating?: string | null;
+
+  @Prop({ type: String, default: null, trim: true })
+  tenure?: string | null;
+
+  @Prop({ type: String, default: null, trim: true })
+  tag?: string | null;
+
   // Soft-delete, phòng khi admin cần ẩn 1 hồ sơ khỏi danh sách mà không xóa hẳn
   @Prop({ type: Boolean, default: true })
   isActive: boolean;

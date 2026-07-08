@@ -8,6 +8,7 @@ import { escapeRegex } from '../../utils/escape-regex';
 
 import { CreateMembershipRegistrationDto } from './dto/create-membership-registration.req';
 import { QueryMembershipRegistrationDto } from './dto/query-membership-registration.req';
+import { UpdateMembershipRegistrationDto } from './dto/update-membership-registration.req';
 import { MinioService } from '../minio/minio.service';
 
 @Injectable()
@@ -269,6 +270,56 @@ export class MembershipRegistrationService {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
         message: `There is a problem while approving membership registration: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  // ─── Admin: cập nhật đơn đăng ký hội viên ────────────────────────────
+  async update(id: string, dto: UpdateMembershipRegistrationDto) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid membership registration id',
+          content: null,
+        };
+      }
+
+      const updateData: any = {};
+      if (dto.starRating !== undefined) updateData.starRating = dto.starRating;
+      if (dto.tenure !== undefined) updateData.tenure = dto.tenure;
+      if (dto.tag !== undefined) updateData.tag = dto.tag;
+
+      const updated = await this.membershipRegistrationModel.findOneAndUpdate(
+        { _id: new Types.ObjectId(id), isActive: true },
+        updateData,
+        { returnDocument: 'after' },
+      );
+
+      if (!updated) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Membership registration not found',
+          content: null,
+        };
+      }
+
+      const updatedWithUrls = await this.attachFileUrls(updated);
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Update membership registration successfully',
+        content: { registration: updatedWithUrls },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while updating membership registration: ${error.message}`,
         content: null,
       };
     }

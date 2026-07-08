@@ -31,6 +31,7 @@ import { RolesGuard } from '../../users/auth/guards/roles.guard';
 import { MembershipRegistrationService } from './membership-registration.service';
 import { CreateMembershipRegistrationDto } from './dto/create-membership-registration.req';
 import { QueryMembershipRegistrationDto } from './dto/query-membership-registration.req';
+import { UpdateMembershipRegistrationDto } from './dto/update-membership-registration.req';
 
 @ApiTags('Membership Registration')
 @Controller('membership-registrations')
@@ -173,5 +174,20 @@ export class MembershipRegistrationController {
   @ApiParam({ name: 'id', description: 'Membership registration id' })
   approve(@Param('id') id: string) {
     return this.membershipRegistrationService.approve(id);
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({
+    summary: 'Admin/editor: update a membership registration entry (rating, tenure, tag)',
+  })
+  @ApiParam({ name: 'id', description: 'Membership registration id' })
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateMembershipRegistrationDto,
+  ) {
+    return this.membershipRegistrationService.update(id, dto);
   }
 }
