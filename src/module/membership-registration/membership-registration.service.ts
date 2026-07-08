@@ -325,7 +325,7 @@ export class MembershipRegistrationService {
     }
   }
 
-  async findHomepage() {
+  async findHomepage(query: QueryMembershipRegistrationDto) {
     try {
       const registrations = await this.membershipRegistrationModel
         .find({ isActive: true, status: 'approved' })

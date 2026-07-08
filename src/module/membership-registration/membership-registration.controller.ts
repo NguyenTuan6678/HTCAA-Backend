@@ -44,8 +44,8 @@ export class MembershipRegistrationController {
   @ApiOperation({
     summary: 'Get membership registrations for homepage display',
   })
-  findHomepage() {
-    return this.membershipRegistrationService.findHomepage();
+  findHomepage(@Query() query: QueryMembershipRegistrationDto) {
+    return this.membershipRegistrationService.findHomepage(query);
   }
 
   // Public — không cần đăng nhập, ai cũng điền được
