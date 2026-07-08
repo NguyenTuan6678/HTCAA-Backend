@@ -40,6 +40,14 @@ export class MembershipRegistrationController {
     private readonly membershipRegistrationService: MembershipRegistrationService,
   ) {}
 
+  @Get('homepage')
+  @ApiOperation({
+    summary: 'Get membership registrations for homepage display',
+  })
+  findHomepage() {
+    return this.membershipRegistrationService.findHomepage();
+  }
+
   // Public — không cần đăng nhập, ai cũng điền được
   @Post()
   @UseInterceptors(

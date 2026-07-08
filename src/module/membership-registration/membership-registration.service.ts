@@ -324,4 +324,30 @@ export class MembershipRegistrationService {
       };
     }
   }
+
+  async findHomepage() {
+    try {
+      const registrations = await this.membershipRegistrationModel
+        .find({ isActive: true, status: 'approved' })
+        .sort({ joinAt: -1 })
+        .limit(5);
+
+      const registrationsWithUrls =
+        await this.attachFileUrlsToList(registrations);
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Get homepage membership registrations successfully',
+        content: { registrations: registrationsWithUrls },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while getting homepage membership registrations: ${error.message}`,
+        content: null,
+      };
+    }
+  }
 }
