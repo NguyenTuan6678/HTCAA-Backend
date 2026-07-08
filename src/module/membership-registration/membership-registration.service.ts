@@ -29,19 +29,33 @@ export class MembershipRegistrationService {
         ? registration.toObject()
         : registration;
 
-    if (obj.avatar && !obj.avatar.startsWith('http://') && !obj.avatar.startsWith('https://')) {
+    if (
+      obj.avatar &&
+      !obj.avatar.startsWith('http://') &&
+      !obj.avatar.startsWith('https://')
+    ) {
       try {
         obj.avatar = await this.minioService.getPresignedUrl(obj.avatar);
       } catch (err: any) {
-        console.error(`Failed to generate presigned URL for avatar ${obj.avatar}:`, err.message);
+        console.error(
+          `Failed to generate presigned URL for avatar ${obj.avatar}:`,
+          err.message,
+        );
       }
     }
 
-    if (obj.logo && !obj.logo.startsWith('http://') && !obj.logo.startsWith('https://')) {
+    if (
+      obj.logo &&
+      !obj.logo.startsWith('http://') &&
+      !obj.logo.startsWith('https://')
+    ) {
       try {
         obj.logo = await this.minioService.getPresignedUrl(obj.logo);
       } catch (err: any) {
-        console.error(`Failed to generate presigned URL for logo ${obj.logo}:`, err.message);
+        console.error(
+          `Failed to generate presigned URL for logo ${obj.logo}:`,
+          err.message,
+        );
       }
     }
 

@@ -114,6 +114,6 @@ export class CreateMembershipRegistrationDto {
   @IsNotEmpty()
   avatarFile?: any;
 
-  @IsNotEmpty()
+  @IsOptional()
   logoFile?: any;
 }
