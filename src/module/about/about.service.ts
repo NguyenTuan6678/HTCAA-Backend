@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+
 import { AboutUs } from '../../schema/about-setting.schema';
 import { UpdateAboutUsDto } from './dto/update-excutve-board.req';
 import { ERROR_INFO, ERROR_RES } from '../../constants/error.const';

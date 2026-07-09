@@ -1,15 +1,13 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { MinioModule } from '../minio/minio.module';
 
+import { MinioModule } from '../minio/minio.module';
 import {
   MembershipRegistration,
   MembershipRegistrationSchema,
 } from '../../schema/membership-registration.schema';
-
 import { MembershipRegistrationController } from './membership-registration.controller';
 import { MembershipRegistrationService } from './membership-registration.service';
-
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 

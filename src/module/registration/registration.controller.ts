@@ -16,7 +16,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { CurrentUser } from '../../users/auth/decorators/current-user.decorator';

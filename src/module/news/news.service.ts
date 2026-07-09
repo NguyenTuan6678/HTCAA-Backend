@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+
 import { News } from '../../schema/news.schema';
 import { NewsCategory } from '../../schema/news-category.schema';
 import { User } from '../../schema/user.schema';
 import { ERROR_INFO, ERROR_RES } from '../../constants/error.const';
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 import { CreateNewsDto } from './dto/create-news.req';
 import { UpdateNewsDto } from './dto/update-news.req';
 import { QueryNewsDto } from './dto/query-news.req';

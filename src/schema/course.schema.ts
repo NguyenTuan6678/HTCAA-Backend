@@ -4,7 +4,6 @@ import { HydratedDocument, Types } from 'mongoose';
 import { User } from './user.schema';
 import { CourseStatus } from '../utils/course-status.enum';
 import { CourseType } from '../utils/course-type.enum';
-import { CourseCategory } from './course-category.schema';
 
 export type CourseDocument = HydratedDocument<Course>;
 

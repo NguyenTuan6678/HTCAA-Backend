@@ -5,7 +5,6 @@ import {
   HomepageSetting,
   HomepageSettingSchema,
 } from '../../schema/homepage-setting.schema';
-
 import { News, NewsSchema } from '../../schema/news.schema';
 import {
   NewsCategory,
@@ -13,10 +12,8 @@ import {
 } from '../../schema/news-category.schema';
 import { User, UserSchema } from '../../schema/user.schema';
 import { Member, MemberSchema } from '../../schema/member.schema';
-
 import { HomepageController } from './homepage.controller';
 import { HomepageService } from './homepage.service';
-
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 import { MinioModule } from '../minio/minio.module';

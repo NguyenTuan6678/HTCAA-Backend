@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+
 import { CreateFaqDto } from './dto/create-faq.req';
 import { UpdateFaqDto } from './dto/update-faq.req';
 import { QueryFaqDto } from './dto/query-faq.req';
@@ -10,7 +11,7 @@ import { QueryFaqCategoryDto } from './dto/query-faq-category.req';
 import { ERROR_RES, ERROR_INFO } from '../../constants/error.const';
 import { Faq, FaqStatus } from '../../schema/faqs.schema';
 import { FaqCategory } from '../../schema/faq-category.schema';
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 import { escapeRegex } from '../../utils/escape-regex';
 
 @Injectable()

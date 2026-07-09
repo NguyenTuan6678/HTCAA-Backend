@@ -14,11 +14,12 @@ import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Response } from 'express';
+
 import { LoggerService } from '../../common/loggers/logger.service';
 import { ERROR_RES, ERROR_INFO } from '../../constants/error.const';
 import { User } from '../../schema/user.schema';
 import { MessageResponse } from '../../types/message.res';
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 import { comparePassword } from '../../utils/validate-password';
 import { ChangePasswordDto } from './dto/change-password.req';
 import { LoginReqType } from './dto/login.req';

@@ -7,7 +7,8 @@ import {
   IsString,
   MinLength,
 } from 'class-validator';
-import { Role } from '../../utils/role/role';
+
+import { Role } from '../../utils/role.enum';
 
 export class UpdateUserDto {
   @ApiPropertyOptional({

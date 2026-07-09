@@ -9,7 +9,6 @@ import {
   Post,
   Put,
   Query,
-  Req,
   UploadedFile,
   UploadedFiles,
   UseGuards,
@@ -24,32 +23,23 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { Request } from 'express';
 import { extname } from 'path';
 import { memoryStorage } from 'multer';
-import {
-  FileFieldsInterceptor,
-  FileInterceptor,
-  FilesInterceptor,
-} from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 
 import { NewsService } from './news.service';
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 import { CurrentUser } from '../../users/auth/decorators/current-user.decorator';
-
 import { CreateNewsDto } from './dto/create-news.req';
 import { UpdateNewsDto } from './dto/update-news.req';
 import { QueryNewsDto } from './dto/query-news.req';
 import { QueryAdminNewsDto } from './dto/query-admin-news.req';
-
 import { CreateNewsCategoryDto } from './dto/create-news-category.req';
 import { UpdateNewsCategoryDto } from './dto/update-news-category.req';
 import { QueryNewsCategoryDto } from './dto/query-news-category.req';
-
 import { CreateNewsCommentDto } from './dto/create-news-comment.req';
 import { QueryNewsCommentDto } from './dto/query-news-comment.req';
 import { UpdateNewsCommentDto } from './dto/update-news-comment.req';
-
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';

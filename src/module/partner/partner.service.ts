@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+
 import { Partner, PartnerDocument } from '../../schema/partner.schema';
 import { CreatePartnerDto } from './dto/create-partner.req';
 import { UpdatePartnerDto } from './dto/update-partner.req';

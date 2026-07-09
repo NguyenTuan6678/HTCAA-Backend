@@ -1,7 +1,8 @@
 import { Controller, Get, Req, Res, NotFoundException } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { MinioService } from './minio.service';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
+
+import { MinioService } from './minio.service';
 
 @ApiTags('Media')
 @Controller('media')

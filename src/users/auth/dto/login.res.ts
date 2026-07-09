@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
+
 import { MessageResponse } from '../../../types/message.res';
-import { Role } from '../../../utils/role/role';
+import { Role } from '../../../utils/role.enum';
 
 export class AuthUserResType {
   @ApiProperty({ type: 'string' })

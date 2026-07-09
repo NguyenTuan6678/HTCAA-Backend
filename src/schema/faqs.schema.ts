@@ -1,8 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
 
-import { FaqCategory } from './faq-category.schema';
-
 export type FaqDocument = HydratedDocument<Faq>;
 
 export enum FaqStatus {

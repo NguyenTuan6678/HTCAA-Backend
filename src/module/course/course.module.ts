@@ -7,10 +7,8 @@ import {
   CourseCategory,
   CourseCategorySchema,
 } from '../../schema/course-category.schema';
-
 import { CourseController } from './course.controller';
 import { CourseService } from './course.service';
-
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 

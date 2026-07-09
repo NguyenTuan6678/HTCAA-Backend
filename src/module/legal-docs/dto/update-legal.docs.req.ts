@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsMongoId, IsOptional, IsString } from 'class-validator';
+
 import { LegalDocStatus } from '../../../schema/legal-docs.schema';
 
 export class UpdateLegalDocDto {

@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
+
 import { SubscribeDto } from './dto/subscribe.req';
 import { QuerySubscriberDto } from './dto/query-subscriber.req';
 import { MailService } from '../mail/mail.service';

@@ -19,13 +19,14 @@ import {
 } from '@nestjs/swagger';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
+
 import { NewsletterSubscriberService } from './newsletter-subscriber.service';
 import { SubscribeDto } from './dto/subscribe.req';
 import { QuerySubscriberDto } from './dto/query-subscriber.req';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 
 @ApiTags('Newsletter Subscribers')
 @Controller('newsletter-subscriber')

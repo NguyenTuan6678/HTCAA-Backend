@@ -1,6 +1,7 @@
 import { Module, Global } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
+
 import { User, UserSchema } from '../../schema/user.schema';
 import { UsersModule } from '../users.module';
 import { AuthController } from './auth.controller';

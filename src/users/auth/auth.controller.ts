@@ -16,6 +16,8 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { Request, Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
+
 import { ERROR_RES } from '../../constants/error.const';
 import { MessageResponse } from '../../types/message.res';
 import { AuthService } from './auth.service';
@@ -26,7 +28,6 @@ import { RegisterAccountDto } from './dto/register.req';
 import { ResetPasswordDto } from './dto/reset-password.req';
 import { ForgotPasswordDto } from './dto/forgot-password.req';
 import { JwtAuthGuard } from './guards/auth.guard';
-import { Throttle } from '@nestjs/throttler';
 import { RefreshTokenDto } from './dto/refresh-token.req';
 import { CurrentUser } from './decorators/current-user.decorator';
 

@@ -8,6 +8,7 @@ import {
   IsString,
   IsUrl,
 } from 'class-validator';
+
 import { SocialPlatform } from '../../../schema/social-post.schema';
 
 export class CreateSocialPostDto {

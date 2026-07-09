@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+
 import { DocumentsController } from './documents.controller';
 import { DocumentsService } from './documents.service';
 import { MinioModule } from '../minio/minio.module';

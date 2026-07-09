@@ -6,7 +6,6 @@ import { User, UserSchema } from '../../schema/user.schema';
 import { MinioModule } from '../minio/minio.module';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
-
 import { LegalDocsController } from './legal-docs.controller';
 import { LegalDocsService } from './legal-docs.service';
 import {

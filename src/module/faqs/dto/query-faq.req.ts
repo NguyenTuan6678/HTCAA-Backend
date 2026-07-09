@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEnum, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+
 import { FaqStatus } from '../../../schema/faqs.schema';
 
 export class QueryFaqDto {

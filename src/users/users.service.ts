@@ -7,13 +7,14 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+
 import { CreateUserDto } from './dto/create-user.req';
 import { QueryUserDto } from './dto/query-user.req';
 import { UpdateUserDto } from './dto/update-user.req';
 import { ERROR_RES, ERROR_INFO } from '../constants/error.const';
 import { User } from '../schema/user.schema';
 import { LoggerService } from '../common/loggers/logger.service';
-import { Role } from '../utils/role/role';
+import { Role } from '../utils/role.enum';
 import { escapeRegex } from '../utils/escape-regex';
 
 @Injectable()

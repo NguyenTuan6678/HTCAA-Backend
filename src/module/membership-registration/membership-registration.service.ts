@@ -5,7 +5,6 @@ import { Model, Types } from 'mongoose';
 import { MembershipRegistration } from '../../schema/membership-registration.schema';
 import { ERROR_INFO, ERROR_RES } from '../../constants/error.const';
 import { escapeRegex } from '../../utils/escape-regex';
-
 import { CreateMembershipRegistrationDto } from './dto/create-membership-registration.req';
 import { QueryMembershipRegistrationDto } from './dto/query-membership-registration.req';
 import { UpdateMembershipRegistrationDto } from './dto/update-membership-registration.req';

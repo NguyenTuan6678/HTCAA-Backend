@@ -1,9 +1,10 @@
 import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 import { AboutUsService } from './about.service';
 import { UpdateAboutUsDto } from './dto/update-excutve-board.req';
 

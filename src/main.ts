@@ -3,15 +3,16 @@ declare const module: any;
 import { join } from 'path';
 import cookieParser from 'cookie-parser';
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import helmet from 'helmet';
 import { NestExpressApplication } from '@nestjs/platform-express';
+
+import { AppModule } from './app.module';
 import { LoggerService } from './common/loggers/logger.service';
 import { ValidationPipe } from '@nestjs/common/pipes/validation.pipe';
 import { AllExceptionsFilter } from './common/filters/all-exception.filter';
 import { ResponseErrorInterceptor } from './common/interceptors/response-error.interceptor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { printServerBanner } from './banner/server-banner';
-import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);

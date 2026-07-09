@@ -1,7 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
-
 import { CourseStatus } from '../../../utils/course-status.enum';
 import { CourseType } from '../../../utils/course-type.enum';
 

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
+
 import { CreateContactDto } from './dto/create-contact.req';
 import { QueryContactDto } from './dto/query-contact.req';
 import { UpdateContactStatusDto } from './dto/update-contact-status.req';

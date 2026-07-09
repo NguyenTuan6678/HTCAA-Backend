@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 import { MinioModule } from '../minio/minio.module';

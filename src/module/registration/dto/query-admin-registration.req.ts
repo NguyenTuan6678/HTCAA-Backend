@@ -8,6 +8,7 @@ import {
   IsOptional,
   Min,
 } from 'class-validator';
+
 import { RegistrationStatus } from '../../../utils/registration-status.enum';
 
 export class QueryAdminRegistrationDto {

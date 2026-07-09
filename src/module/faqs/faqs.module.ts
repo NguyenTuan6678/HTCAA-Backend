@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+
 import { FaqsController } from './faqs.controller';
 import { FaqsService } from './faqs.service';
 import { Faq, FaqSchema } from '../../schema/faqs.schema';

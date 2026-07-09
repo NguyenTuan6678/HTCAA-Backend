@@ -16,6 +16,7 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+
 import { ContactService } from './contact.service';
 import { CreateContactDto } from './dto/create-contact.req';
 import { QueryContactDto } from './dto/query-contact.req';
@@ -23,7 +24,7 @@ import { UpdateContactStatusDto } from './dto/update-contact-status.req';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 
 @ApiTags('Contact')
 @Controller('contact')

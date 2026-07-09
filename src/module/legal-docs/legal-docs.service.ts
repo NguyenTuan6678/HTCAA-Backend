@@ -8,10 +8,11 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Response } from 'express';
+
 import { LegalDoc, LegalDocStatus } from '../../schema/legal-docs.schema';
 import { User } from '../../schema/user.schema';
 import { ERROR_INFO, ERROR_RES } from '../../constants/error.const';
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 import { MinioService } from '../minio/minio.service';
 import { escapeRegex } from '../../utils/escape-regex';
 import { CreateLegalDocDto } from './dto/create-legal-docs.req';

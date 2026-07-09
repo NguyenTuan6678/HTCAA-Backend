@@ -8,6 +8,7 @@ import {
   IsString,
   Min,
 } from 'class-validator';
+
 import { DocumentStatus } from '../../../schema/documents.schema';
 
 export class QueryDocumentDto {

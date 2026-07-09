@@ -8,6 +8,7 @@ import {
   IsString,
   Min,
 } from 'class-validator';
+
 import { LegalDocStatus } from '../../../schema/legal-docs.schema';
 
 export class QueryLegalDocDto {

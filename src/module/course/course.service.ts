@@ -6,7 +6,6 @@ import { Course } from '../../schema/course.schema';
 import { User } from '../../schema/user.schema';
 import { CourseCategory } from '../../schema/course-category.schema';
 import { ERROR_INFO, ERROR_RES } from '../../constants/error.const';
-
 import { CreateCourseDto } from './dto/create-course.req';
 import { QueryCourseDto } from './dto/query-course.req';
 import { CourseStatus } from '../../utils/course-status.enum';

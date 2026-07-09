@@ -7,7 +7,6 @@ import {
   Post,
   Put,
   Query,
-  Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -21,12 +20,12 @@ import {
   ApiOperation,
   ApiParam,
   ApiQuery,
-  ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
-import { Role } from '../../utils/role/role';
+
+import { Role } from '../../utils/role.enum';
 import { MemberService } from './member.service';
 import { RegisterMemberDto } from './dto/register-member.req';
 import { UpdateMemberDto } from './dto/update-member.req';

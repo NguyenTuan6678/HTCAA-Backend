@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+
 import { NewsletterSubscriberController } from './newsletter-subscriber.controller';
 import { NewsletterSubscriberService } from './newsletter-subscriber.service';
 import { MailModule } from '../mail/mail.module';

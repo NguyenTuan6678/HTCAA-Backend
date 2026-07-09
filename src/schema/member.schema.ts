@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+
 import { User } from './user.schema';
 import { MemberStatus } from '../utils/member-status.enum';
 import { MemberType } from '../utils/member-type.enum';

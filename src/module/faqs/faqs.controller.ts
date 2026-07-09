@@ -8,7 +8,6 @@ import {
   Post,
   Put,
   Query,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -18,7 +17,7 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { Request } from 'express';
+
 import { FaqsService } from './faqs.service';
 import { CreateFaqDto } from './dto/create-faq.req';
 import { UpdateFaqDto } from './dto/update-faq.req';
@@ -30,7 +29,7 @@ import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { CurrentUser } from '../../users/auth/decorators/current-user.decorator';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 
 @ApiTags('FAQs')
 @Controller('faqs')

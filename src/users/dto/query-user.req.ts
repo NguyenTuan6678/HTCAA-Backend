@@ -8,7 +8,8 @@ import {
   IsString,
   Min,
 } from 'class-validator';
-import { Role } from '../../utils/role/role';
+
+import { Role } from '../../utils/role.enum';
 
 export class QueryUserDto {
   @ApiPropertyOptional({

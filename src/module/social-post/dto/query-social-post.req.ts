@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
+
 import { SocialPlatform } from '../../../schema/social-post.schema';
 
 export class QuerySocialPostDto {

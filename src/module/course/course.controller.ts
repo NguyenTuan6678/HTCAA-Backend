@@ -8,7 +8,6 @@ import {
   Put,
   Patch,
   Query,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -18,7 +17,6 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { Request } from 'express';
 
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.req';
@@ -26,8 +24,7 @@ import { QueryCourseDto } from './dto/query-course.req';
 import { CreateCourseCategoryDto } from './dto/create-course-category.req';
 import { UpdateCourseCategoryDto } from './dto/update-course-category.req';
 import { QueryCourseCategoryDto } from './dto/query-course-category.req';
-
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';

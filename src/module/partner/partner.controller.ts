@@ -23,12 +23,13 @@ import {
 } from '@nestjs/swagger';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
+
 import { PartnerService } from './partner.service';
 import { CreatePartnerDto } from './dto/create-partner.req';
 import { UpdatePartnerDto } from './dto/update-partner.req';
 import { ReorderPartnersDto } from './dto/reorder-partners.req';
 import { QueryPartnerDto } from './dto/query-partner.req';
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';

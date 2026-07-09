@@ -1,16 +1,27 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsDateString, IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+
 import { MembershipType } from '../../../utils/membership-type.enum';
 
 export class UpdateMembershipRegistrationDto {
-
   @ApiPropertyOptional({ example: 'Nguyễn Văn An' })
   @IsString()
   @IsOptional()
   name: string;
 
-  @ApiPropertyOptional({ enum: MembershipType, example: MembershipType.INDIVIDUAL })
+  @ApiPropertyOptional({
+    enum: MembershipType,
+    example: MembershipType.INDIVIDUAL,
+  })
   @IsEnum(MembershipType)
   @IsOptional()
   memberType: MembershipType;
@@ -101,9 +112,6 @@ export class UpdateMembershipRegistrationDto {
   @IsOptional()
   @IsString()
   introduceBy?: string;
-
-
-
 
   @ApiPropertyOptional({
     example: '5',

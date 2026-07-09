@@ -8,6 +8,7 @@ import {
   IsString,
   Min,
 } from 'class-validator';
+
 import { NewsStatus } from '../../../utils/new-status.enum';
 
 export class QueryAdminNewsDto {

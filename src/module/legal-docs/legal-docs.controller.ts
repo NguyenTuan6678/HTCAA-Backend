@@ -9,7 +9,6 @@ import {
   Post,
   Put,
   Query,
-  Req,
   Res,
   StreamableFile,
   UploadedFile,
@@ -27,9 +26,10 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
-import { Request, Response } from 'express';
+import { Response } from 'express';
+
 import { LegalDocsService } from './legal-docs.service';
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';

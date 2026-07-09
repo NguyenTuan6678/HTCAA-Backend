@@ -9,7 +9,6 @@ import {
   Post,
   Put,
   Query,
-  Req,
   Res,
   StreamableFile,
   UploadedFile,
@@ -27,7 +26,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.req';
@@ -37,7 +36,7 @@ import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { CurrentUser } from '../../users/auth/decorators/current-user.decorator';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 
 // Accept .xlsx and .xls only
 const xlsxFileFilter = (req: any, file: Express.Multer.File, callback: any) => {

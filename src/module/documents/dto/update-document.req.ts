@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsEnum, IsMongoId, IsOptional, IsString } from 'class-validator';
+
 import { DocumentStatus } from '../../../schema/documents.schema';
 
 export class UpdateDocumentDto {

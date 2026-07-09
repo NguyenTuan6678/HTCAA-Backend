@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+
 import { Member, MemberSchema } from '../../schema/member.schema';
 import { User, UserSchema } from '../../schema/user.schema';
 import { MemberController } from './member.controller';

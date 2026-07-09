@@ -22,8 +22,7 @@ import {
 
 import { HomepageService } from './homepage.service';
 import { UpdateHomepageSettingDto } from './dto/update-homepage-setting.req';
-
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';

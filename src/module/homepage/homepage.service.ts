@@ -7,10 +7,8 @@ import { News } from '../../schema/news.schema';
 import { NewsCategory } from '../../schema/news-category.schema';
 import { User } from '../../schema/user.schema';
 import { Member } from '../../schema/member.schema';
-
 import { ERROR_INFO, ERROR_RES } from '../../constants/error.const';
 import { NewsStatus } from '../../utils/new-status.enum';
-
 import { UpdateHomepageSettingDto } from './dto/update-homepage-setting.req';
 import { DEFAULT_HOMEPAGE_SETTING } from './data/homepage-default.data';
 import { MinioService } from '../minio/minio.service';

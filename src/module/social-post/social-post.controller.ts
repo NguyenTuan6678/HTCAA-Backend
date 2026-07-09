@@ -23,12 +23,13 @@ import {
 } from '@nestjs/swagger';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
+
 import { SocialPostService } from './social-post.service';
 import { CreateSocialPostDto } from './dto/create-social-post.req';
 import { UpdateSocialPostDto } from './dto/update-social-post.req';
 import { PinSocialPostDto } from './dto/pin-social-post.req';
 import { QuerySocialPostDto } from './dto/query-social-post.req';
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';

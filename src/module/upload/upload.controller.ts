@@ -22,7 +22,7 @@ import { Request } from 'express';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 import { UploadService } from './upload.service';
 
 const ALLOWED_MIME_TYPES = [

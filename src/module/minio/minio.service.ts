@@ -1,7 +1,8 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import * as Minio from 'minio';
 import { Readable } from 'stream';
+
+import * as Minio from 'minio';
 
 export type UploadedMinioFile = {
   originalName: string;

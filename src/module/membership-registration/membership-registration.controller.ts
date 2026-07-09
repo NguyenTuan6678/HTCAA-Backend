@@ -23,11 +23,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
-
 import { MembershipRegistrationService } from './membership-registration.service';
 import { CreateMembershipRegistrationDto } from './dto/create-membership-registration.req';
 import { QueryMembershipRegistrationDto } from './dto/query-membership-registration.req';

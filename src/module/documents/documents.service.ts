@@ -8,6 +8,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Response } from 'express';
+
 import { CreateDocumentDto } from './dto/create-document.req';
 import { UpdateDocumentDto } from './dto/update-document.req';
 import { QueryDocumentDto } from './dto/query-document.req';
@@ -15,7 +16,7 @@ import { ERROR_RES, ERROR_INFO } from '../../constants/error.const';
 import { MinioService } from '../minio/minio.service';
 import { DocumentFile, DocumentStatus } from '../../schema/documents.schema';
 import { LegalDocsCategory } from '../../schema/legal-docs-category.schema';
-import { Role } from '../../utils/role/role';
+import { Role } from '../../utils/role.enum';
 import { escapeRegex } from '../../utils/escape-regex';
 
 // Only .xlsx (and legacy .xls) allowed
