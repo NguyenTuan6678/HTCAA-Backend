@@ -145,5 +145,5 @@ export class UpdateMembershipRegistrationDto {
   avatarFile?: any;
 
   @IsOptional()
-  logoFile?: any;
+  bannerFile?: any;
 }

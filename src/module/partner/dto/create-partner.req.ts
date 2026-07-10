@@ -9,21 +9,33 @@ export class CreatePartnerDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({
-    example: 'partners/logos/m-invoice.png',
-    description: 'Logo object key or URL',
+  @ApiPropertyOptional({
+    type: 'object',
+    description:
+      'Metadata file logo (lấy từ kết quả upload). Có thể để trống lúc tạo và upload sau qua POST /partners/:id/logo.',
+    properties: {
+      objectName: { type: 'string' },
+      originalName: { type: 'string' },
+      mimeType: { type: 'string' },
+      size: { type: 'number' },
+    },
   })
-  @IsString()
-  @IsNotEmpty()
-  logo: string;
+  @IsOptional()
+  logo?: any;
 
   @ApiPropertyOptional({
-    example: 'partners/banners/m-invoice.png',
-    description: 'Banner object key or URL',
+    type: 'object',
+    description:
+      'Metadata file banner (lấy từ kết quả upload). Có thể upload sau qua POST /partners/:id/banner.',
+    properties: {
+      objectName: { type: 'string' },
+      originalName: { type: 'string' },
+      mimeType: { type: 'string' },
+      size: { type: 'number' },
+    },
   })
-  @IsString()
   @IsOptional()
-  banner?: string;
+  banner?: any;
 
   @ApiProperty({
     example: 'Hệ thống hóa đơn điện tử hàng đầu',

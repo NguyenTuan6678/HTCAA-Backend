@@ -33,25 +33,30 @@ export class SocialPostService {
   private async attachThumbnailUrl(post: any) {
     if (!post) return post;
     const obj = typeof post.toObject === 'function' ? post.toObject() : post;
-    if (obj.thumbnailImage) {
-      if (
-        !obj.thumbnailImage.startsWith('http://') &&
-        !obj.thumbnailImage.startsWith('https://')
-      ) {
-        try {
-          obj.thumbnailImage = await this.minioService.getPresignedUrl(
-            obj.thumbnailImage,
-          );
-        } catch (err: any) {
-          // If MinIO link generation fails, log and fallback to stored path
-          console.error(
-            `Failed to generate presigned URL for ${obj.thumbnailImage}:`,
-            err.message,
-          );
-        }
+    if (obj.thumbnailImage?.objectName) {
+      try {
+        obj.thumbnailImage = await this.minioService.attachPresignedUrl(
+          obj.thumbnailImage,
+        );
+      } catch (err: any) {
+        // If MinIO link generation fails, log and fallback to stored path
+        console.error(
+          `Failed to generate presigned URL for ${obj.thumbnailImage?.objectName}:`,
+          err.message,
+        );
       }
     }
     return obj;
+  }
+
+  private buildFileMetadata(uploadResult: any) {
+    return {
+      objectName: uploadResult.objectName,
+      originalName: uploadResult.originalName,
+      bucket: uploadResult.bucket || 'htcaa',
+      mimetype: uploadResult.mimetype || uploadResult.mimeType,
+      size: uploadResult.size,
+    };
   }
 
   private async attachThumbnailUrlToList(posts: any[]) {
@@ -104,7 +109,9 @@ export class SocialPostService {
       platform: dto.platform,
       title: dto.title,
       postUrl: dto.postUrl,
-      thumbnailImage: dto.thumbnailImage ?? null,
+      thumbnailImage: dto.thumbnailImage
+        ? this.buildFileMetadata(dto.thumbnailImage)
+        : null,
       publishedDate: dto.publishedDate
         ? new Date(dto.publishedDate)
         : new Date(),
@@ -185,7 +192,9 @@ export class SocialPostService {
     if (dto.title !== undefined) updateData.title = dto.title;
     if (dto.postUrl !== undefined) updateData.postUrl = dto.postUrl;
     if (dto.thumbnailImage !== undefined)
-      updateData.thumbnailImage = dto.thumbnailImage ?? null;
+      updateData.thumbnailImage = dto.thumbnailImage
+        ? this.buildFileMetadata(dto.thumbnailImage)
+        : null;
     if (dto.publishedDate !== undefined)
       updateData.publishedDate = new Date(dto.publishedDate);
     if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
@@ -302,23 +311,19 @@ export class SocialPostService {
     // Upload new image to MinIO under social-posts folder
     const result = await this.minioService.uploadFile(file, 'social-posts');
 
-    // Clean up old thumbnail if it was a MinIO object key
-    if (
-      post.thumbnailImage &&
-      !post.thumbnailImage.startsWith('http://') &&
-      !post.thumbnailImage.startsWith('https://')
-    ) {
+    // Clean up old thumbnail file in MinIO, if any
+    if (post.thumbnailImage?.objectName) {
       try {
-        await this.minioService.removeFile(post.thumbnailImage);
+        await this.minioService.removeFile(post.thumbnailImage.objectName);
       } catch (err: any) {
         console.error(
-          `Failed to remove old thumbnail ${post.thumbnailImage}:`,
+          `Failed to remove old thumbnail ${post.thumbnailImage.objectName}:`,
           err.message,
         );
       }
     }
 
-    post.thumbnailImage = result.objectName;
+    post.thumbnailImage = this.buildFileMetadata(result);
     await post.save();
 
     return this.attachThumbnailUrl(post);

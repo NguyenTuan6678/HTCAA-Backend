@@ -41,23 +41,28 @@ export class CourseService {
     const obj =
       typeof course.toObject === 'function' ? course.toObject() : course;
 
-    if (obj.image) {
-      if (
-        !obj.image.startsWith('http://') &&
-        !obj.image.startsWith('https://')
-      ) {
-        try {
-          obj.image = await this.minioService.getPresignedUrl(obj.image);
-        } catch (err: any) {
-          console.error(
-            `Failed to generate presigned URL for course image ${obj.image}:`,
-            err.message,
-          );
-        }
+    if (obj.image?.objectName) {
+      try {
+        obj.image = await this.minioService.attachPresignedUrl(obj.image);
+      } catch (err: any) {
+        console.error(
+          `Failed to generate presigned URL for course image ${obj.image?.objectName}:`,
+          err.message,
+        );
       }
     }
 
     return obj;
+  }
+
+  private buildFileMetadata(uploadResult: any) {
+    return {
+      objectName: uploadResult.objectName,
+      originalName: uploadResult.originalName,
+      bucket: uploadResult.bucket || 'htcaa',
+      mimetype: uploadResult.mimetype || uploadResult.mimeType,
+      size: uploadResult.size,
+    };
   }
 
   private async attachImageUrlsToList(courses: any[]) {
@@ -134,7 +139,9 @@ export class CourseService {
         title: createCourseDto.title,
         date: new Date(createCourseDto.date),
         location: createCourseDto.location ?? null,
-        image: createCourseDto.image ?? null,
+        image: createCourseDto.image
+          ? this.buildFileMetadata(createCourseDto.image)
+          : null,
         learningType: createCourseDto.learningType ?? null,
         duration: createCourseDto.duration ?? null,
         taxHours: createCourseDto.taxHours ?? 0,
@@ -219,7 +226,7 @@ export class CourseService {
         info: ERROR_INFO.SUCCESS,
         message: 'Get courses successfully',
         content: {
-          items,
+          items: itemsWithImages,
           total,
           page,
           limit,
@@ -276,7 +283,9 @@ export class CourseService {
       }
 
       if (updateCourseDto.image !== undefined) {
-        updateData.image = updateCourseDto.image;
+        updateData.image = updateCourseDto.image
+          ? this.buildFileMetadata(updateCourseDto.image)
+          : null;
       }
 
       if (updateCourseDto.learningType !== undefined) {
@@ -605,22 +614,18 @@ export class CourseService {
 
       const result = await this.minioService.uploadFile(file, 'courses/images');
 
-      if (
-        course.image &&
-        !course.image.startsWith('http://') &&
-        !course.image.startsWith('https://')
-      ) {
+      if (course.image?.objectName) {
         try {
-          await this.minioService.removeFile(course.image);
+          await this.minioService.removeFile(course.image.objectName);
         } catch (err: any) {
           console.error(
-            `Failed to remove old course image ${course.image}:`,
+            `Failed to remove old course image ${course.image.objectName}:`,
             err.message,
           );
         }
       }
 
-      course.image = result.objectName;
+      course.image = this.buildFileMetadata(result);
       await course.save();
 
       const courseWithImage = await this.attachImageUrl(course);

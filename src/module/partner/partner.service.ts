@@ -32,24 +32,29 @@ export class PartnerService {
       typeof partner.toObject === 'function' ? partner.toObject() : partner;
 
     for (const field of ['logo', 'banner']) {
-      if (obj[field]) {
-        if (
-          !obj[field].startsWith('http://') &&
-          !obj[field].startsWith('https://')
-        ) {
-          try {
-            obj[field] = await this.minioService.getPresignedUrl(obj[field]);
-          } catch (err: any) {
-            console.error(
-              `Failed to generate presigned URL for ${field} ${obj[field]}:`,
-              err.message,
-            );
-          }
+      if (obj[field]?.objectName) {
+        try {
+          obj[field] = await this.minioService.attachPresignedUrl(obj[field]);
+        } catch (err: any) {
+          console.error(
+            `Failed to generate presigned URL for ${field} ${obj[field]?.objectName}:`,
+            err.message,
+          );
         }
       }
     }
 
     return obj;
+  }
+
+  private buildFileMetadata(uploadResult: any) {
+    return {
+      objectName: uploadResult.objectName,
+      originalName: uploadResult.originalName,
+      bucket: uploadResult.bucket || 'htcaa',
+      mimetype: uploadResult.mimetype || uploadResult.mimeType,
+      size: uploadResult.size,
+    };
   }
 
   private async attachMediaUrlsToList(partners: any[]) {
@@ -67,8 +72,8 @@ export class PartnerService {
 
     const partner = await this.partnerModel.create({
       name: dto.name,
-      logo: dto.logo,
-      banner: dto.banner ?? null,
+      logo: dto.logo ? this.buildFileMetadata(dto.logo) : null,
+      banner: dto.banner ? this.buildFileMetadata(dto.banner) : null,
       tagline: dto.tagline,
       description: dto.description,
       displayOrder,
@@ -135,8 +140,14 @@ export class PartnerService {
     const updateData: any = {};
 
     if (dto.name !== undefined) updateData.name = dto.name;
-    if (dto.logo !== undefined) updateData.logo = dto.logo;
-    if (dto.banner !== undefined) updateData.banner = dto.banner;
+    if (dto.logo !== undefined) {
+      updateData.logo = dto.logo ? this.buildFileMetadata(dto.logo) : null;
+    }
+    if (dto.banner !== undefined) {
+      updateData.banner = dto.banner
+        ? this.buildFileMetadata(dto.banner)
+        : null;
+    }
     if (dto.tagline !== undefined) updateData.tagline = dto.tagline;
     if (dto.description !== undefined) updateData.description = dto.description;
     if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
@@ -227,23 +238,19 @@ export class PartnerService {
     // Upload to MinIO bucket
     const result = await this.minioService.uploadFile(file, 'partners/logos');
 
-    // Clean up old logo if it was a MinIO object key
-    if (
-      partner.logo &&
-      !partner.logo.startsWith('http://') &&
-      !partner.logo.startsWith('https://')
-    ) {
+    // Clean up old logo file in MinIO, if any
+    if (partner.logo?.objectName) {
       try {
-        await this.minioService.removeFile(partner.logo);
+        await this.minioService.removeFile(partner.logo.objectName);
       } catch (err: any) {
         console.error(
-          `Failed to remove old logo ${partner.logo}:`,
+          `Failed to remove old logo ${partner.logo.objectName}:`,
           err.message,
         );
       }
     }
 
-    partner.logo = result.objectName;
+    partner.logo = this.buildFileMetadata(result);
     await partner.save();
 
     return this.attachMediaUrls(partner);
@@ -261,22 +268,18 @@ export class PartnerService {
 
     const result = await this.minioService.uploadFile(file, 'partners/banners');
 
-    if (
-      partner.banner &&
-      !partner.banner.startsWith('http://') &&
-      !partner.banner.startsWith('https://')
-    ) {
+    if (partner.banner?.objectName) {
       try {
-        await this.minioService.removeFile(partner.banner);
+        await this.minioService.removeFile(partner.banner.objectName);
       } catch (err: any) {
         console.error(
-          `Failed to remove old banner ${partner.banner}:`,
+          `Failed to remove old banner ${partner.banner.objectName}:`,
           err.message,
         );
       }
     }
 
-    partner.banner = result.objectName;
+    partner.banner = this.buildFileMetadata(result);
     await partner.save();
 
     return this.attachMediaUrls(partner);

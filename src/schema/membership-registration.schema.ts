@@ -6,6 +6,31 @@ import { MembershipType } from '../utils/membership-type.enum';
 export type MembershipRegistrationDocument =
   HydratedDocument<MembershipRegistration>;
 
+// File metadata for avatar/logo, giống NewsFile bên news.schema.ts,
+// để lưu đủ thông tin (objectName, bucket, mimetype, size...) thay vì chỉ 1 string.
+@Schema({ _id: false })
+export class MembershipFile {
+  @Prop({ type: String, required: true })
+  originalName: string;
+
+  @Prop({ type: String, required: true })
+  objectName: string;
+
+  @Prop({ type: String, required: true })
+  bucket: string;
+
+  @Prop({ type: String, required: true })
+  mimetype: string;
+
+  @Prop({ type: Number, required: true })
+  size: number;
+
+  url?: string | null;
+}
+
+export const MembershipFileSchema =
+  SchemaFactory.createForClass(MembershipFile);
+
 @Schema({ timestamps: true, collection: 'membership_registrations' })
 export class MembershipRegistration {
   @Prop({ type: String, required: true, trim: true })
@@ -53,8 +78,8 @@ export class MembershipRegistration {
   })
   status: string;
 
-  @Prop({ type: String, required: true, trim: true })
-  avatar: string;
+  @Prop({ type: MembershipFileSchema, required: true })
+  avatar: MembershipFile;
 
   @Prop({ type: Boolean, required: true })
   isProfessionalCertification: boolean;
@@ -84,8 +109,8 @@ export class MembershipRegistration {
   @Prop({ type: String, default: null, trim: true })
   introduceBy?: string | null;
 
-  @Prop({ type: String, default: null, trim: true })
-  logo?: string | null;
+  @Prop({ type: MembershipFileSchema, default: null })
+  banner?: MembershipFile | null;
 
   @Prop({ type: String, default: null, trim: true })
   starRating?: string | null;

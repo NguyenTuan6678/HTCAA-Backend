@@ -10,18 +10,32 @@ export class UpdatePartnerDto {
   name?: string;
 
   @ApiPropertyOptional({
-    example: 'partners/logos/m-invoice.png',
+    type: 'object',
+    description:
+      'Metadata file logo mới (lấy từ kết quả upload). Nếu chỉ muốn thay ảnh, nên dùng POST /partners/:id/logo thay vì gửi field này.',
+    properties: {
+      objectName: { type: 'string' },
+      originalName: { type: 'string' },
+      mimeType: { type: 'string' },
+      size: { type: 'number' },
+    },
   })
-  @IsString()
   @IsOptional()
-  logo?: string;
+  logo?: any;
 
   @ApiPropertyOptional({
-    example: 'partners/banners/m-invoice.png',
+    type: 'object',
+    description:
+      'Metadata file banner mới (lấy từ kết quả upload). Nếu chỉ muốn thay ảnh, nên dùng POST /partners/:id/banner thay vì gửi field này.',
+    properties: {
+      objectName: { type: 'string' },
+      originalName: { type: 'string' },
+      mimeType: { type: 'string' },
+      size: { type: 'number' },
+    },
   })
-  @IsString()
   @IsOptional()
-  banner?: string;
+  banner?: any;
 
   @ApiPropertyOptional({
     example: 'Hệ thống hóa đơn điện tử hàng đầu',

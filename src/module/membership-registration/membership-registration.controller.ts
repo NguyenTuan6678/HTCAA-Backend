@@ -53,7 +53,7 @@ export class MembershipRegistrationController {
     FileFieldsInterceptor(
       [
         { name: 'avatar', maxCount: 1 },
-        { name: 'logo', maxCount: 1 },
+        { name: 'banner', maxCount: 1 },
       ],
       {
         storage: memoryStorage(),
@@ -104,10 +104,10 @@ export class MembershipRegistrationController {
           format: 'binary',
           description: 'Required avatar image file',
         },
-        logo: {
+        banner: {
           type: 'string',
           format: 'binary',
-          description: 'Optional logo image file',
+          description: 'Optional banner image file',
         },
       },
       required: [
@@ -133,7 +133,7 @@ export class MembershipRegistrationController {
     @UploadedFiles()
     files: {
       avatar?: Express.Multer.File[];
-      logo?: Express.Multer.File[];
+      banner?: Express.Multer.File[];
     },
   ) {
     if (!files?.avatar?.[0]) {
@@ -141,8 +141,8 @@ export class MembershipRegistrationController {
     }
     dto.avatarFile = files.avatar[0];
 
-    if (files.logo?.[0]) {
-      dto.logoFile = files.logo[0];
+    if (files.banner?.[0]) {
+      dto.bannerFile = files.banner[0];
     }
 
     return this.membershipRegistrationService.create(dto);
@@ -187,15 +187,61 @@ export class MembershipRegistrationController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)
   @ApiBearerAuth('authorization')
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'avatar', maxCount: 1 },
+        { name: 'banner', maxCount: 1 },
+      ],
+      {
+        storage: memoryStorage(),
+        limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+      },
+    ),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        starRating: { type: 'string', example: '5' },
+        tenure: { type: 'string', example: '2026-2028' },
+        tag: { type: 'string', example: 'Vip' },
+        avatar: {
+          type: 'string',
+          format: 'binary',
+          description: 'Optional new avatar image file',
+        },
+        banner: {
+          type: 'string',
+          format: 'binary',
+          description: 'Optional new banner image file',
+        },
+      },
+    },
+  })
   @ApiOperation({
     summary:
-      'Admin/editor: update a membership registration entry (rating, tenure, tag)',
+      'Admin/editor: update a membership registration entry (rating, tenure, tag, avatar, banner)',
   })
   @ApiParam({ name: 'id', description: 'Membership registration id' })
   update(
     @Param('id') id: string,
     @Body() dto: UpdateMembershipRegistrationDto,
+    @UploadedFiles()
+    files: {
+      avatar?: Express.Multer.File[];
+      banner?: Express.Multer.File[];
+    },
   ) {
+    if (files?.avatar?.[0]) {
+      dto.avatarFile = files.avatar[0];
+    }
+
+    if (files?.banner?.[0]) {
+      dto.bannerFile = files.banner[0];
+    }
+
     return this.membershipRegistrationService.update(id, dto);
   }
 }

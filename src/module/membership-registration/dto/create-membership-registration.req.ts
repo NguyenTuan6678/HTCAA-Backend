@@ -115,5 +115,5 @@ export class CreateMembershipRegistrationDto {
   avatarFile?: any;
 
   @IsOptional()
-  logoFile?: any;
+  bannerFile?: any;
 }

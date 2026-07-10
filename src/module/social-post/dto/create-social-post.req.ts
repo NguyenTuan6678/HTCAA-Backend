@@ -36,12 +36,18 @@ export class CreateSocialPostDto {
   postUrl: string;
 
   @ApiPropertyOptional({
-    example:
-      'https://miniostorage.minvoicehcm.vn/htcaa/social-posts/thumbnail.png',
+    type: 'object',
+    description:
+      'Metadata file thumbnail (lấy từ kết quả upload). Có thể để trống lúc tạo và upload sau qua POST /social-posts/:id/thumbnail.',
+    properties: {
+      objectName: { type: 'string' },
+      originalName: { type: 'string' },
+      mimeType: { type: 'string' },
+      size: { type: 'number' },
+    },
   })
-  @IsString()
   @IsOptional()
-  thumbnailImage?: string;
+  thumbnailImage?: any;
 
   @ApiPropertyOptional({
     example: '2026-07-06T00:00:00.000Z',

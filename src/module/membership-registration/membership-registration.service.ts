@@ -29,37 +29,39 @@ export class MembershipRegistrationService {
         ? registration.toObject()
         : registration;
 
-    if (
-      obj.avatar &&
-      !obj.avatar.startsWith('http://') &&
-      !obj.avatar.startsWith('https://')
-    ) {
+    if (obj.avatar?.objectName) {
       try {
-        obj.avatar = await this.minioService.getPresignedUrl(obj.avatar);
+        obj.avatar = await this.minioService.attachPresignedUrl(obj.avatar);
       } catch (err: any) {
         console.error(
-          `Failed to generate presigned URL for avatar ${obj.avatar}:`,
+          `Failed to generate presigned URL for avatar ${obj.avatar?.objectName}:`,
           err.message,
         );
       }
     }
 
-    if (
-      obj.logo &&
-      !obj.logo.startsWith('http://') &&
-      !obj.logo.startsWith('https://')
-    ) {
+    if (obj.banner?.objectName) {
       try {
-        obj.logo = await this.minioService.getPresignedUrl(obj.logo);
+        obj.banner = await this.minioService.attachPresignedUrl(obj.banner);
       } catch (err: any) {
         console.error(
-          `Failed to generate presigned URL for logo ${obj.logo}:`,
+          `Failed to generate presigned URL for banner ${obj.banner?.objectName}:`,
           err.message,
         );
       }
     }
 
     return obj;
+  }
+
+  private buildFileMetadata(uploadResult: any) {
+    return {
+      objectName: uploadResult.objectName,
+      originalName: uploadResult.originalName,
+      bucket: uploadResult.bucket || 'htcaa',
+      mimetype: uploadResult.mimetype,
+      size: uploadResult.size,
+    };
   }
 
   private async attachFileUrlsToList(registrations: any[]) {
@@ -69,22 +71,22 @@ export class MembershipRegistrationService {
   // ─── Public: khách điền form đăng ký hội viên, không cần đăng nhập ────────
   async create(dto: CreateMembershipRegistrationDto) {
     try {
-      let avatarUrl = '';
+      let avatarFile: any = null;
       if (dto.avatarFile) {
         const uploadResult = await this.minioService.uploadFile(
           dto.avatarFile,
           'membership-registrations/avatars',
         );
-        avatarUrl = uploadResult.objectName;
+        avatarFile = this.buildFileMetadata(uploadResult);
       }
 
-      let logoUrl = null;
-      if (dto.logoFile) {
+      let bannerFile: any = null;
+      if (dto.bannerFile) {
         const uploadResult = await this.minioService.uploadFile(
-          dto.logoFile,
-          'membership-registrations/logos',
+          dto.bannerFile,
+          'membership-registrations/banners',
         );
-        logoUrl = uploadResult.objectName;
+        bannerFile = this.buildFileMetadata(uploadResult);
       }
 
       const registration = await this.membershipRegistrationModel.create({
@@ -100,7 +102,7 @@ export class MembershipRegistrationService {
         email: dto.email,
         status: 'pending',
         joinAt: null,
-        avatar: avatarUrl,
+        avatar: avatarFile,
         isProfessionalCertification: dto.isProfessionalCertification,
         professionalCertificationNumber: dto.professionalCertificationNumber,
         companyName: dto.companyName,
@@ -110,7 +112,7 @@ export class MembershipRegistrationService {
         companyJobType: dto.companyJobType ?? null,
         companySlogan: dto.companySlogan ?? null,
         introduceBy: dto.introduceBy ?? null,
-        logo: logoUrl,
+        banner: bannerFile,
         isActive: true,
       });
 
@@ -286,10 +288,70 @@ export class MembershipRegistrationService {
         };
       }
 
+      const existing = await this.membershipRegistrationModel.findOne({
+        _id: new Types.ObjectId(id),
+        isActive: true,
+      });
+
+      if (!existing) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Membership registration not found',
+          content: null,
+        };
+      }
+
       const updateData: any = {};
       if (dto.starRating !== undefined) updateData.starRating = dto.starRating;
       if (dto.tenure !== undefined) updateData.tenure = dto.tenure;
       if (dto.tag !== undefined) updateData.tag = dto.tag;
+
+      // Nếu có file avatar mới: upload lên MinIO, xoá file cũ, cập nhật metadata mới
+      if (dto.avatarFile) {
+        const uploadResult = await this.minioService.uploadFile(
+          dto.avatarFile,
+          'membership-registrations/avatars',
+        );
+
+        if ((existing as any).avatar?.objectName) {
+          try {
+            await this.minioService.removeFile(
+              (existing as any).avatar.objectName,
+            );
+          } catch (err: any) {
+            console.error(
+              `Failed to remove old avatar ${(existing as any).avatar.objectName}:`,
+              err.message,
+            );
+          }
+        }
+
+        updateData.avatar = this.buildFileMetadata(uploadResult);
+      }
+
+      // Nếu có file banner mới: upload lên MinIO, xoá file cũ, cập nhật metadata mới
+      if (dto.bannerFile) {
+        const uploadResult = await this.minioService.uploadFile(
+          dto.bannerFile,
+          'membership-registrations/banners',
+        );
+
+        if ((existing as any).banner?.objectName) {
+          try {
+            await this.minioService.removeFile(
+              (existing as any).banner.objectName,
+            );
+          } catch (err: any) {
+            console.error(
+              `Failed to remove old banner ${(existing as any).banner.objectName}:`,
+              err.message,
+            );
+          }
+        }
+
+        updateData.banner = this.buildFileMetadata(uploadResult);
+      }
 
       const updated = await this.membershipRegistrationModel.findOneAndUpdate(
         { _id: new Types.ObjectId(id), isActive: true },

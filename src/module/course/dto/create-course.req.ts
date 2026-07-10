@@ -34,12 +34,18 @@ export class CreateCourseDto {
   location?: string;
 
   @ApiPropertyOptional({
-    example: 'courses/images/cover.png',
-    description: 'Course image object key or URL',
+    type: 'object',
+    description:
+      'Metadata file ảnh khóa học (lấy từ kết quả upload). Có thể để trống lúc tạo và upload sau qua POST /courses/:id/image.',
+    properties: {
+      objectName: { type: 'string' },
+      originalName: { type: 'string' },
+      mimeType: { type: 'string' },
+      size: { type: 'number' },
+    },
   })
   @IsOptional()
-  @IsString()
-  image?: string;
+  image?: any;
 
   @ApiPropertyOptional({
     example: 'offline',

@@ -7,6 +7,30 @@ import { CourseType } from '../utils/course-type.enum';
 
 export type CourseDocument = HydratedDocument<Course>;
 
+// File metadata for image, giống NewsFile / MembershipFile / PartnerFile / SocialPostFile,
+// để lưu đủ thông tin (objectName, bucket, mimetype, size...) thay vì chỉ 1 string.
+@Schema({ _id: false })
+export class CourseFile {
+  @Prop({ type: String, required: true })
+  originalName: string;
+
+  @Prop({ type: String, required: true })
+  objectName: string;
+
+  @Prop({ type: String, required: true })
+  bucket: string;
+
+  @Prop({ type: String, required: true })
+  mimetype: string;
+
+  @Prop({ type: Number, required: true })
+  size: number;
+
+  url?: string | null;
+}
+
+export const CourseFileSchema = SchemaFactory.createForClass(CourseFile);
+
 @Schema({ timestamps: true, collection: 'courses' })
 export class Course {
   @Prop({ type: Types.ObjectId, ref: User.name, required: true })
@@ -21,8 +45,8 @@ export class Course {
   @Prop({ type: String, default: null, trim: true })
   location?: string | null;
 
-  @Prop({ type: String, default: null, trim: true })
-  image?: string | null;
+  @Prop({ type: CourseFileSchema, default: null })
+  image?: CourseFile | null;
 
   @Prop({ type: String, default: null, trim: true })
   learningType?: string | null;
