@@ -16,6 +16,8 @@ import {
   NewsCommentSchema,
 } from '../../schema/news-comment.schema';
 import { MinioModule } from '../minio/minio.module';
+import { MailModule } from '../mail/mail.module';
+import { NewsletterSubscriberModule } from '../newsletter-subscriber/newsletter-subscriber.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { MinioModule } from '../minio/minio.module';
       { name: NewsComment.name, schema: NewsCommentSchema },
     ]),
     MinioModule,
+    MailModule,
+    NewsletterSubscriberModule,
   ],
   controllers: [NewsController],
   providers: [NewsService, JwtAuthGuard, RolesGuard],

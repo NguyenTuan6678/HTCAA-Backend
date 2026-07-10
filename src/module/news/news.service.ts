@@ -21,6 +21,8 @@ import { QueryNewsCommentDto } from './dto/query-news-comment.req';
 import { UpdateNewsCommentDto } from './dto/update-news-comment.req';
 import { MinioService } from '../minio/minio.service';
 import { escapeRegex } from '../../utils/escape-regex';
+import { MailService } from '../mail/mail.service';
+import { NewsletterSubscriberService } from '../newsletter-subscriber/newsletter-subscriber.service';
 
 @Injectable()
 export class NewsService {
@@ -38,6 +40,8 @@ export class NewsService {
     private readonly newsCommentModel: Model<NewsComment>,
 
     private readonly minioService: MinioService,
+    private readonly mailService: MailService,
+    private readonly newsletterSubscriberService: NewsletterSubscriberService,
   ) {}
 
   // =========================
@@ -227,6 +231,45 @@ export class NewsService {
 
   private async attachNewsListFileUrls(newsList: any[]) {
     return Promise.all(newsList.map((news) => this.attachNewsFileUrls(news)));
+  }
+
+  // Gửi mail thông báo cho toàn bộ subscriber đã confirmed khi có tin mới
+  // được publish. Chạy "fire-and-forget" từ publish() — tự bắt lỗi bên trong,
+  // không để lỗi gửi mail ảnh hưởng tới response trả về cho admin.
+  private async notifySubscribersOfPublishedNews(news: any) {
+    try {
+      const emails =
+        await this.newsletterSubscriberService.findConfirmedEmails();
+
+      if (emails.length === 0) {
+        return;
+      }
+
+      const newsWithUrls = await this.attachNewsFileUrls(news);
+
+      // Lưu ý: thumbnail.url là presigned URL của MinIO, có thời hạn hết hạn
+      // (thường vài phút tới vài giờ tùy cấu hình). Nếu subscriber mở email
+      // sau khi URL hết hạn, ảnh sẽ không hiển thị được. Cân nhắc: (1) tạo
+      // presigned URL với thời hạn dài hơn riêng cho mục đích gửi mail, hoặc
+      // (2) cấu hình bucket/object này ở chế độ public-read nếu ảnh không
+      // nhạy cảm, để dùng URL cố định thay vì presigned URL.
+      const { sent, failed } =
+        await this.mailService.sendNewsNotificationEmails(emails, {
+          title: newsWithUrls.title,
+          slug: newsWithUrls.slug,
+          summary: newsWithUrls.summary ?? null,
+          thumbnailUrl: newsWithUrls.thumbnail?.url ?? null,
+        });
+
+      console.log(
+        `[News] Sent publish notification for "${newsWithUrls.title}": ${sent} sent, ${failed.length} failed.`,
+      );
+    } catch (err: any) {
+      console.error(
+        '[News] Failed to notify subscribers of new news:',
+        err.message,
+      );
+    }
   }
 
   // =========================
@@ -924,6 +967,10 @@ export class NewsService {
           content: null,
         };
       }
+
+      // Không await: gửi mail thông báo chạy nền, không làm chậm response
+      // trả về cho admin. Lỗi (nếu có) đã được log riêng bên trong hàm.
+      void this.notifySubscribersOfPublishedNews(news);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,

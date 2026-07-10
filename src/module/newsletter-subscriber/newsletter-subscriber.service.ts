@@ -426,6 +426,17 @@ export class NewsletterSubscriberService {
   // HELPER METHODS
   // =========================
 
+  // Danh sách email của subscriber đã xác nhận (confirmed) và còn active,
+  // dùng cho NewsService để gửi mail thông báo tin tức mới.
+  async findConfirmedEmails(): Promise<string[]> {
+    const subscribers = await this.subscriberModel
+      .find({ confirmed: true, isActive: true })
+      .select('email')
+      .lean<{ email: string }[]>();
+
+    return subscribers.map((s: { email: string }) => s.email);
+  }
+
   private async sendConfirmationMailSafely(email: string, token: string) {
     try {
       const backendUrl =
