@@ -11,6 +11,7 @@ import { CourseController } from './course.controller';
 import { CourseService } from './course.service';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
+import { MinioModule } from '../minio/minio.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { RolesGuard } from '../../users/auth/guards/roles.guard';
         schema: CourseCategorySchema,
       },
     ]),
+    MinioModule,
   ],
   controllers: [CourseController],
   providers: [CourseService, JwtAuthGuard, RolesGuard],

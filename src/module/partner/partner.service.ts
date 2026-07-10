@@ -26,27 +26,34 @@ export class PartnerService {
   // HELPERS
   // =========================
 
-  private async attachLogoUrl(partner: any) {
+  private async attachMediaUrls(partner: any) {
     if (!partner) return partner;
     const obj =
       typeof partner.toObject === 'function' ? partner.toObject() : partner;
-    if (obj.logo) {
-      if (!obj.logo.startsWith('http://') && !obj.logo.startsWith('https://')) {
-        try {
-          obj.logo = await this.minioService.getPresignedUrl(obj.logo);
-        } catch (err: any) {
-          console.error(
-            `Failed to generate presigned URL for logo ${obj.logo}:`,
-            err.message,
-          );
+
+    for (const field of ['logo', 'banner']) {
+      if (obj[field]) {
+        if (
+          !obj[field].startsWith('http://') &&
+          !obj[field].startsWith('https://')
+        ) {
+          try {
+            obj[field] = await this.minioService.getPresignedUrl(obj[field]);
+          } catch (err: any) {
+            console.error(
+              `Failed to generate presigned URL for ${field} ${obj[field]}:`,
+              err.message,
+            );
+          }
         }
       }
     }
+
     return obj;
   }
 
-  private async attachLogoUrlToList(partners: any[]) {
-    return Promise.all(partners.map((p) => this.attachLogoUrl(p)));
+  private async attachMediaUrlsToList(partners: any[]) {
+    return Promise.all(partners.map((p) => this.attachMediaUrls(p)));
   }
 
   // =========================
@@ -61,13 +68,14 @@ export class PartnerService {
     const partner = await this.partnerModel.create({
       name: dto.name,
       logo: dto.logo,
+      banner: dto.banner ?? null,
       tagline: dto.tagline,
       description: dto.description,
       displayOrder,
       isActive: dto.isActive ?? true,
     });
 
-    return this.attachLogoUrl(partner);
+    return this.attachMediaUrls(partner);
   }
 
   async findAll(query: QueryPartnerDto) {
@@ -95,7 +103,7 @@ export class PartnerService {
       this.partnerModel.countDocuments(filter),
     ]);
 
-    const itemsWithUrls = await this.attachLogoUrlToList(items);
+    const itemsWithUrls = await this.attachMediaUrlsToList(items);
 
     return {
       items: itemsWithUrls,
@@ -116,7 +124,7 @@ export class PartnerService {
       throw new NotFoundException('Đối tác không tồn tại.');
     }
 
-    return this.attachLogoUrl(partner);
+    return this.attachMediaUrls(partner);
   }
 
   async update(id: string, dto: UpdatePartnerDto) {
@@ -128,6 +136,7 @@ export class PartnerService {
 
     if (dto.name !== undefined) updateData.name = dto.name;
     if (dto.logo !== undefined) updateData.logo = dto.logo;
+    if (dto.banner !== undefined) updateData.banner = dto.banner;
     if (dto.tagline !== undefined) updateData.tagline = dto.tagline;
     if (dto.description !== undefined) updateData.description = dto.description;
     if (dto.isActive !== undefined) updateData.isActive = dto.isActive;
@@ -141,7 +150,7 @@ export class PartnerService {
       throw new NotFoundException('Đối tác không tồn tại.');
     }
 
-    return this.attachLogoUrl(partner);
+    return this.attachMediaUrls(partner);
   }
 
   async delete(id: string) {
@@ -237,7 +246,40 @@ export class PartnerService {
     partner.logo = result.objectName;
     await partner.save();
 
-    return this.attachLogoUrl(partner);
+    return this.attachMediaUrls(partner);
+  }
+
+  async uploadBanner(id: string, file: Express.Multer.File) {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new BadRequestException('ID đối tác không hợp lệ.');
+    }
+
+    const partner = await this.partnerModel.findById(id);
+    if (!partner) {
+      throw new NotFoundException('Đối tác không tồn tại.');
+    }
+
+    const result = await this.minioService.uploadFile(file, 'partners/banners');
+
+    if (
+      partner.banner &&
+      !partner.banner.startsWith('http://') &&
+      !partner.banner.startsWith('https://')
+    ) {
+      try {
+        await this.minioService.removeFile(partner.banner);
+      } catch (err: any) {
+        console.error(
+          `Failed to remove old banner ${partner.banner}:`,
+          err.message,
+        );
+      }
+    }
+
+    partner.banner = result.objectName;
+    await partner.save();
+
+    return this.attachMediaUrls(partner);
   }
 
   // =========================
@@ -249,12 +291,13 @@ export class PartnerService {
       .find({ isActive: true })
       .sort({ displayOrder: 1, createdAt: -1 });
 
-    const partnersWithUrls = await this.attachLogoUrlToList(partners);
+    const partnersWithUrls = await this.attachMediaUrlsToList(partners);
 
     // Map output to only return presentation fields
-    return partnersWithUrls.map((p) => ({
+    return partnersWithUrls.map((p: any) => ({
       name: p.name,
       logo: p.logo,
+      banner: p.banner,
       tagline: p.tagline,
       description: p.description,
       displayOrder: p.displayOrder,

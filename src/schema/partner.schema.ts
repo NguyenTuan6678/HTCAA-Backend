@@ -11,6 +11,9 @@ export class Partner {
   @Prop({ type: String, required: true })
   logo: string;
 
+  @Prop({ type: String, default: null })
+  banner?: string | null;
+
   @Prop({ type: String, required: true, trim: true })
   tagline: string;
 

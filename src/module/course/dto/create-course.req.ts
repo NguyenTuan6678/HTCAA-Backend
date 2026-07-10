@@ -34,6 +34,14 @@ export class CreateCourseDto {
   location?: string;
 
   @ApiPropertyOptional({
+    example: 'courses/images/cover.png',
+    description: 'Course image object key or URL',
+  })
+  @IsOptional()
+  @IsString()
+  image?: string;
+
+  @ApiPropertyOptional({
     example: 'offline',
   })
   @IsOptional()

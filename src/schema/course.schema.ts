@@ -22,6 +22,9 @@ export class Course {
   location?: string | null;
 
   @Prop({ type: String, default: null, trim: true })
+  image?: string | null;
+
+  @Prop({ type: String, default: null, trim: true })
   learningType?: string | null;
 
   // Thời lượng khóa học, dạng free-text (VD: "4 giờ", "2 ngày", "08:00 - 17:00")

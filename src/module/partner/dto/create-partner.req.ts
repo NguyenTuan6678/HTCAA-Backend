@@ -17,6 +17,14 @@ export class CreatePartnerDto {
   @IsNotEmpty()
   logo: string;
 
+  @ApiPropertyOptional({
+    example: 'partners/banners/m-invoice.png',
+    description: 'Banner object key or URL',
+  })
+  @IsString()
+  @IsOptional()
+  banner?: string;
+
   @ApiProperty({
     example: 'Hệ thống hóa đơn điện tử hàng đầu',
   })

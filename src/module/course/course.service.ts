@@ -1,4 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 
@@ -15,6 +19,7 @@ import { CreateCourseCategoryDto } from './dto/create-course-category.req';
 import { UpdateCourseCategoryDto } from './dto/update-course-category.req';
 import { QueryCourseCategoryDto } from './dto/query-course-category.req';
 import { escapeRegex } from '../../utils/escape-regex';
+import { MinioService } from '../minio/minio.service';
 
 @Injectable()
 export class CourseService {
@@ -27,7 +32,37 @@ export class CourseService {
 
     @InjectModel(CourseCategory.name)
     private readonly courseCategoryModel: Model<CourseCategory>,
+
+    private readonly minioService: MinioService,
   ) {}
+
+  private async attachImageUrl(course: any) {
+    if (!course) return course;
+    const obj =
+      typeof course.toObject === 'function' ? course.toObject() : course;
+
+    if (obj.image) {
+      if (
+        !obj.image.startsWith('http://') &&
+        !obj.image.startsWith('https://')
+      ) {
+        try {
+          obj.image = await this.minioService.getPresignedUrl(obj.image);
+        } catch (err: any) {
+          console.error(
+            `Failed to generate presigned URL for course image ${obj.image}:`,
+            err.message,
+          );
+        }
+      }
+    }
+
+    return obj;
+  }
+
+  private async attachImageUrlsToList(courses: any[]) {
+    return Promise.all(courses.map((course) => this.attachImageUrl(course)));
+  }
 
   private getPopulateQueries() {
     return [
@@ -99,6 +134,7 @@ export class CourseService {
         title: createCourseDto.title,
         date: new Date(createCourseDto.date),
         location: createCourseDto.location ?? null,
+        image: createCourseDto.image ?? null,
         learningType: createCourseDto.learningType ?? null,
         duration: createCourseDto.duration ?? null,
         taxHours: createCourseDto.taxHours ?? 0,
@@ -117,12 +153,14 @@ export class CourseService {
         .findById(course._id)
         .populate(this.getPopulateQueries());
 
+      const courseWithImage = await this.attachImageUrl(populatedCourse);
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Create course successfully',
         content: {
-          course: populatedCourse,
+          course: courseWithImage,
         },
       };
     } catch (error: any) {
@@ -173,6 +211,8 @@ export class CourseService {
           .limit(limit),
         this.courseModel.countDocuments(filter),
       ]);
+
+      const itemsWithImages = await this.attachImageUrlsToList(items as any[]);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
@@ -233,6 +273,10 @@ export class CourseService {
 
       if (updateCourseDto.location !== undefined) {
         updateData.location = updateCourseDto.location;
+      }
+
+      if (updateCourseDto.image !== undefined) {
+        updateData.image = updateCourseDto.image;
       }
 
       if (updateCourseDto.learningType !== undefined) {
@@ -306,12 +350,14 @@ export class CourseService {
         })
         .populate(this.getPopulateQueries());
 
+      const courseWithImage = await this.attachImageUrl(updatedCourse);
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Update course successfully',
         content: {
-          course: updatedCourse,
+          course: courseWithImage,
         },
       };
     } catch (error: any) {
@@ -359,12 +405,14 @@ export class CourseService {
         };
       }
 
+      const courseWithImage = await this.attachImageUrl(deletedCourse);
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Delete course successfully',
         content: {
-          course: deletedCourse,
+          course: courseWithImage,
         },
       };
     } catch (error: any) {
@@ -525,6 +573,71 @@ export class CourseService {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
         message: `Lỗi khi cập nhật danh mục: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async uploadImage(id: string, file: Express.Multer.File) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid course id',
+          content: null,
+        };
+      }
+
+      const course = await this.courseModel.findOne({
+        _id: new Types.ObjectId(id),
+        isActive: true,
+      });
+
+      if (!course) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Course not found',
+          content: null,
+        };
+      }
+
+      const result = await this.minioService.uploadFile(file, 'courses/images');
+
+      if (
+        course.image &&
+        !course.image.startsWith('http://') &&
+        !course.image.startsWith('https://')
+      ) {
+        try {
+          await this.minioService.removeFile(course.image);
+        } catch (err: any) {
+          console.error(
+            `Failed to remove old course image ${course.image}:`,
+            err.message,
+          );
+        }
+      }
+
+      course.image = result.objectName;
+      await course.save();
+
+      const courseWithImage = await this.attachImageUrl(course);
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Upload course image successfully',
+        content: {
+          course: courseWithImage,
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while uploading course image: ${error.message}`,
         content: null,
       };
     }

@@ -17,6 +17,13 @@ export class UpdatePartnerDto {
   logo?: string;
 
   @ApiPropertyOptional({
+    example: 'partners/banners/m-invoice.png',
+  })
+  @IsString()
+  @IsOptional()
+  banner?: string;
+
+  @ApiPropertyOptional({
     example: 'Hệ thống hóa đơn điện tử hàng đầu',
   })
   @IsString()
