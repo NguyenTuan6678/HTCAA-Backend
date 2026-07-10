@@ -112,4 +112,23 @@ export class RegistrationController {
   ) {
     return this.registrationService.verifyMembership(id, verifyMembershipDto);
   }
+
+  @Patch(':id/approve-guest')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({
+    summary:
+      'Admin: verify membership claim and confirm a guest registration in one step (PENDING -> CONFIRMED)',
+  })
+  @ApiParam({ name: 'id', description: 'Registration id' })
+  approveGuestRegistration(
+    @Param('id') id: string,
+    @Body() verifyMembershipDto: VerifyMembershipDto,
+  ) {
+    return this.registrationService.approveGuestRegistration(
+      id,
+      verifyMembershipDto,
+    );
+  }
 }

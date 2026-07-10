@@ -48,6 +48,11 @@ export class Course {
   @Prop({ type: String, default: null, trim: true })
   location?: string | null;
 
+  // Tóm tắt/giới thiệu khóa học, cho phép FE truyền HTML để trình bày đẹp hơn
+  // (không trim vì có thể làm hỏng thẻ HTML ở đầu/cuối chuỗi)
+  @Prop({ type: String, default: null })
+  summary?: string | null;
+
   @Prop({ type: CourseFileSchema, default: null })
   image?: CourseFile | null;
 
@@ -119,4 +124,4 @@ CourseSchema.index({ createdBy: 1 });
 CourseSchema.index({ status: 1 });
 CourseSchema.index({ date: 1 });
 CourseSchema.index({ isActive: 1 });
-CourseSchema.index({ title: 'text', location: 'text' });
+CourseSchema.index({ title: 'text', location: 'text', summary: 'text' });

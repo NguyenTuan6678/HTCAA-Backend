@@ -506,6 +506,89 @@ export class RegistrationService {
     }
   }
 
+  // ─── Admin duyệt đăng ký của khách vãng lai trong 1 bước ──────────────────
+  // Gộp verifyMembership() + confirm() làm một: đối chiếu claim hội viên,
+  // tính giá, rồi chuyển thẳng PENDING -> CONFIRMED. Dùng cho trường hợp
+  // admin muốn duyệt guest registration ngay mà không cần gọi 2 API riêng.
+  async approveGuestRegistration(id: string, dto: VerifyMembershipDto) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid registration id',
+          content: null,
+        };
+      }
+
+      const registration = await this.registrationModel.findById(id);
+
+      if (!registration) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Registration not found',
+          content: null,
+        };
+      }
+
+      if (registration.userId) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message:
+            'This registration belongs to a logged-in user. Use PATCH /:id/confirm instead.',
+          content: null,
+        };
+      }
+
+      if (registration.status !== RegistrationStatus.PENDING) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: `Cannot approve a registration with status "${registration.status}". Only PENDING registrations can be approved.`,
+          content: null,
+        };
+      }
+
+      const course = await this.courseModel.findById(registration.courseId);
+
+      if (!course) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Course not found',
+          content: null,
+        };
+      }
+
+      const price = dto.isMember
+        ? (course.memberPrice ?? course.price)
+        : course.price;
+
+      registration.registrant.isMember = dto.isMember;
+      registration.price = price;
+      registration.membershipVerified = true;
+      registration.status = RegistrationStatus.CONFIRMED;
+      registration.confirmedAt = new Date();
+      await registration.save();
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Approve guest registration successfully',
+        content: { registration },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while approving guest registration: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
   // ─── Admin xác nhận đăng ký (PENDING -> CONFIRMED) ────────────────────────
   async confirm(id: string) {
     try {
@@ -538,12 +621,16 @@ export class RegistrationService {
         };
       }
 
-      if (!registration.membershipVerified) {
+      // Chỉ bắt buộc xác thực hội viên đối với đăng ký của KHÁCH VÃNG LAI
+      // (userId = null, tự khai claimedIsMember). Đăng ký của user đã đăng
+      // nhập đã xác định isMember chính xác ngay từ lúc register() nên
+      // không cần qua bước verify-membership.
+      if (!registration.userId && !registration.membershipVerified) {
         return {
           code: ERROR_RES.CONFLICT_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
           message:
-            'This registration is a guest registration pending membership verification. Please verify membership first.',
+            'This is a guest registration pending membership verification. Please call /verify-membership first, or use PATCH /:id/approve-guest to verify and confirm in one step.',
           content: null,
         };
       }

@@ -35,6 +35,16 @@ export class UpdateCourseDto {
   location?: string;
 
   @ApiPropertyOptional({
+    example:
+      '<p>Khóa học cập nhật các điểm mới trong <strong>chính sách thuế GTGT</strong> năm 2026...</p>',
+    description:
+      'Tóm tắt/giới thiệu khóa học. Chấp nhận HTML để FE tự trình bày (in đậm, xuống dòng, danh sách...).',
+  })
+  @IsOptional()
+  @IsString()
+  summary?: string;
+
+  @ApiPropertyOptional({
     type: 'object',
     description:
       'Metadata file ảnh khóa học mới (lấy từ kết quả upload). Nếu chỉ muốn thay ảnh, nên dùng POST /courses/:id/image thay vì gửi field này.',

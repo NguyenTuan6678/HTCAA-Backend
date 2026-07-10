@@ -9,13 +9,6 @@ export class CreateCourseCategoryDto {
   @IsNotEmpty()
   name: string;
 
-  @ApiProperty({
-    example: 'ke-toan-doanh-nghiep',
-  })
-  @IsString()
-  @IsNotEmpty()
-  slug: string;
-
   @ApiPropertyOptional({
     example: 'Các khóa học về kế toán, chuẩn mực kế toán doanh nghiệp.',
   })

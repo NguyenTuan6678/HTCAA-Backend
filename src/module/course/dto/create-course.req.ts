@@ -34,6 +34,16 @@ export class CreateCourseDto {
   location?: string;
 
   @ApiPropertyOptional({
+    example:
+      '<p>Khóa học cập nhật các điểm mới trong <strong>chính sách thuế GTGT</strong> năm 2026...</p>',
+    description:
+      'Tóm tắt/giới thiệu khóa học. Chấp nhận HTML để FE tự trình bày (in đậm, xuống dòng, danh sách...).',
+  })
+  @IsOptional()
+  @IsString()
+  summary?: string;
+
+  @ApiPropertyOptional({
     type: 'object',
     description:
       'Metadata file ảnh khóa học (lấy từ kết quả upload). Có thể để trống lúc tạo và upload sau qua POST /courses/:id/image.',

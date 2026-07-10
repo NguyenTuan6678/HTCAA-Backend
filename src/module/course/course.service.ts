@@ -100,6 +100,21 @@ export class CourseService {
     return slug;
   }
 
+  private async generateUniqueCourseCategorySlug(
+    name: string,
+  ): Promise<string> {
+    const baseSlug = this.slugify(name);
+    let slug = baseSlug;
+    let count = 1;
+
+    while (await this.courseCategoryModel.exists({ slug })) {
+      slug = `${baseSlug}-${count}`;
+      count++;
+    }
+
+    return slug;
+  }
+
   private getPopulateQueries() {
     return [
       {
@@ -173,6 +188,7 @@ export class CourseService {
         slug,
         date: new Date(createCourseDto.date),
         location: createCourseDto.location ?? null,
+        summary: createCourseDto.summary ?? null,
         image: createCourseDto.image
           ? this.buildFileMetadata(createCourseDto.image)
           : null,
@@ -244,7 +260,11 @@ export class CourseService {
         const escaped = escapeRegex(query.q);
         const regex = new RegExp(escaped, 'i');
 
-        filter.$or = [{ title: regex }, { location: regex }];
+        filter.$or = [
+          { title: regex },
+          { location: regex },
+          { summary: regex },
+        ];
       }
 
       const [items, total] = await Promise.all([
@@ -276,6 +296,49 @@ export class CourseService {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
         message: `There is a problem while getting courses: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  // ─── Lấy chi tiết 1 khóa học theo id ───────────────────────────────────────
+  async findOne(id: string) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid course id',
+          content: null,
+        };
+      }
+
+      const course = await this.courseModel
+        .findOne({ _id: new Types.ObjectId(id), isActive: true })
+        .populate(this.getPopulateQueries());
+
+      if (!course) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Course not found',
+          content: null,
+        };
+      }
+
+      const courseWithImage = await this.attachImageUrl(course);
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Get course successfully',
+        content: { course: courseWithImage },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while getting course: ${error.message}`,
         content: null,
       };
     }
@@ -324,6 +387,10 @@ export class CourseService {
 
       if (updateCourseDto.location !== undefined) {
         updateData.location = updateCourseDto.location;
+      }
+
+      if (updateCourseDto.summary !== undefined) {
+        updateData.summary = updateCourseDto.summary;
       }
 
       if (updateCourseDto.image !== undefined) {
@@ -484,21 +551,11 @@ export class CourseService {
 
   async createCategory(dto: CreateCourseCategoryDto) {
     try {
-      const existing = await this.courseCategoryModel.findOne({
-        slug: dto.slug,
-      });
-      if (existing) {
-        return {
-          code: ERROR_RES.CONFLICT_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Slug danh mục đã tồn tại',
-          content: null,
-        };
-      }
+      const slug = await this.generateUniqueCourseCategorySlug(dto.name);
 
       const category = await this.courseCategoryModel.create({
         name: dto.name,
-        slug: dto.slug,
+        slug,
         description: dto.description ?? null,
         isActive: dto.isActive ?? true,
       });
@@ -510,6 +567,15 @@ export class CourseService {
         content: { category },
       };
     } catch (error: any) {
+      if (error?.code === 11000) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Slug danh mục đã tồn tại',
+          content: null,
+        };
+      }
+
       return {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
@@ -578,23 +644,28 @@ export class CourseService {
         };
       }
 
+      const existingCategory = await this.courseCategoryModel.findOne({
+        _id: new Types.ObjectId(id),
+      });
+
+      if (!existingCategory) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Không tìm thấy danh mục khóa học',
+          content: null,
+        };
+      }
+
       const updateData: any = {};
-      if (dto.name !== undefined) updateData.name = dto.name;
-      if (dto.slug !== undefined) {
-        // check unique slug
-        const existing = await this.courseCategoryModel.findOne({
-          slug: dto.slug,
-          _id: { $ne: new Types.ObjectId(id) },
-        });
-        if (existing) {
-          return {
-            code: ERROR_RES.CONFLICT_ERROR.statusCode,
-            info: ERROR_INFO.FAIL,
-            message: 'Slug danh mục đã tồn tại',
-            content: null,
-          };
+      if (dto.name !== undefined) {
+        updateData.name = dto.name;
+
+        if (dto.name !== (existingCategory as any).name) {
+          updateData.slug = await this.generateUniqueCourseCategorySlug(
+            dto.name,
+          );
         }
-        updateData.slug = dto.slug;
       }
       if (dto.description !== undefined)
         updateData.description = dto.description;
@@ -622,6 +693,15 @@ export class CourseService {
         content: { category },
       };
     } catch (error: any) {
+      if (error?.code === 11000) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Slug danh mục đã tồn tại',
+          content: null,
+        };
+      }
+
       return {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,

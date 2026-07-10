@@ -10,13 +10,6 @@ export class UpdateCourseCategoryDto {
   name?: string;
 
   @ApiPropertyOptional({
-    example: 'ke-toan-doanh-nghiep',
-  })
-  @IsString()
-  @IsOptional()
-  slug?: string;
-
-  @ApiPropertyOptional({
     example: 'Các khóa học về kế toán, chuẩn mực kế toán doanh nghiệp.',
   })
   @IsString()
