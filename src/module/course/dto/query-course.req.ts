@@ -32,6 +32,14 @@ export class QueryCourseDto {
   @IsEnum(CourseType)
   type?: CourseType;
 
+  @ApiPropertyOptional({
+    example: 'cap-nhat-chinh-sach-thue-gtgt-2026',
+    description: 'Lọc chính xác theo slug khóa học',
+  })
+  @IsOptional()
+  @IsString()
+  slug?: string;
+
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
   @Type(() => Number)

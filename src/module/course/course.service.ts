@@ -69,6 +69,37 @@ export class CourseService {
     return Promise.all(courses.map((course) => this.attachImageUrl(course)));
   }
 
+  private normalizeVietnamese(value: string): string {
+    return value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D');
+  }
+
+  private slugify(value: string): string {
+    return this.normalizeVietnamese(value)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+  }
+
+  private async generateUniqueCourseSlug(title: string): Promise<string> {
+    const baseSlug = this.slugify(title);
+    let slug = baseSlug;
+    let count = 1;
+
+    while (await this.courseModel.exists({ slug })) {
+      slug = `${baseSlug}-${count}`;
+      count++;
+    }
+
+    return slug;
+  }
+
   private getPopulateQueries() {
     return [
       {
@@ -134,9 +165,12 @@ export class CourseService {
         categoryIdObj = categoryExists._id;
       }
 
+      const slug = await this.generateUniqueCourseSlug(createCourseDto.title);
+
       const course = await this.courseModel.create({
         createdBy: new Types.ObjectId(userId),
         title: createCourseDto.title,
+        slug,
         date: new Date(createCourseDto.date),
         location: createCourseDto.location ?? null,
         image: createCourseDto.image
@@ -200,6 +234,10 @@ export class CourseService {
 
       if (query.type) {
         filter.type = query.type;
+      }
+
+      if (query.slug) {
+        filter.slug = query.slug;
       }
 
       if (query.q) {
@@ -272,6 +310,12 @@ export class CourseService {
 
       if (updateCourseDto.title !== undefined) {
         updateData.title = updateCourseDto.title;
+
+        if (updateCourseDto.title !== (course as any).title) {
+          updateData.slug = await this.generateUniqueCourseSlug(
+            updateCourseDto.title,
+          );
+        }
       }
 
       if (updateCourseDto.date !== undefined) {

@@ -39,6 +39,9 @@ export class Course {
   @Prop({ type: String, required: true, trim: true })
   title: string;
 
+  @Prop({ type: String, required: true, trim: true })
+  slug: string;
+
   @Prop({ type: Date, required: true })
   date: Date;
 
@@ -111,6 +114,7 @@ export class Course {
 
 export const CourseSchema = SchemaFactory.createForClass(Course);
 
+CourseSchema.index({ slug: 1 }, { unique: true });
 CourseSchema.index({ createdBy: 1 });
 CourseSchema.index({ status: 1 });
 CourseSchema.index({ date: 1 });
