@@ -241,7 +241,7 @@ export class NewsController {
   @UseInterceptors(
     FileInterceptor('thumbnail', {
       storage: memoryStorage(),
-      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+      limits: { fileSize: 30 * 1024 * 1024 }, // 30 MB
       fileFilter: imageFileFilter,
     }),
   )
@@ -279,7 +279,7 @@ export class NewsController {
   @UseInterceptors(
     FilesInterceptor('images', 20, {
       storage: memoryStorage(),
-      limits: { fileSize: 10 * 1024 * 1024 }, // 10MB per file
+      limits: { fileSize: 30 * 1024 * 1024 }, // 30MB per file
       fileFilter: imageFileFilter,
     }),
   )

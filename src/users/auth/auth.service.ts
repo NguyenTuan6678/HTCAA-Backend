@@ -364,8 +364,6 @@ export class AuthService {
       let isGraceReuse = false;
 
       if (!matchesCurrent) {
-        // Không khớp token hiện hành -> kiểm tra xem có phải là token NGAY
-        // TRƯỚC lần rotate gần nhất, và còn trong khoảng grace hay không.
         const previousHash = (user as any).previousRefreshTokenHash;
         const previousExpiresAt = (user as any).previousRefreshTokenExpiresAt;
 
@@ -382,8 +380,6 @@ export class AuthService {
         }
 
         if (!isGraceReuse) {
-          // Token không khớp current, cũng không khớp previous-trong-grace
-          // -> đây là dấu hiệu reuse-attack thật sự. Revoke toàn bộ session.
           (user as any).refreshTokenHash = null;
           (user as any).previousRefreshTokenHash = null;
           (user as any).previousRefreshTokenExpiresAt = null;
@@ -394,11 +390,9 @@ export class AuthService {
         }
       }
 
-      // Hợp lệ (khớp current, hoặc khớp previous trong grace window) -> rotate hoặc trả về access token mới.
       let accessToken: string;
 
       if (matchesCurrent) {
-        // Rotate bình thường: hash hiện hành lùi thành "previous", mở grace window mới.
         const token = await this.generateToken(user);
         accessToken = token.accessToken;
 
@@ -413,9 +407,6 @@ export class AuthService {
 
         this.setRefreshTokenCookie(response, token.refreshToken);
       } else {
-        // isGraceReuse === true: đây là request concurrent sử dụng token cũ vừa mới bị rotate.
-        // KHÔNG tạo/ghi đè refresh token mới để tránh làm mất/hủy cookie refresh token mới thực sự (token2).
-        // Chỉ cấp access token mới dựa trên tokenVersion hiện tại của user để các request concurrent tiếp tục thành công.
         const payload = {
           id: (user as any)._id?.toString() || (user as any).id,
           email: user.email,
@@ -498,7 +489,7 @@ export class AuthService {
 
       if (user) {
         const resetToken = crypto.randomBytes(32).toString('hex');
-        // SHA-256 is fast O(1) query-able and highly secure for high-entropy tokens
+
         const resetTokenHash = crypto
           .createHash('sha256')
           .update(resetToken)
@@ -547,7 +538,6 @@ export class AuthService {
         throw new BadRequestException('Token is required');
       }
 
-      // SHA-256 lookup token
       const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
 
       const matchedUser = await this.userModel

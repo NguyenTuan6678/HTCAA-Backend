@@ -7,7 +7,6 @@ import {
 import { MinioService } from '../minio/minio.service';
 import { ERROR_INFO, ERROR_RES } from '../../constants/error.const';
 
-// Allowed category values — maps to MinIO folder prefix
 const CATEGORY_FOLDER_MAP: Record<string, string> = {
   'about-us': 'about-us/images',
   news: 'news/images',
@@ -27,22 +26,19 @@ export class UploadService {
         throw new BadRequestException('At least one file is required');
       }
 
-      // Resolve folder from category, fall back to general
       const folder =
         (category && CATEGORY_FOLDER_MAP[category]) ?? DEFAULT_FOLDER;
 
-      // Upload all files in parallel
       const uploaded = await Promise.all(
         files.map(async (file) => {
           const result = await this.minioService.uploadFile(file, folder);
-          // Attach a presigned URL immediately so FE can use it right away
           const withUrl = await this.minioService.attachPresignedUrl(result);
           return {
             originalName: file.originalname,
             objectName: withUrl.objectName,
             mimeType: file.mimetype,
             size: file.size,
-            url: withUrl.url, // presigned URL — paste this into any field
+            url: withUrl.url,
           };
         }),
       );
@@ -52,7 +48,7 @@ export class UploadService {
         info: ERROR_INFO.SUCCESS,
         message: `Uploaded ${uploaded.length} file(s) successfully`,
         content: {
-          files: uploaded, // array — even for a single file
+          files: uploaded,
         },
       };
     } catch (error: any) {

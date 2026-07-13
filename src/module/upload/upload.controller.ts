@@ -86,12 +86,10 @@ export class UploadController {
       type: 'object',
       required: ['file', 'category'],
       properties: {
-        // multer key is 'file', FE sends one or more files under this key
         file: {
           type: 'array',
           items: { type: 'string', format: 'binary' },
         },
-        // category controls which MinIO folder the files land in
         category: {
           type: 'string',
           example: 'about-us',
@@ -102,9 +100,8 @@ export class UploadController {
   })
   @UseInterceptors(
     FilesInterceptor('file', 20, {
-      // up to 20 files at once
       storage: memoryStorage(),
-      limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB per file
+      limits: { fileSize: 30 * 1024 * 1024 }, // 30 MB per file
       fileFilter,
     }),
   )

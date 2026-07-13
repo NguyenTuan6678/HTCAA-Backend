@@ -65,7 +65,7 @@ const docFileFilter = (req: any, file: Express.Multer.File, callback: any) => {
 
 const uploadDocInterceptor = FileInterceptor('file', {
   storage: memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+  limits: { fileSize: 30 * 1024 * 1024 }, // 30 MB
   fileFilter: docFileFilter,
 });
 

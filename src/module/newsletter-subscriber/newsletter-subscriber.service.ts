@@ -20,9 +20,7 @@ export class NewsletterSubscriberService {
     private readonly configService: ConfigService,
   ) {}
 
-  // =========================
-  // PUBLIC METHODS
-  // =========================
+  // ─── PUBLIC METHODS  ────────────────────────────────────────────────────────────────
 
   async subscribe(dto: SubscribeDto) {
     try {
@@ -42,7 +40,6 @@ export class NewsletterSubscriberService {
           };
         }
 
-        // If subscribed but not confirmed, regenerate token and send confirmation mail again
         const token = crypto.randomBytes(32).toString('hex');
         subscriber.confirmationToken = token;
         await subscriber.save();
@@ -58,7 +55,6 @@ export class NewsletterSubscriberService {
         };
       }
 
-      // Create new subscriber
       const token = crypto.randomBytes(32).toString('hex');
       subscriber = await this.subscriberModel.create({
         email,
@@ -162,7 +158,7 @@ export class NewsletterSubscriberService {
       }
 
       subscriber.confirmed = true;
-      subscriber.confirmationToken = null; // Clear token after success
+      subscriber.confirmationToken = null;
       await subscriber.save();
 
       return {
@@ -244,9 +240,7 @@ export class NewsletterSubscriberService {
     }
   }
 
-  // =========================
-  // ADMIN METHODS
-  // =========================
+  // ─── ADMIN METHODS ────────────────────────────────────────────────────────────────
 
   async findAll(query: QuerySubscriberDto) {
     try {
@@ -364,7 +358,7 @@ export class NewsletterSubscriberService {
 
       subscriber.confirmed = !subscriber.confirmed;
       if (subscriber.confirmed) {
-        subscriber.confirmationToken = null; // Clear token if manually confirmed
+        subscriber.confirmationToken = null;
       }
       await subscriber.save();
 
@@ -422,12 +416,8 @@ export class NewsletterSubscriberService {
     }
   }
 
-  // =========================
-  // HELPER METHODS
-  // =========================
+  // ─── HELPER METHODS  ────────────────────────────────────────────────────────────────
 
-  // Danh sách email của subscriber đã xác nhận (confirmed) và còn active,
-  // dùng cho NewsService để gửi mail thông báo tin tức mới.
   async findConfirmedEmails(): Promise<string[]> {
     const subscribers = await this.subscriberModel
       .find({ confirmed: true, isActive: true })

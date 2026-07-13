@@ -19,10 +19,9 @@ import { LegalDocsCategory } from '../../schema/legal-docs-category.schema';
 import { Role } from '../../utils/role.enum';
 import { escapeRegex } from '../../utils/escape-regex';
 
-// Only .xlsx (and legacy .xls) allowed
 const ALLOWED_MIME_TYPES = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
-  'application/vnd.ms-excel', // .xls
+  'application/vnd.ms-excel',
 ];
 
 @Injectable()
@@ -37,9 +36,7 @@ export class DocumentsService {
     private readonly minioService: MinioService,
   ) {}
 
-  // =========================
-  // HELPERS
-  // =========================
+  // ───  HELPERS ────────────────────────────────────────────────────────────────
 
   private canModify(doc: any, userId: string, role: Role): boolean {
     if (role === Role.ADMIN) return true;
@@ -144,11 +141,8 @@ export class DocumentsService {
     return { error: null };
   }
 
-  // =========================
-  // CRUD
-  // =========================
+  // ─── ADMIN  ────────────────────────────────────────────────────────────────
 
-  /** Admin/Editor – create document with required .xlsx file */
   async create(
     userId: string,
     dto: CreateDocumentDto,
@@ -179,7 +173,6 @@ export class DocumentsService {
       );
       if (categoryError) return categoryError;
 
-      // Upload file directly to MinIO
       const result = await this.minioService.uploadFile(
         file,
         'legal-docs/files',
@@ -402,9 +395,7 @@ export class DocumentsService {
     }
   }
 
-  // =========================
-  // PUBLISH / UNPUBLISH
-  // =========================
+  // ─── PUBLISH / UNPUBLISH ────────────────────────────────────────────────────────────────
 
   async publish(id: string) {
     try {
@@ -490,9 +481,7 @@ export class DocumentsService {
     }
   }
 
-  // =========================
-  // FILE REPLACE / DELETE
-  // =========================
+  // ─── FILE REPLACE / DELETE ────────────────────────────────────────────────────────────────
 
   async uploadFile(
     id: string,
@@ -527,7 +516,6 @@ export class DocumentsService {
       );
       if (error) return error;
 
-      // Upload file directly to MinIO
       const result = await this.minioService.uploadFile(
         file,
         'legal-docs/files',
@@ -570,11 +558,8 @@ export class DocumentsService {
     }
   }
 
-  // =========================
-  // DOWNLOAD (stream)
-  // =========================
+  // ─── DOWNLOAD (stream) ────────────────────────────────────────────────────────────────
 
-  /** Streams the .xlsx file as an attachment so FE triggers Save-As */
   async downloadFile(id: string, res: Response): Promise<StreamableFile> {
     try {
       if (!Types.ObjectId.isValid(id)) {

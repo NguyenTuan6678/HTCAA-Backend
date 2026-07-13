@@ -3,8 +3,6 @@ import { HydratedDocument } from 'mongoose';
 
 export type PartnerDocument = HydratedDocument<Partner>;
 
-// File metadata for logo/banner, giống NewsFile / MembershipFile,
-// để lưu đủ thông tin (objectName, bucket, mimetype, size...) thay vì chỉ 1 string.
 @Schema({ _id: false })
 export class PartnerFile {
   @Prop({ type: String, required: true })
@@ -53,5 +51,4 @@ export class Partner {
 
 export const PartnerSchema = SchemaFactory.createForClass(Partner);
 
-// Double-ensure sorting index
 PartnerSchema.index({ displayOrder: 1, isActive: 1 });

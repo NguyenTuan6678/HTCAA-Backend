@@ -44,9 +44,7 @@ export class NewsService {
     private readonly newsletterSubscriberService: NewsletterSubscriberService,
   ) {}
 
-  // =========================
-  // HELPERS
-  // =========================
+  // ─── HELPERS  ────────────────────────────────────────────────────────────────
 
   private normalizeVietnamese(str: string): string {
     return str
@@ -233,9 +231,6 @@ export class NewsService {
     return Promise.all(newsList.map((news) => this.attachNewsFileUrls(news)));
   }
 
-  // Gửi mail thông báo cho toàn bộ subscriber đã confirmed khi có tin mới
-  // được publish. Chạy "fire-and-forget" từ publish() — tự bắt lỗi bên trong,
-  // không để lỗi gửi mail ảnh hưởng tới response trả về cho admin.
   private async notifySubscribersOfPublishedNews(news: any) {
     try {
       const emails =
@@ -247,12 +242,6 @@ export class NewsService {
 
       const newsWithUrls = await this.attachNewsFileUrls(news);
 
-      // Lưu ý: thumbnail.url là presigned URL của MinIO, có thời hạn hết hạn
-      // (thường vài phút tới vài giờ tùy cấu hình). Nếu subscriber mở email
-      // sau khi URL hết hạn, ảnh sẽ không hiển thị được. Cân nhắc: (1) tạo
-      // presigned URL với thời hạn dài hơn riêng cho mục đích gửi mail, hoặc
-      // (2) cấu hình bucket/object này ở chế độ public-read nếu ảnh không
-      // nhạy cảm, để dùng URL cố định thay vì presigned URL.
       const { sent, failed } =
         await this.mailService.sendNewsNotificationEmails(emails, {
           title: newsWithUrls.title,
@@ -272,9 +261,7 @@ export class NewsService {
     }
   }
 
-  // =========================
-  // NEWS CATEGORY
-  // =========================
+  // ─── NEWS CATEGORIE  ────────────────────────────────────────────────────────────────
 
   async createCategory(createCategoryDto: CreateNewsCategoryDto) {
     try {
@@ -512,9 +499,7 @@ export class NewsService {
     }
   }
 
-  // =========================
-  // NEWS
-  // =========================
+  // ─── NEWS  ────────────────────────────────────────────────────────────────
 
   async create(userId: string, createNewsDto: CreateNewsDto) {
     try {
@@ -968,8 +953,6 @@ export class NewsService {
         };
       }
 
-      // Không await: gửi mail thông báo chạy nền, không làm chậm response
-      // trả về cho admin. Lỗi (nếu có) đã được log riêng bên trong hàm.
       void this.notifySubscribersOfPublishedNews(news);
 
       return {
@@ -1436,7 +1419,6 @@ export class NewsService {
         return error;
       }
 
-      // Upload to MinIO
       const result = await this.minioService.uploadFile(file, 'news/images');
 
       if ((news as any).thumbnail?.objectName) {
@@ -1553,7 +1535,6 @@ export class NewsService {
         return error;
       }
 
-      // Upload files to MinIO in parallel
       const fileMetadatas = await Promise.all(
         files.map(async (file) => {
           const result = await this.minioService.uploadFile(

@@ -26,9 +26,7 @@ export class SocialPostService {
     private readonly minioService: MinioService,
   ) {}
 
-  // =========================
-  // HELPERS
-  // =========================
+  // ─── HELPERS  ────────────────────────────────────────────────────────────────
 
   private async attachThumbnailUrl(post: any) {
     if (!post) return post;
@@ -39,7 +37,6 @@ export class SocialPostService {
           obj.thumbnailImage,
         );
       } catch (err: any) {
-        // If MinIO link generation fails, log and fallback to stored path
         console.error(
           `Failed to generate presigned URL for ${obj.thumbnailImage?.objectName}:`,
           err.message,
@@ -63,9 +60,7 @@ export class SocialPostService {
     return Promise.all(posts.map((p) => this.attachThumbnailUrl(p)));
   }
 
-  // =========================
-  // CRUD
-  // =========================
+  // ─── CRUD  ────────────────────────────────────────────────────────────────
 
   async create(dto: CreateSocialPostDto) {
     const isActive = dto.isActive ?? true;
@@ -73,7 +68,6 @@ export class SocialPostService {
     let pinnedOrder: number | null = null;
 
     if (isActive) {
-      // 1. Get all current active pinned posts on this platform
       const activePinned = await this.socialPostModel
         .find({
           platform: dto.platform,
@@ -82,7 +76,6 @@ export class SocialPostService {
         })
         .sort({ pinnedOrder: 1, createdAt: -1 });
 
-      // 2. If there are already 3 pinned posts, unpin the oldest/least priority one(s) to make room
       if (activePinned.length >= 3) {
         const postsToUnpin = activePinned.slice(2);
         for (const p of postsToUnpin) {
@@ -92,7 +85,6 @@ export class SocialPostService {
         }
       }
 
-      // 3. Determine the next available pinnedOrder for the remaining active pinned posts
       const remainingPinned = activePinned.slice(0, 2);
       const taken = remainingPinned
         .map((p) => p.pinnedOrder)
@@ -222,7 +214,6 @@ export class SocialPostService {
     }
 
     if (dto.isPinned) {
-      // 1. Check limit of 3 pinned posts on this platform
       const pinnedCount = await this.socialPostModel.countDocuments({
         platform: post.platform,
         isPinned: true,
@@ -236,7 +227,6 @@ export class SocialPostService {
         );
       }
 
-      // 2. Validate/assign pinnedOrder
       let pinnedOrder = dto.pinnedOrder;
       if (pinnedOrder != null) {
         const orderExists = await this.socialPostModel.exists({
@@ -252,7 +242,6 @@ export class SocialPostService {
           );
         }
       } else {
-        // Auto-assign first positive integer order that is not already taken
         const activePinned = await this.socialPostModel.find({
           platform: post.platform,
           isPinned: true,
@@ -308,10 +297,8 @@ export class SocialPostService {
       throw new NotFoundException('Bài viết không tồn tại.');
     }
 
-    // Upload new image to MinIO under social-posts folder
     const result = await this.minioService.uploadFile(file, 'social-posts');
 
-    // Clean up old thumbnail file in MinIO, if any
     if (post.thumbnailImage?.objectName) {
       try {
         await this.minioService.removeFile(post.thumbnailImage.objectName);
@@ -352,7 +339,6 @@ export class SocialPostService {
     const fbWithUrls = await this.attachThumbnailUrlToList(facebookPosts);
     const ytWithUrls = await this.attachThumbnailUrlToList(youtubePosts);
 
-    // Map output to return only needed fields for Frontend presentation
     const mapFields = (p: any) => ({
       title: p.title,
       postUrl: p.postUrl,

@@ -7,8 +7,6 @@ import { CourseType } from '../utils/course-type.enum';
 
 export type CourseDocument = HydratedDocument<Course>;
 
-// File metadata for image, giống NewsFile / MembershipFile / PartnerFile / SocialPostFile,
-// để lưu đủ thông tin (objectName, bucket, mimetype, size...) thay vì chỉ 1 string.
 @Schema({ _id: false })
 export class CourseFile {
   @Prop({ type: String, required: true })
@@ -48,8 +46,6 @@ export class Course {
   @Prop({ type: String, default: null, trim: true })
   location?: string | null;
 
-  // Tóm tắt/giới thiệu khóa học, cho phép FE truyền HTML để trình bày đẹp hơn
-  // (không trim vì có thể làm hỏng thẻ HTML ở đầu/cuối chuỗi)
   @Prop({ type: String, default: null })
   summary?: string | null;
 
@@ -59,20 +55,15 @@ export class Course {
   @Prop({ type: String, default: null, trim: true })
   learningType?: string | null;
 
-  // Thời lượng khóa học, dạng free-text (VD: "4 giờ", "2 ngày", "08:00 - 17:00")
   @Prop({ type: String, default: null, trim: true })
   duration?: string | null;
 
-  // Học phí cho người CHƯA là hội viên, đơn vị VND. null/0 = miễn phí
   @Prop({ type: Number, default: 0 })
   price: number;
 
-  // Học phí ưu đãi cho hội viên, đơn vị VND. Bắt buộc phải nhập khi tạo course
-  // để tránh trường hợp quên set giá hội viên
   @Prop({ type: Number, required: true })
   memberPrice: number;
 
-  // Tên giảng viên (free text), VD: "TS. Nguyễn Văn A" hoặc nhiều tên cách nhau bằng dấu phẩy
   @Prop({ type: String, default: null, trim: true })
   lecturer?: string | null;
 

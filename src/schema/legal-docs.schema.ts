@@ -9,16 +9,16 @@ export enum LegalDocStatus {
 @Schema({ _id: false })
 export class LegalDocFile {
   @Prop({ required: true })
-  objectName: string; // MinIO object key, e.g. "legal-docs/files/1700000000-123456-contract.pdf"
+  objectName: string;
 
   @Prop({ required: true })
-  originalName: string; // original filename, e.g. "contract.pdf"
+  originalName: string;
 
   @Prop({ required: true })
-  mimeType: string; // e.g. "application/pdf"
+  mimeType: string;
 
   @Prop({ required: true })
-  size: number; // file size in bytes
+  size: number;
 
   url?: string | null;
 }
@@ -39,11 +39,9 @@ export class LegalDoc extends Document {
   @Prop({ required: true, trim: true })
   type: string;
 
-  // Ngày văn bản được ban hành (VD: ngày ký nghị định/thông tư)
   @Prop({ type: Date, default: null })
   issuedAt?: Date | null;
 
-  // Ngày văn bản có hiệu lực thi hành
   @Prop({ type: Date, default: null })
   effectiveAt?: Date | null;
 
@@ -54,7 +52,6 @@ export class LegalDoc extends Document {
   })
   status: LegalDocStatus;
 
-  // Stores the uploaded file metadata (PDF, DOCX, etc.)
   @Prop({ type: LegalDocFileSchema, default: null })
   file: LegalDocFile | null;
 

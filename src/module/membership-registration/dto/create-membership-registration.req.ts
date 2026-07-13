@@ -79,7 +79,6 @@ export class CreateMembershipRegistrationDto {
   @IsNotEmpty()
   companyName: string;
 
-  // Optional fields
   @ApiPropertyOptional({ example: 'http://example.com/license.pdf' })
   @IsOptional()
   @IsString()
@@ -110,7 +109,6 @@ export class CreateMembershipRegistrationDto {
   @IsString()
   introduceBy?: string;
 
-  // Uploaded files mapped by controller
   @IsOptional()
   avatarFile?: any;
 

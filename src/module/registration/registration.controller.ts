@@ -44,7 +44,6 @@ export class RegistrationController {
     return this.registrationService.register(userId, registerDto);
   }
 
-  // Public — không cần đăng nhập, dành cho khách vãng lai
   @Post('guest-register')
   @ApiOperation({ summary: 'Public: register for a course as a guest' })
   guestRegister(@Body() guestRegisterDto: GuestRegisterCourseDto) {

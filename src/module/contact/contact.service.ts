@@ -16,9 +16,7 @@ export class ContactService {
     private readonly contactModel: Model<Contact>,
   ) {}
 
-  // =========================
-  // PUBLIC
-  // =========================
+  // ─── PUBLIC ────────────────────────────────────────────────────────────────
 
   async submit(dto: CreateContactDto) {
     try {
@@ -48,9 +46,7 @@ export class ContactService {
     }
   }
 
-  // =========================
-  // ADMIN / EDITOR
-  // =========================
+  // ─── ADMIN / EDITOR ────────────────────────────────────────────────────────────────
 
   async findAll(query: QueryContactDto) {
     try {

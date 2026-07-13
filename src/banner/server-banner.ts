@@ -52,8 +52,7 @@ ${reset}
   ];
 
   const maxContentLength = Math.max(...visibleLengths);
-  const boxWidth = maxContentLength + 8; // Left margin (4) + right margin (4)
-
+  const boxWidth = maxContentLength + 8;
   const drawLine = (left: string, right: string) => {
     const leftLen = getVisibleLength(left);
     const rightLen = getVisibleLength(right);

@@ -78,9 +78,7 @@ export class CourseController {
     return this.courseService.findAll(query);
   }
 
-  // ==========================================
-  // COURSE CATEGORY ENDPOINTS
-  // ==========================================
+  // ─── COURSE CATEGORIES ────────────────────────────────────────────────────────────────
 
   @Get('categories')
   @ApiOperation({ summary: 'Get course categories' })

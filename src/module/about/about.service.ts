@@ -13,7 +13,6 @@ export class AboutUsService {
     private readonly aboutUsModel: Model<AboutUs>,
   ) {}
 
-  // Always work with a single document (singleton pattern, same as your original)
   private async getOrCreate(): Promise<AboutUs> {
     let doc = await this.aboutUsModel.findOne();
 
@@ -67,7 +66,6 @@ export class AboutUsService {
   async update(dto: UpdateAboutUsDto) {
     const doc = await this.getOrCreate();
 
-    // Top-level scalar fields
     const scalarFields = [
       'description',
       'company_name',
@@ -88,7 +86,6 @@ export class AboutUsService {
       }
     }
 
-    // Nested section fields — replace the whole section when provided
     const sectionFields = [
       'leadership',
       'mission',
@@ -102,7 +99,6 @@ export class AboutUsService {
       }
     }
 
-    // Tell Mongoose the nested objects changed (mixed-type safety)
     doc.markModified('leadership');
     doc.markModified('mission');
     doc.markModified('stats');

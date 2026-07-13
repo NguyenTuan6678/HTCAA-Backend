@@ -8,8 +8,6 @@ export enum SocialPlatform {
   YOUTUBE = 'youtube',
 }
 
-// File metadata for thumbnailImage, giống NewsFile / MembershipFile / PartnerFile,
-// để lưu đủ thông tin (objectName, bucket, mimetype, size...) thay vì chỉ 1 string.
 @Schema({ _id: false })
 export class SocialPostFile {
   @Prop({ type: String, required: true })
@@ -67,5 +65,4 @@ export class SocialPost {
 
 export const SocialPostSchema = SchemaFactory.createForClass(SocialPost);
 
-// Compound index for target queries in homepage: platform + isPinned + pinnedOrder
 SocialPostSchema.index({ platform: 1, isPinned: 1, pinnedOrder: 1 });

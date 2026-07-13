@@ -31,7 +31,6 @@ export class Faq {
   @Prop({ type: Number, default: 0, min: 0 })
   dislikes: number;
 
-  // Track which users already liked/disliked to prevent duplicate votes
   @Prop({ type: [Types.ObjectId], ref: 'User', default: [] })
   likedBy: Types.ObjectId[];
 

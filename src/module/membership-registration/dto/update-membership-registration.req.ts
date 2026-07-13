@@ -82,7 +82,6 @@ export class UpdateMembershipRegistrationDto {
   @IsOptional()
   companyName: string;
 
-  // Optional fields
   @ApiPropertyOptional({ example: 'http://example.com/license.pdf' })
   @IsOptional()
   @IsString()
@@ -140,7 +139,6 @@ export class UpdateMembershipRegistrationDto {
   @IsOptional()
   tag?: string | null;
 
-  // Uploaded files mapped by controller
   @IsOptional()
   avatarFile?: any;
 

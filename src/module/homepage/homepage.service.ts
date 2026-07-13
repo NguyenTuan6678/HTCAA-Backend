@@ -484,7 +484,6 @@ export class HomepageService {
       const setting = await this.getOrCreateHomepageSetting();
       const currentImage = this.getNestedValue(setting, 'hero.visual.image');
 
-      // Upload new file directly to MinIO
       const result = await this.minioService.uploadFile(
         file,
         'about-us/images',
@@ -554,7 +553,6 @@ export class HomepageService {
         'presidentQuote.avatar',
       );
 
-      // Upload new file directly to MinIO
       const result = await this.minioService.uploadFile(
         file,
         'about-us/images',
@@ -633,7 +631,6 @@ export class HomepageService {
 
       const currentQrCode = channels[zaloIndex]?.qrCode;
 
-      // Upload new file directly to MinIO
       const result = await this.minioService.uploadFile(
         file,
         'about-us/images',

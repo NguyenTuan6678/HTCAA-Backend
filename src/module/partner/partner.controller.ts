@@ -70,9 +70,7 @@ const imageFileFilter = (
 export class PartnerController {
   constructor(private readonly partnerService: PartnerService) {}
 
-  // =========================
-  // PUBLIC ENDPOINTS
-  // =========================
+  // ─── PUBLIC ENDPOINTS ──────────────────────────────────────────────────────
 
   @Get('homepage')
   @ApiOperation({
@@ -82,9 +80,7 @@ export class PartnerController {
     return this.partnerService.findHomepage();
   }
 
-  // =========================
-  // ADMIN ENDPOINTS
-  // =========================
+  // ─── ADMIN  ────────────────────────────────────────────────────────────────
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -168,7 +164,7 @@ export class PartnerController {
   @UseInterceptors(
     FileInterceptor('logo', {
       storage: memoryStorage(),
-      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+      limits: { fileSize: 30 * 1024 * 1024 }, // 30 MB
       fileFilter: imageFileFilter,
     }),
   )

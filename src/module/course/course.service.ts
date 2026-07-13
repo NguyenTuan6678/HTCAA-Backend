@@ -301,7 +301,6 @@ export class CourseService {
     }
   }
 
-  // ─── Lấy chi tiết 1 khóa học theo id ───────────────────────────────────────
   async findOne(id: string) {
     try {
       if (!Types.ObjectId.isValid(id)) {
@@ -545,9 +544,7 @@ export class CourseService {
     }
   }
 
-  // ==========================================
-  // COURSE CATEGORY METHODS
-  // ==========================================
+  // ─── COURSE CATEGORIES ────────────────────────────────────────────────────────────────
 
   async createCategory(dto: CreateCourseCategoryDto) {
     try {
@@ -783,7 +780,6 @@ export class CourseService {
         };
       }
 
-      // Soft delete category by setting isActive = false
       const category = await this.courseCategoryModel.findByIdAndUpdate(
         id,
         { isActive: false },

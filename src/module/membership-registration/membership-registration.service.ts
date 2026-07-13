@@ -18,9 +18,7 @@ export class MembershipRegistrationService {
     private readonly minioService: MinioService,
   ) {}
 
-  // =========================
-  // HELPERS
-  // =========================
+  // ─── HELPERS  ────────────────────────────────────────────────────────────────
 
   private async attachFileUrls(registration: any) {
     if (!registration) return registration;
@@ -68,7 +66,6 @@ export class MembershipRegistrationService {
     return Promise.all(registrations.map((r) => this.attachFileUrls(r)));
   }
 
-  // ─── Public: khách điền form đăng ký hội viên, không cần đăng nhập ────────
   async create(dto: CreateMembershipRegistrationDto) {
     try {
       let avatarFile: any = null;
@@ -134,7 +131,6 @@ export class MembershipRegistrationService {
     }
   }
 
-  // ─── Admin: xem danh sách các đơn đăng ký hội viên ────────────────────────
   async findAll(query: QueryMembershipRegistrationDto) {
     try {
       const page = Number(query.page ?? 1);
@@ -186,7 +182,6 @@ export class MembershipRegistrationService {
     }
   }
 
-  // ─── Admin: xóa mềm 1 đơn đăng ký hội viên ────────────────────────────────
   async delete(id: string) {
     try {
       if (!Types.ObjectId.isValid(id)) {
@@ -231,7 +226,6 @@ export class MembershipRegistrationService {
     }
   }
 
-  // ─── Admin: phê duyệt 1 đơn đăng ký hội viên ──────────────────────────────
   async approve(id: string) {
     try {
       if (!Types.ObjectId.isValid(id)) {
@@ -276,7 +270,6 @@ export class MembershipRegistrationService {
     }
   }
 
-  // ─── Admin: cập nhật đơn đăng ký hội viên ────────────────────────────
   async update(id: string, dto: UpdateMembershipRegistrationDto) {
     try {
       if (!Types.ObjectId.isValid(id)) {
@@ -307,7 +300,6 @@ export class MembershipRegistrationService {
       if (dto.tenure !== undefined) updateData.tenure = dto.tenure;
       if (dto.tag !== undefined) updateData.tag = dto.tag;
 
-      // Nếu có file avatar mới: upload lên MinIO, xoá file cũ, cập nhật metadata mới
       if (dto.avatarFile) {
         const uploadResult = await this.minioService.uploadFile(
           dto.avatarFile,
@@ -330,7 +322,6 @@ export class MembershipRegistrationService {
         updateData.avatar = this.buildFileMetadata(uploadResult);
       }
 
-      // Nếu có file banner mới: upload lên MinIO, xoá file cũ, cập nhật metadata mới
       if (dto.bannerFile) {
         const uploadResult = await this.minioService.uploadFile(
           dto.bannerFile,

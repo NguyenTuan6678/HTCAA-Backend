@@ -318,8 +318,6 @@ export class MemberService {
 
       const filter: any = {
         isActive: true,
-        // Danh bạ chỉ hiện hội viên đã được duyệt (API này giờ yêu cầu đăng nhập
-        // ở tầng controller, nhưng vẫn nên lọc PENDING/REJECTED ở đây).
         status: MemberStatus.ACTIVE,
       };
 
@@ -338,7 +336,6 @@ export class MemberService {
           { certificateNumber: regex },
           { workplace: regex },
           { district: regex },
-          // Tìm theo MST (taxId) - theo yêu cầu "Danh bạ & Tìm kiếm" của client.
           { 'organization.name': regex },
           { 'organization.taxCode': regex },
         ];
@@ -524,7 +521,7 @@ export class MemberService {
             rejectedAt: new Date(),
             rejectReason: rejectMemberDto.reason,
             approvedBy: null,
-            approvedAt: null, // Bug cũ: set = new Date() khi từ chối là sai
+            approvedAt: null,
           },
           {
             returnDocument: 'after',

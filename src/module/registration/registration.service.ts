@@ -28,7 +28,6 @@ export class RegistrationService {
     @InjectModel(User.name) private readonly userModel: Model<User>,
   ) {}
 
-  // ─── User đăng ký khóa học (member hoặc chưa phải member đều đăng ký được) ─
   async register(userId: string, registerDto: RegisterCourseDto) {
     try {
       if (!Types.ObjectId.isValid(userId)) {
@@ -104,7 +103,6 @@ export class RegistrationService {
         };
       }
 
-      // Atomic increment: only increment if registeredSeats < totalSeats (or if totalSeats is null)
       const courseUpdateCondition: any = {
         _id: course._id,
         isActive: true,
@@ -132,8 +130,6 @@ export class RegistrationService {
       const hasIncremented = true;
 
       try {
-        // Chỉ tính là hội viên khi có Member với status ACTIVE.
-        // PENDING/REJECTED/EXPIRED hoặc không có profile Member -> isMember = false
         const member = await this.memberModel.findOne({
           userId: new Types.ObjectId(userId),
           isActive: true,
@@ -141,8 +137,6 @@ export class RegistrationService {
 
         const isMember = !!member && member.status === MemberStatus.ACTIVE;
 
-        // memberPrice là field bắt buộc trên Course kể từ giờ, nhưng vẫn fallback
-        // về `price` cho các course cũ (tạo trước khi có field này) để tránh lỗi
         const price = isMember
           ? (course.memberPrice ?? course.price)
           : course.price;
@@ -156,7 +150,6 @@ export class RegistrationService {
           price,
           note: registerDto.note ?? null,
           registrant: {
-            // name/email lấy trực tiếp từ hồ sơ User, không bắt nhập lại
             name: user.name,
             email: user.email,
             dateOfBirth: new Date(registerDto.dateOfBirth),
@@ -210,9 +203,6 @@ export class RegistrationService {
     }
   }
 
-  // ─── Khách vãng lai đăng ký khóa học (không cần đăng nhập) ────────────────
-  // Chỉ lưu lại thông tin + claim hội viên (tự khai). KHÔNG tính giá ngay,
-  // admin sẽ đối chiếu qua verifyMembership() rồi hệ thống mới tự tính price.
   async guestRegister(dto: GuestRegisterCourseDto) {
     try {
       if (!Types.ObjectId.isValid(dto.courseId)) {
@@ -240,7 +230,6 @@ export class RegistrationService {
 
       const email = dto.email.trim().toLowerCase();
 
-      // Guest không có userId nên check trùng ở tầng application theo email
       const existing = await this.registrationModel.findOne({
         courseId: course._id,
         'registrant.email': email,
@@ -256,7 +245,6 @@ export class RegistrationService {
         };
       }
 
-      // Atomic increment: only increment if registeredSeats < totalSeats (or if totalSeats is null)
       const courseUpdateCondition: any = {
         _id: course._id,
         isActive: true,
@@ -310,8 +298,6 @@ export class RegistrationService {
           isActive: true,
         });
 
-        // Theo yêu cầu: chỉ trả về đăng ký thành công hay chưa, không trả giá/
-        // trạng thái hội viên vì còn chờ admin xác thực.
         return {
           code: ERROR_RES.SUCCESS.statusCode,
           info: ERROR_INFO.SUCCESS,
@@ -339,7 +325,6 @@ export class RegistrationService {
     }
   }
 
-  // ─── Danh sách khóa học đã đăng ký của user hiện tại ──────────────────────
   async me(userId: string) {
     try {
       if (!Types.ObjectId.isValid(userId)) {
@@ -375,7 +360,6 @@ export class RegistrationService {
     }
   }
 
-  // ─── Hủy đăng ký (member tự hủy hoặc admin hủy thay) ──────────────────────
   async cancel(id: string, userId: string, cancelDto: CancelRegistrationDto) {
     try {
       if (!Types.ObjectId.isValid(id)) {
@@ -416,7 +400,6 @@ export class RegistrationService {
       registration.cancelReason = cancelDto.cancelReason ?? null;
       await registration.save();
 
-      // Nhả chỗ lại cho khóa học
       await this.courseModel.findByIdAndUpdate(registration.courseId, {
         $inc: { registeredSeats: -1 },
       });
@@ -437,7 +420,6 @@ export class RegistrationService {
     }
   }
 
-  // ─── Admin xác thực claim hội viên của guest -> tự tính price ─────────────
   async verifyMembership(id: string, dto: VerifyMembershipDto) {
     try {
       if (!Types.ObjectId.isValid(id)) {
@@ -506,10 +488,6 @@ export class RegistrationService {
     }
   }
 
-  // ─── Admin duyệt đăng ký của khách vãng lai trong 1 bước ──────────────────
-  // Gộp verifyMembership() + confirm() làm một: đối chiếu claim hội viên,
-  // tính giá, rồi chuyển thẳng PENDING -> CONFIRMED. Dùng cho trường hợp
-  // admin muốn duyệt guest registration ngay mà không cần gọi 2 API riêng.
   async approveGuestRegistration(id: string, dto: VerifyMembershipDto) {
     try {
       if (!Types.ObjectId.isValid(id)) {
@@ -589,7 +567,6 @@ export class RegistrationService {
     }
   }
 
-  // ─── Admin xác nhận đăng ký (PENDING -> CONFIRMED) ────────────────────────
   async confirm(id: string) {
     try {
       if (!Types.ObjectId.isValid(id)) {
@@ -621,10 +598,6 @@ export class RegistrationService {
         };
       }
 
-      // Chỉ bắt buộc xác thực hội viên đối với đăng ký của KHÁCH VÃNG LAI
-      // (userId = null, tự khai claimedIsMember). Đăng ký của user đã đăng
-      // nhập đã xác định isMember chính xác ngay từ lúc register() nên
-      // không cần qua bước verify-membership.
       if (!registration.userId && !registration.membershipVerified) {
         return {
           code: ERROR_RES.CONFLICT_ERROR.statusCode,
@@ -655,7 +628,6 @@ export class RegistrationService {
     }
   }
 
-  // ─── Admin xem toàn bộ danh sách đăng ký ──────────────────────────────────
   async adminFindAll(query: QueryAdminRegistrationDto) {
     try {
       const page = Number(query.page ?? 1);

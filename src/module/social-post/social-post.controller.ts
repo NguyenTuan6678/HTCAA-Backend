@@ -70,9 +70,7 @@ const imageFileFilter = (
 export class SocialPostController {
   constructor(private readonly socialPostService: SocialPostService) {}
 
-  // =========================
-  // PUBLIC ENDPOINTS
-  // =========================
+  // ─── PUBLIC  ────────────────────────────────────────────────────────────────
 
   @Get('homepage')
   @ApiOperation({ summary: 'Public – Get pinned social posts for homepage' })
@@ -80,9 +78,7 @@ export class SocialPostController {
     return this.socialPostService.findHomepage();
   }
 
-  // =========================
-  // ADMIN ENDPOINTS
-  // =========================
+  // ─── ADMIN  ────────────────────────────────────────────────────────────────
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -167,7 +163,7 @@ export class SocialPostController {
   @UseInterceptors(
     FileInterceptor('thumbnail', {
       storage: memoryStorage(),
-      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+      limits: { fileSize: 30 * 1024 * 1024 }, // 30 MB
       fileFilter: imageFileFilter,
     }),
   )

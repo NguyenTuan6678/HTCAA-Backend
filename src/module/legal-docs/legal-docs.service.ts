@@ -51,9 +51,7 @@ export class LegalDocsService {
     private readonly minioService: MinioService,
   ) {}
 
-  // =========================
-  // HELPERS
-  // =========================
+  // ─── HELPERS  ────────────────────────────────────────────────────────────────
 
   private canModify(doc: any, userId: string, role: Role): boolean {
     if (role === Role.ADMIN) return true;
@@ -183,8 +181,6 @@ export class LegalDocsService {
     return slug;
   }
 
-  // Validates that categoryId (if provided) refers to an existing, active category.
-  // Returns true when categoryId is undefined/null (the field is optional).
   private async ensureCategoryExists(
     categoryId?: string | null,
   ): Promise<boolean> {
@@ -199,9 +195,7 @@ export class LegalDocsService {
     return !!exists;
   }
 
-  // =========================
-  // TYPE CATEGORY
-  // =========================
+  // ─── TYPE  ────────────────────────────────────────────────────────────────
 
   async createTypeCategory(createTypeCategoryDto: CreateTypeCategoryDto) {
     try {
@@ -430,9 +424,7 @@ export class LegalDocsService {
     }
   }
 
-  // =========================
-  // LEGAL DOC CATEGORY
-  // =========================
+  // ─── LEGAL DOC CATEGORIES  ────────────────────────────────────────────────────────────────
 
   async createCategory(createLegalDocCategoryDto: CreateLegalDocCategoryDto) {
     try {
@@ -678,9 +670,7 @@ export class LegalDocsService {
     }
   }
 
-  // =========================
-  // CRUD
-  // =========================
+  // ─── CRUD  ────────────────────────────────────────────────────────────────
 
   async create(
     userId: string,
@@ -709,7 +699,6 @@ export class LegalDocsService {
           };
         }
 
-        // Upload to MinIO
         const result = await this.minioService.uploadFile(
           file,
           'legal-docs/files',
@@ -941,9 +930,7 @@ export class LegalDocsService {
     }
   }
 
-  // =========================
-  // PUBLISH / UNPUBLISH
-  // =========================
+  // ─── PUBLISH / UNPUBLISH  ────────────────────────────────────────────────────────────────
 
   async publish(id: string) {
     try {
@@ -1029,9 +1016,7 @@ export class LegalDocsService {
     }
   }
 
-  // =========================
-  // FILE UPLOAD / DELETE
-  // =========================
+  // ─── FILE UPLOAD / DELETE  ────────────────────────────────────────────────────────────────
 
   async uploadFile(
     id: string,
@@ -1066,7 +1051,6 @@ export class LegalDocsService {
       );
       if (error) return error;
 
-      // Upload to MinIO
       const result = await this.minioService.uploadFile(
         file,
         'legal-docs/files',
@@ -1153,9 +1137,7 @@ export class LegalDocsService {
     }
   }
 
-  // =========================
-  // STREAM (preview / download)
-  // =========================
+  // ─── STREAM FILE  ────────────────────────────────────────────────────────────────
 
   async streamFile(
     id: string,

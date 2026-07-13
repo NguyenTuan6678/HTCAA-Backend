@@ -38,7 +38,6 @@ import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 import { Role } from '../../utils/role.enum';
 
-// Accept .xlsx and .xls only
 const xlsxFileFilter = (req: any, file: Express.Multer.File, callback: any) => {
   const allowedMimeTypes = [
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -63,7 +62,7 @@ const xlsxFileFilter = (req: any, file: Express.Multer.File, callback: any) => {
 
 const uploadXlsxInterceptor = FileInterceptor('file', {
   storage: memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+  limits: { fileSize: 30 * 1024 * 1024 }, // 30 MB
   fileFilter: xlsxFileFilter,
 });
 

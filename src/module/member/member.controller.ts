@@ -120,7 +120,7 @@ export class MemberController {
     FileInterceptor('profileFile', {
       storage: memoryStorage(),
       fileFilter: pdfFileFilter,
-      limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+      limits: { fileSize: 30 * 1024 * 1024 }, // 30 MB
     }),
   )
   register(

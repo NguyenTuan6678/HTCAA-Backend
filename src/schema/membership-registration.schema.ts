@@ -6,8 +6,6 @@ import { MembershipType } from '../utils/membership-type.enum';
 export type MembershipRegistrationDocument =
   HydratedDocument<MembershipRegistration>;
 
-// File metadata for avatar/logo, giống NewsFile bên news.schema.ts,
-// để lưu đủ thông tin (objectName, bucket, mimetype, size...) thay vì chỉ 1 string.
 @Schema({ _id: false })
 export class MembershipFile {
   @Prop({ type: String, required: true })
@@ -90,7 +88,6 @@ export class MembershipRegistration {
   @Prop({ type: String, required: true, trim: true })
   companyName: string;
 
-  // Optional fields
   @Prop({ type: String, default: null, trim: true })
   companyLicense?: string | null;
 
@@ -121,7 +118,6 @@ export class MembershipRegistration {
   @Prop({ type: String, default: null, trim: true })
   tag?: string | null;
 
-  // Soft-delete, phòng khi admin cần ẩn 1 hồ sơ khỏi danh sách mà không xóa hẳn
   @Prop({ type: Boolean, default: true })
   isActive: boolean;
 }

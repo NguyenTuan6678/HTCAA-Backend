@@ -22,9 +22,7 @@ export class PartnerService {
     private readonly minioService: MinioService,
   ) {}
 
-  // =========================
-  // HELPERS
-  // =========================
+  // ─── HELPER METHODS  ────────────────────────────────────────────────────────────────
 
   private async attachMediaUrls(partner: any) {
     if (!partner) return partner;
@@ -61,12 +59,9 @@ export class PartnerService {
     return Promise.all(partners.map((p) => this.attachMediaUrls(p)));
   }
 
-  // =========================
-  // CRUD
-  // =========================
+  // ─── CRUD  ────────────────────────────────────────────────────────────────
 
   async create(dto: CreatePartnerDto) {
-    // Automatically assign displayOrder = total count + 1
     const totalCount = await this.partnerModel.countDocuments();
     const displayOrder = totalCount + 1;
 
@@ -182,12 +177,9 @@ export class PartnerService {
     return { success: true };
   }
 
-  // =========================
-  // REORDER (DRAG & DROP)
-  // =========================
+  // ─── REORDER (DRAG & DROP) ────────────────────────────────────────────────────────────────
 
   async reorder(dto: ReorderPartnersDto) {
-    // 1. Validate: displayOrder uniqueness in input array
     const orders = dto.items.map((item) => item.displayOrder);
     const hasDuplicates = new Set(orders).size !== orders.length;
     if (hasDuplicates) {
@@ -196,7 +188,6 @@ export class PartnerService {
       );
     }
 
-    // 2. Validate: all IDs must exist in the database
     const ids = dto.items.map((item) => new Types.ObjectId(item.id));
     const existingCount = await this.partnerModel.countDocuments({
       _id: { $in: ids },
@@ -208,7 +199,6 @@ export class PartnerService {
       );
     }
 
-    // 3. Atomically perform bulk updates to reindex displayOrder
     const bulkOps = dto.items.map((item) => ({
       updateOne: {
         filter: { _id: new Types.ObjectId(item.id) },
@@ -221,9 +211,7 @@ export class PartnerService {
     return { success: true };
   }
 
-  // =========================
-  // FILE UPLOAD
-  // =========================
+  // ─── FILE UPLOAD  ────────────────────────────────────────────────────────────────
 
   async uploadLogo(id: string, file: Express.Multer.File) {
     if (!Types.ObjectId.isValid(id)) {
@@ -235,10 +223,8 @@ export class PartnerService {
       throw new NotFoundException('Đối tác không tồn tại.');
     }
 
-    // Upload to MinIO bucket
     const result = await this.minioService.uploadFile(file, 'partners/logos');
 
-    // Clean up old logo file in MinIO, if any
     if (partner.logo?.objectName) {
       try {
         await this.minioService.removeFile(partner.logo.objectName);
@@ -285,9 +271,7 @@ export class PartnerService {
     return this.attachMediaUrls(partner);
   }
 
-  // =========================
-  // PUBLIC HOMEPAGE
-  // =========================
+  // ─── PUBLIC HOMEPAGE  ────────────────────────────────────────────────────────────────
 
   async findHomepage() {
     const partners = await this.partnerModel
@@ -296,7 +280,6 @@ export class PartnerService {
 
     const partnersWithUrls = await this.attachMediaUrlsToList(partners);
 
-    // Map output to only return presentation fields
     return partnersWithUrls.map((p: any) => ({
       name: p.name,
       logo: p.logo,

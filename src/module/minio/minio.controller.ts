@@ -14,8 +14,6 @@ export class MinioController {
     summary: 'Get presigned URL for a MinIO object and redirect',
   })
   async getMedia(@Req() req: Request, @Res() res: Response) {
-    // Use req.originalUrl which always contains the full, real request path.
-    // Example: /api/media/general/1782444424623-113024832-11111.jpg?v=1
     const fullPath = (req.originalUrl || req.url).split('?')[0];
     const prefix = '/api/media/';
     const objectName = fullPath.startsWith(prefix)

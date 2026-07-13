@@ -23,9 +23,7 @@ export class FaqsService {
     private readonly faqCategoryModel: Model<FaqCategory>,
   ) {}
 
-  // =========================
-  // HELPERS
-  // =========================
+  // ─── HELPERS  ────────────────────────────────────────────────────────────────
 
   private getPopulateQuery() {
     return [
@@ -136,9 +134,7 @@ export class FaqsService {
     return { error: null };
   }
 
-  // =========================
-  // CRUD
-  // =========================
+  // ─── CRUD  ────────────────────────────────────────────────────────────────
 
   async create(userId: string, dto: CreateFaqDto) {
     try {
@@ -208,7 +204,7 @@ export class FaqsService {
           .skip(skip)
           .limit(limit)
           .populate(this.getPopulateQuery())
-          .select('-likedBy -dislikedBy'), // don't leak user id arrays
+          .select('-likedBy -dislikedBy'),
         this.faqModel.countDocuments(filter),
       ]);
 
@@ -348,9 +344,7 @@ export class FaqsService {
     }
   }
 
-  // =========================
-  // PUBLISH / UNPUBLISH
-  // =========================
+  // ─── PUBLISH / UNPUBLISH  ────────────────────────────────────────────────────────────────
 
   async publish(id: string) {
     try {
@@ -436,16 +430,8 @@ export class FaqsService {
     }
   }
 
-  // =========================
-  // LIKES / DISLIKES
-  // =========================
+  // ─── LIKE / DISLIKE  ────────────────────────────────────────────────────────────────
 
-  /**
-   * Toggle like on a FAQ for a logged-in user.
-   * - If user already liked → remove the like (unlike)
-   * - If user already disliked → remove dislike first, then add like
-   * - Otherwise → add like
-   */
   async like(id: string, userId: string) {
     try {
       const { error, faq } = await this.findActiveById(id);
@@ -460,20 +446,17 @@ export class FaqsService {
       let update: any;
 
       if (alreadyLiked) {
-        // Unlike
         update = {
           $pull: { likedBy: userObjectId },
           $inc: { likes: -1 },
         };
       } else if (alreadyDisliked) {
-        // Switch from dislike to like
         update = {
           $pull: { dislikedBy: userObjectId },
           $push: { likedBy: userObjectId },
           $inc: { likes: 1, dislikes: -1 },
         };
       } else {
-        // New like
         update = {
           $push: { likedBy: userObjectId },
           $inc: { likes: 1 },
@@ -520,20 +503,17 @@ export class FaqsService {
       let update: any;
 
       if (alreadyDisliked) {
-        // Un-dislike
         update = {
           $pull: { dislikedBy: userObjectId },
           $inc: { dislikes: -1 },
         };
       } else if (alreadyLiked) {
-        // Switch from like to dislike
         update = {
           $pull: { likedBy: userObjectId },
           $push: { dislikedBy: userObjectId },
           $inc: { likes: -1, dislikes: 1 },
         };
       } else {
-        // New dislike
         update = {
           $push: { dislikedBy: userObjectId },
           $inc: { dislikes: 1 },
@@ -560,9 +540,7 @@ export class FaqsService {
     }
   }
 
-  // =========================
-  // FAQ CATEGORY CRUD
-  // =========================
+  // ─── FAQ CATEGORIES  ────────────────────────────────────────────────────────────────
 
   async createCategory(dto: CreateFaqCategoryDto) {
     try {

@@ -39,7 +39,6 @@ export class JwtAuthGuard implements CanActivate {
         throw new UnauthorizedException('Token not valid');
       }
 
-      // Check token version directly via AuthService
       const isValidVersion = await this.authService.validateTokenVersion(
         payload.id,
         payload.tokenVersion,

@@ -97,9 +97,6 @@ Nếu bạn không thực hiện yêu cầu này, bạn có thể an tâm bỏ q
     }
   }
 
-  // ─── Gửi mail thông báo tin tức mới cho toàn bộ subscriber đã xác nhận ────
-  // Không throw khi 1 email gửi lỗi — tránh 1 địa chỉ hỏng làm chặn cả batch.
-  // Trả về { sent, failed } để caller (NewsService) tự log/theo dõi.
   async sendNewsNotificationEmails(
     subscriberEmails: string[],
     news: {
@@ -129,9 +126,6 @@ Nếu bạn không thực hiện yêu cầu này, bạn có thể an tâm bỏ q
 
     const newsUrl = `${frontendUrl}/tin-tuc/${news.slug}`;
 
-    // Giới hạn số email gửi song song mỗi đợt để tránh dồn quá nhiều request
-    // cùng lúc lên Resend (không phải giới hạn cứng của Resend, chỉ là mức
-    // an toàn hợp lý — có thể chỉnh lại tùy rate limit gói đang dùng).
     const CONCURRENCY = 10;
     const failed: string[] = [];
     let sent = 0;

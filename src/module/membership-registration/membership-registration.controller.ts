@@ -47,7 +47,6 @@ export class MembershipRegistrationController {
     return this.membershipRegistrationService.findHomepage(query);
   }
 
-  // Public — không cần đăng nhập, ai cũng điền được
   @Post()
   @UseInterceptors(
     FileFieldsInterceptor(
@@ -57,7 +56,7 @@ export class MembershipRegistrationController {
       ],
       {
         storage: memoryStorage(),
-        limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+        limits: { fileSize: 30 * 1024 * 1024 }, // 30MB limit
       },
     ),
   )
@@ -195,7 +194,7 @@ export class MembershipRegistrationController {
       ],
       {
         storage: memoryStorage(),
-        limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+        limits: { fileSize: 30 * 1024 * 1024 }, // 30MB limit
       },
     ),
   )

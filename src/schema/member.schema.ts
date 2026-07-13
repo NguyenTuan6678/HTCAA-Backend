@@ -143,5 +143,4 @@ MemberSchema.index({ status: 1 });
 MemberSchema.index({ district: 1 });
 MemberSchema.index({ expiredAt: 1 });
 MemberSchema.index({ createdAt: -1 });
-// Phục vụ tìm kiếm real-time theo MST trong tính năng Danh bạ & Tìm kiếm
 MemberSchema.index({ 'organization.taxCode': 1 });
