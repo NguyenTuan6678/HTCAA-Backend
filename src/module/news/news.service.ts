@@ -44,7 +44,7 @@ export class NewsService {
     private readonly newsletterSubscriberService: NewsletterSubscriberService,
   ) {}
 
-  // ─── HELPERS  ────────────────────────────────────────────────────────────────
+  // ─── HELPERS ────────────────────────────────────────────────────────────────
 
   private normalizeVietnamese(str: string): string {
     return str
@@ -240,18 +240,24 @@ export class NewsService {
         return;
       }
 
-      const newsWithUrls = await this.attachNewsFileUrls(news);
+      const MAIL_THUMBNAIL_EXPIRY_SECONDS = 7 * 24 * 60 * 60; // 7 ngày
+      const thumbnailUrl = news.thumbnail?.objectName
+        ? await this.minioService.getRealPresignedUrl(
+            news.thumbnail.objectName,
+            MAIL_THUMBNAIL_EXPIRY_SECONDS,
+          )
+        : null;
 
       const { sent, failed } =
         await this.mailService.sendNewsNotificationEmails(emails, {
-          title: newsWithUrls.title,
-          slug: newsWithUrls.slug,
-          summary: newsWithUrls.summary ?? null,
-          thumbnailUrl: newsWithUrls.thumbnail?.url ?? null,
+          title: news.title,
+          slug: news.slug,
+          summary: news.summary ?? null,
+          thumbnailUrl,
         });
 
       console.log(
-        `[News] Sent publish notification for "${newsWithUrls.title}": ${sent} sent, ${failed.length} failed.`,
+        `[News] Sent publish notification for "${news.title}": ${sent} sent, ${failed.length} failed.`,
       );
     } catch (err: any) {
       console.error(
@@ -261,7 +267,7 @@ export class NewsService {
     }
   }
 
-  // ─── NEWS CATEGORIE  ────────────────────────────────────────────────────────────────
+  // ─── NEWS CATEGORY ────────────────────────────────────────────────────────────────
 
   async createCategory(createCategoryDto: CreateNewsCategoryDto) {
     try {
@@ -499,7 +505,7 @@ export class NewsService {
     }
   }
 
-  // ─── NEWS  ────────────────────────────────────────────────────────────────
+  // ─── NEWS ────────────────────────────────────────────────────────────────
 
   async create(userId: string, createNewsDto: CreateNewsDto) {
     try {
