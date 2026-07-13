@@ -98,6 +98,12 @@ export class Member {
   @Prop({ type: MemberProfileFileSchema, default: null })
   profileFile?: MemberProfileFile | null;
 
+  @Prop({ type: Number, default: 0 })
+  cpeHours: number;
+
+  @Prop({ type: MemberProfileFileSchema, default: null })
+  certificateFile?: MemberProfileFile | null;
+
   @Prop({
     type: String,
     enum: MemberStatus,

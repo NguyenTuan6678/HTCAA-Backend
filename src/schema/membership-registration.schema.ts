@@ -70,11 +70,56 @@ export class MembershipRegistration {
 
   @Prop({
     type: String,
-    enum: ['pending', 'approved'],
+    enum: ['pending', 'need_info', 'approved', 'rejected'],
     default: 'pending',
     required: true,
   })
   status: string;
+
+  @Prop({ type: Number, default: 0 })
+  fee: number;
+
+  @Prop({
+    type: String,
+    enum: ['high', 'medium', 'low'],
+    default: 'medium',
+    required: true,
+  })
+  priority: string;
+
+  @Prop({ type: [MembershipFileSchema], default: [] })
+  attachments: MembershipFile[];
+
+  @Prop({ type: String, default: null, trim: true })
+  supplementToken?: string | null;
+
+  @Prop({ type: String, default: null, trim: true })
+  applicationCode?: string | null;
+
+  @Prop({ type: String, default: null, trim: true })
+  validationNotes?: string | null;
+
+  @Prop({
+    type: String,
+    enum: ['unpaid', 'paid'],
+    default: 'unpaid',
+    required: true,
+  })
+  paymentStatus: string;
+
+  @Prop({
+    type: String,
+    enum: ['bank_transfer', 'cash', 'none'],
+    default: 'none',
+    required: true,
+  })
+  paymentMethod: string;
+
+  @Prop({ type: Date, default: null })
+  paymentDate?: Date | null;
+
+  @Prop({ type: Number, default: 0 })
+  amountPaid: number;
 
   @Prop({ type: MembershipFileSchema, required: true })
   avatar: MembershipFile;
@@ -120,6 +165,9 @@ export class MembershipRegistration {
 
   @Prop({ type: Boolean, default: true })
   isActive: boolean;
+
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export const MembershipRegistrationSchema = SchemaFactory.createForClass(
@@ -129,3 +177,5 @@ export const MembershipRegistrationSchema = SchemaFactory.createForClass(
 MembershipRegistrationSchema.index({ isActive: 1 });
 MembershipRegistrationSchema.index({ createdAt: -1 });
 MembershipRegistrationSchema.index({ name: 'text', address: 'text' });
+MembershipRegistrationSchema.index({ supplementToken: 1 }, { sparse: true });
+MembershipRegistrationSchema.index({ applicationCode: 1 }, { sparse: true });

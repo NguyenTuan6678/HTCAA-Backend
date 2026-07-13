@@ -8,6 +8,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  ValidateIf,
 } from 'class-validator';
 
 import { MembershipType } from '../../../utils/membership-type.enum';
@@ -28,7 +29,11 @@ export class CreateMembershipRegistrationDto {
   @IsNotEmpty()
   address: string;
 
-  @ApiProperty({ example: '0123456789' })
+  @ApiPropertyOptional({
+    example: '0123456789',
+    description: 'Required if memberType is collective',
+  })
+  @ValidateIf((o) => o.memberType === MembershipType.COLLECTIVE)
   @IsString()
   @IsNotEmpty()
   taxCode: string;
@@ -69,12 +74,20 @@ export class CreateMembershipRegistrationDto {
   @IsNotEmpty()
   isProfessionalCertification: boolean;
 
-  @ApiProperty({ example: 'CCT-123456' })
+  @ApiPropertyOptional({
+    example: 'CCT-123456',
+    description: 'Required if isProfessionalCertification is true',
+  })
+  @ValidateIf((o) => o.isProfessionalCertification === true)
   @IsString()
   @IsNotEmpty()
   professionalCertificationNumber: string;
 
-  @ApiProperty({ example: 'Công ty TNHH Kế toán ABC' })
+  @ApiPropertyOptional({
+    example: 'Công ty TNHH Kế toán ABC',
+    description: 'Required if memberType is collective',
+  })
+  @ValidateIf((o) => o.memberType === MembershipType.COLLECTIVE)
   @IsString()
   @IsNotEmpty()
   companyName: string;

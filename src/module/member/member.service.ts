@@ -59,6 +59,14 @@ export class MemberService {
         obj.profileFile.path = presignedUrl;
       }
     }
+    if (obj.certificateFile?.filename) {
+      if (obj.certificateFile.filename.includes('/')) {
+        const presignedUrl = await this.minioService.getPresignedUrl(
+          obj.certificateFile.filename,
+        );
+        obj.certificateFile.path = presignedUrl;
+      }
+    }
     return obj;
   }
 

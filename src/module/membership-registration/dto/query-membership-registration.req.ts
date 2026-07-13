@@ -15,6 +15,14 @@ export class QueryMembershipRegistrationDto {
   @IsEnum(MembershipType)
   memberType?: MembershipType;
 
+  @ApiPropertyOptional({
+    description: 'Lọc theo trạng thái',
+    enum: ['pending', 'need_info', 'approved', 'rejected'],
+  })
+  @IsOptional()
+  @IsString()
+  status?: string;
+
   @ApiPropertyOptional({ example: 1 })
   @IsOptional()
   @Type(() => Number)

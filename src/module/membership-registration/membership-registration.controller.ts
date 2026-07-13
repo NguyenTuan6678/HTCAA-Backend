@@ -11,6 +11,8 @@ import {
   UseInterceptors,
   UploadedFiles,
   BadRequestException,
+  Sse,
+  MessageEvent,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -22,6 +24,7 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { Observable, map } from 'rxjs';
 
 import { Role } from '../../utils/role.enum';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
@@ -31,6 +34,8 @@ import { MembershipRegistrationService } from './membership-registration.service
 import { CreateMembershipRegistrationDto } from './dto/create-membership-registration.req';
 import { QueryMembershipRegistrationDto } from './dto/query-membership-registration.req';
 import { UpdateMembershipRegistrationDto } from './dto/update-membership-registration.req';
+import { CheckExistsDto } from './dto/check-exists.req';
+import { ConfirmPaymentDto } from './dto/confirm-payment.req';
 
 @ApiTags('Membership Registration')
 @Controller('membership-registrations')
@@ -47,12 +52,32 @@ export class MembershipRegistrationController {
     return this.membershipRegistrationService.findHomepage(query);
   }
 
+  @Get('check-exists')
+  @ApiOperation({
+    summary: 'Public: check if email or phone number is already registered',
+  })
+  checkExists(@Query() query: CheckExistsDto) {
+    return this.membershipRegistrationService.checkExists(query);
+  }
+
+  @Sse('notifications/stream')
+  @ApiOperation({
+    summary:
+      'Admin/editor: SSE stream for real-time registration notifications',
+  })
+  streamNotifications(): Observable<MessageEvent> {
+    return this.membershipRegistrationService
+      .getNotificationStream()
+      .pipe(map((data) => ({ data }) as MessageEvent));
+  }
+
   @Post()
   @UseInterceptors(
     FileFieldsInterceptor(
       [
         { name: 'avatar', maxCount: 1 },
         { name: 'banner', maxCount: 1 },
+        { name: 'attachments', maxCount: 10 },
       ],
       {
         storage: memoryStorage(),
@@ -88,7 +113,6 @@ export class MembershipRegistrationController {
         companyLicense: {
           type: 'string',
           example: 'https://example.com/license.pdf',
-          description: 'Optional company license document URL or number',
         },
         companyWebsiteUrl: {
           type: 'string',
@@ -108,12 +132,16 @@ export class MembershipRegistrationController {
           format: 'binary',
           description: 'Optional banner image file',
         },
+        attachments: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+          description: 'Attachments (PDF, PNG, JPG files, max 5MB/file)',
+        },
       },
       required: [
         'name',
         'memberType',
         'address',
-        'taxCode',
         'identityCode',
         'job',
         'position',
@@ -121,8 +149,6 @@ export class MembershipRegistrationController {
         'phoneNumber',
         'email',
         'isProfessionalCertification',
-        'professionalCertificationNumber',
-        'companyName',
       ],
     },
   })
@@ -133,18 +159,103 @@ export class MembershipRegistrationController {
     files: {
       avatar?: Express.Multer.File[];
       banner?: Express.Multer.File[];
+      attachments?: Express.Multer.File[];
     },
   ) {
     if (!files?.avatar?.[0]) {
-      throw new BadRequestException('Avatar file is required');
-    }
-    dto.avatarFile = files.avatar[0];
-
-    if (files.banner?.[0]) {
-      dto.bannerFile = files.banner[0];
+      throw new BadRequestException('Ảnh đại diện (avatar) là bắt buộc.');
     }
 
-    return this.membershipRegistrationService.create(dto);
+    return this.membershipRegistrationService.create(dto, {
+      avatar: files.avatar[0],
+      banner: files.banner?.[0],
+      attachments: files.attachments || [],
+    });
+  }
+
+  @Get('supplement/:token')
+  @ApiOperation({
+    summary:
+      'Public: get registration details to supplement missing info/files',
+  })
+  @ApiParam({ name: 'token', description: 'Supplementation secure token' })
+  getSupplement(@Param('token') token: string) {
+    return this.membershipRegistrationService.getSupplementByToken(token);
+  }
+
+  @Patch('supplement/:token')
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'avatar', maxCount: 1 },
+        { name: 'banner', maxCount: 1 },
+        { name: 'attachments', maxCount: 10 },
+      ],
+      {
+        storage: memoryStorage(),
+        limits: { fileSize: 30 * 1024 * 1024 },
+      },
+    ),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        memberType: {
+          type: 'string',
+          enum: ['individual', 'collective', 'affiliate'],
+        },
+        address: { type: 'string' },
+        taxCode: { type: 'string' },
+        identityCode: { type: 'string' },
+        job: { type: 'string' },
+        position: { type: 'string' },
+        dateOfBirth: { type: 'string' },
+        phoneNumber: { type: 'string' },
+        email: { type: 'string' },
+        isProfessionalCertification: { type: 'boolean' },
+        professionalCertificationNumber: { type: 'string' },
+        companyName: { type: 'string' },
+        companyLicense: { type: 'string' },
+        companyWebsiteUrl: { type: 'string' },
+        companyPhoneNumber: { type: 'string' },
+        companyJobType: { type: 'string' },
+        companySlogan: { type: 'string' },
+        introduceBy: { type: 'string' },
+        avatar: { type: 'string', format: 'binary' },
+        banner: { type: 'string', format: 'binary' },
+        attachments: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+        },
+      },
+    },
+  })
+  @ApiOperation({
+    summary: 'Public: supplement files/info using secure token',
+  })
+  @ApiParam({ name: 'token', description: 'Supplementation secure token' })
+  updateSupplement(
+    @Param('token') token: string,
+    @Body() dto: UpdateMembershipRegistrationDto,
+    @UploadedFiles()
+    files: {
+      avatar?: Express.Multer.File[];
+      banner?: Express.Multer.File[];
+      attachments?: Express.Multer.File[];
+    },
+  ) {
+    return this.membershipRegistrationService.updateSupplementByToken(
+      token,
+      dto,
+      {
+        avatar: files?.avatar?.[0],
+        banner: files?.banner?.[0],
+        attachments: files?.attachments || [],
+      },
+    );
   }
 
   @Get()
@@ -182,6 +293,20 @@ export class MembershipRegistrationController {
     return this.membershipRegistrationService.approve(id);
   }
 
+  @Patch(':id/confirm-payment')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({
+    summary:
+      'Admin/editor: reconcile and confirm payment for membership registration',
+  })
+  @ApiParam({ name: 'id', description: 'Membership registration id' })
+  @ApiBody({ type: ConfirmPaymentDto })
+  confirmPayment(@Param('id') id: string, @Body() dto: ConfirmPaymentDto) {
+    return this.membershipRegistrationService.confirmPayment(id, dto);
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)
@@ -194,7 +319,7 @@ export class MembershipRegistrationController {
       ],
       {
         storage: memoryStorage(),
-        limits: { fileSize: 30 * 1024 * 1024 }, // 30MB limit
+        limits: { fileSize: 30 * 1024 * 1024 },
       },
     ),
   )
