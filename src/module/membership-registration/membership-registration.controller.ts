@@ -331,25 +331,140 @@ export class MembershipRegistrationController {
     schema: {
       type: 'object',
       properties: {
-        starRating: { type: 'string', example: '5' },
-        tenure: { type: 'string', example: '2026-2028' },
-        tag: { type: 'string', example: 'Vip' },
+        // ── Personal information ──────────────────────────────────────────
+        name: {
+          type: 'string',
+          example: 'John Doe',
+          description: 'Full name',
+        },
+        memberType: {
+          type: 'string',
+          enum: ['individual', 'collective', 'affiliate'],
+          example: 'individual',
+          description: 'Membership type',
+        },
+        address: {
+          type: 'string',
+          example: '123 Main Street, District 1, Ho Chi Minh City',
+          description: 'Residential address',
+        },
+        taxCode: {
+          type: 'string',
+          example: '0123456789',
+          description: 'Tax identification number',
+        },
+        identityCode: {
+          type: 'string',
+          example: '012345678901',
+          description: 'National ID / Passport number',
+        },
+        job: {
+          type: 'string',
+          example: 'Accountant',
+          description: 'Occupation',
+        },
+        position: {
+          type: 'string',
+          example: 'Department Head',
+          description: 'Job title / position',
+        },
+        dateOfBirth: {
+          type: 'string',
+          example: '1995-10-15',
+          description: 'Date of birth (ISO 8601)',
+        },
+        phoneNumber: {
+          type: 'string',
+          example: '0900000000',
+          description: 'Personal phone number',
+        },
+        email: {
+          type: 'string',
+          example: 'john.doe@example.com',
+          description: 'Email address',
+        },
+        isProfessionalCertification: {
+          type: 'boolean',
+          example: true,
+          description: 'Whether the member holds a professional certification',
+        },
+        professionalCertificationNumber: {
+          type: 'string',
+          example: 'CCT-123456',
+          description: 'Professional certification number',
+        },
+        // ── Company information ───────────────────────────────────────────
+        companyName: {
+          type: 'string',
+          example: 'ABC Accounting Co., Ltd.',
+          description: 'Company name',
+        },
+        companyLicense: {
+          type: 'string',
+          example: 'https://example.com/license.pdf',
+          description: 'Business license URL',
+        },
+        companyWebsiteUrl: {
+          type: 'string',
+          example: 'https://abc-accounting.com',
+          description: 'Company website URL',
+        },
+        companyPhoneNumber: {
+          type: 'string',
+          example: '02812345678',
+          description: 'Company phone number',
+        },
+        companyJobType: {
+          type: 'string',
+          example: 'Financial Services',
+          description: 'Industry / business sector',
+        },
+        companySlogan: {
+          type: 'string',
+          example: 'Where success begins',
+          description: 'Company slogan',
+        },
+        introduceBy: {
+          type: 'string',
+          example: 'Referred by Jane Smith',
+          description: 'Referrer name',
+        },
+        // ── Admin-only fields ─────────────────────────────────────────────
+        starRating: {
+          type: 'string',
+          example: '5',
+          description: 'Star rating (1–5)',
+          nullable: true,
+        },
+        tenure: {
+          type: 'string',
+          example: '2026-2028',
+          description: 'Membership tenure / term',
+          nullable: true,
+        },
+        tag: {
+          type: 'string',
+          example: 'Vip',
+          description: 'Classification tag or label',
+          nullable: true,
+        },
+        // ── File uploads ──────────────────────────────────────────────────
         avatar: {
           type: 'string',
           format: 'binary',
-          description: 'Optional new avatar image file',
+          description: 'New avatar image (optional)',
         },
         banner: {
           type: 'string',
           format: 'binary',
-          description: 'Optional new banner image file',
+          description: 'New banner image (optional)',
         },
       },
     },
   })
   @ApiOperation({
     summary:
-      'Admin/editor: update a membership registration entry (rating, tenure, tag, avatar, banner)',
+      'Admin/editor: update a membership registration entry (all fields supported)',
   })
   @ApiParam({ name: 'id', description: 'Membership registration id' })
   update(
