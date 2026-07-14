@@ -8,6 +8,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  ValidateIf,
 } from 'class-validator';
 
 import { MembershipType } from '../../../utils/membership-type.enum';
@@ -73,6 +74,7 @@ export class UpdateMembershipRegistrationDto {
   isProfessionalCertification: boolean;
 
   @ApiPropertyOptional({ example: 'CCT-123456' })
+  @ValidateIf((o) => o.isProfessionalCertification === true)
   @IsString()
   @IsNotEmpty()
   professionalCertificationNumber: string;

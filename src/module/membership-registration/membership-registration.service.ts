@@ -608,6 +608,20 @@ export class MembershipRegistrationService {
         }
       }
 
+      // Validate professional certification field
+      const isProfessional =
+        dto.isProfessionalCertification === true ||
+        (typeof dto.isProfessionalCertification === 'string' &&
+          dto.isProfessionalCertification === 'true');
+
+      if (isProfessional) {
+        if (!dto.professionalCertificationNumber?.trim()) {
+          errors.push(
+            'Đối với hội viên có Chứng chỉ hành nghề, bắt buộc phải nhập Số quyết định/Số chứng chỉ hành nghề.',
+          );
+        }
+      }
+
       // 3. Check attachments constraints (max 5MB, correct formats: pdf, png, jpg)
       const allowedMimetypes = ['image/jpeg', 'image/png', 'application/pdf'];
       const maxFileSize = 5 * 1024 * 1024; // 5MB
@@ -947,6 +961,20 @@ export class MembershipRegistrationService {
       }
       if (!mergedData.taxCode?.trim()) {
         errors.push('Đối với hội viên Tổ chức, bắt buộc phải nhập Mã số thuế.');
+      }
+    }
+
+    // Validate professional certification field
+    const isProfessional =
+      mergedData.isProfessionalCertification === true ||
+      (typeof mergedData.isProfessionalCertification === 'string' &&
+        mergedData.isProfessionalCertification === 'true');
+
+    if (isProfessional) {
+      if (!mergedData.professionalCertificationNumber?.trim()) {
+        errors.push(
+          'Đối với hội viên có Chứng chỉ hành nghề, bắt buộc phải nhập Số quyết định/Số chứng chỉ hành nghề.',
+        );
       }
     }
 
