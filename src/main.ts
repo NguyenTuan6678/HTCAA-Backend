@@ -11,6 +11,7 @@ import { LoggerService } from './common/loggers/logger.service';
 import { ValidationPipe } from '@nestjs/common/pipes/validation.pipe';
 import { AllExceptionsFilter } from './common/filters/all-exception.filter';
 import { ResponseErrorInterceptor } from './common/interceptors/response-error.interceptor';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { printServerBanner } from './banner/server-banner';
 
@@ -73,7 +74,10 @@ async function bootstrap() {
 
   const allExceptionsFilter = new AllExceptionsFilter(logger);
   app.useGlobalFilters(allExceptionsFilter);
-  app.useGlobalInterceptors(new ResponseErrorInterceptor());
+  app.useGlobalInterceptors(
+    new ResponseErrorInterceptor(),
+    new LoggingInterceptor(),
+  );
 
   app.use(cookieParser());
 

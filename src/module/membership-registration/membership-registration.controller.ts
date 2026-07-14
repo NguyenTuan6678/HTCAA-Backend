@@ -13,6 +13,8 @@ import {
   BadRequestException,
   Sse,
   MessageEvent,
+  StreamableFile,
+  Header,
 } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -36,6 +38,7 @@ import { QueryMembershipRegistrationDto } from './dto/query-membership-registrat
 import { UpdateMembershipRegistrationDto } from './dto/update-membership-registration.req';
 import { CheckExistsDto } from './dto/check-exists.req';
 import { ConfirmPaymentDto } from './dto/confirm-payment.req';
+import { CustomCertificateDto } from './dto/custom-certificate.req';
 
 @ApiTags('Membership Registration')
 @Controller('membership-registrations')
@@ -367,5 +370,38 @@ export class MembershipRegistrationController {
     }
 
     return this.membershipRegistrationService.update(id, dto);
+  }
+
+  @Post('certificates/preview')
+  @ApiOperation({
+    summary:
+      'Public/Admin: Generate dynamic preview of certificate (PDF, PNG, JPG as base64) with custom coordinates and text overrides',
+  })
+  @ApiBody({ type: CustomCertificateDto })
+  previewCustomCertificate(@Body() dto: CustomCertificateDto) {
+    return this.membershipRegistrationService.previewCustomCertificate(dto);
+  }
+
+  @Get('certificates/preview')
+  @Header('Content-Type', 'application/pdf')
+  @Header('Content-Disposition', 'inline; filename="certificate_preview.pdf"')
+  @ApiOperation({
+    summary: 'Public: Preview certificate dynamically as PDF stream',
+  })
+  async previewCustomCertificatePdf(@Query() query: any): Promise<StreamableFile> {
+    const pdfBuffer = await this.membershipRegistrationService.previewCustomCertificatePdf(query);
+    return new StreamableFile(pdfBuffer);
+  }
+
+  @Get(':id/certificate/preview')
+  @Header('Content-Type', 'application/pdf')
+  @Header('Content-Disposition', 'inline; filename="certificate_preview.pdf"')
+  @ApiOperation({
+    summary: 'Public: Preview certificate PDF by registration ID as PDF stream',
+  })
+  @ApiParam({ name: 'id', description: 'Membership registration ID' })
+  async previewCertificatePdfById(@Param('id') id: string): Promise<StreamableFile> {
+    const pdfBuffer = await this.membershipRegistrationService.previewCertificatePdfById(id);
+    return new StreamableFile(pdfBuffer);
   }
 }

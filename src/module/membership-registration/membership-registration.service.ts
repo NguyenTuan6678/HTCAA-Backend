@@ -7,8 +7,13 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import * as crypto from 'crypto';
 import { Subject } from 'rxjs';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, rgb } from 'pdf-lib';
+import * as fontkit from '@pdf-lib/fontkit';
 import * as QRCode from 'qrcode';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+import { execSync } from 'child_process';
 
 import { MembershipRegistration } from '../../schema/membership-registration.schema';
 import { Member } from '../../schema/member.schema';
@@ -21,6 +26,7 @@ import { CreateMembershipRegistrationDto } from './dto/create-membership-registr
 import { QueryMembershipRegistrationDto } from './dto/query-membership-registration.req';
 import { UpdateMembershipRegistrationDto } from './dto/update-membership-registration.req';
 import { ConfirmPaymentDto } from './dto/confirm-payment.req';
+import { CustomCertificateDto } from './dto/custom-certificate.req';
 import { MinioService } from '../minio/minio.service';
 import { MailService } from '../mail/mail.service';
 import { MembershipType } from '../../utils/membership-type.enum';
@@ -139,175 +145,354 @@ export class MembershipRegistrationService {
       .replace(/Đ/g, 'D');
   }
 
+  private splitTextIntoLines(text: string, maxLength = 38): string[] {
+    if (text.includes('/')) {
+      return text.split('/').map((s) => s.trim());
+    }
+    if (text.includes('\n')) {
+      return text.split('\n').map((s) => s.trim());
+    }
+    if (text.length <= maxLength) {
+      return [text];
+    }
+    const words = text.split(' ');
+    let line1 = '';
+    let line2 = '';
+    for (const word of words) {
+      if ((line1 + ' ' + word).length <= maxLength && line2 === '') {
+        line1 = line1 ? line1 + ' ' + word : word;
+      } else {
+        line2 = line2 ? line2 + ' ' + word : word;
+      }
+    }
+    return line2 ? [line1, line2] : [line1];
+  }
+
   private async generateCertificatePdfBuffer(
     name: string,
     memberCode: string,
     memberType: MembershipType,
     issueDate: Date,
+    customLayout?: {
+      recipientName?: { x?: number; y?: number; fontSize?: number };
+      dateText?: { paddingRight?: number; y?: number; fontSize?: number };
+      decisionNumber?: { x?: number; y?: number; fontSize?: number };
+    },
+    customDateText?: string,
+    customDecisionNumberText?: string,
   ): Promise<Buffer> {
-    // 1. Generate QR Code
-    const verifyUrl = `https://htcaa.vn/verify-member?code=${memberCode}`;
-    const qrDataUrl = await QRCode.toDataURL(verifyUrl, { margin: 1 });
-    const qrBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
+    // 1. Define layout positions on the 1920x1356 vector page space
+    // Scale factor to map standard 842x595 coordinates to 1920x1355.8 coordinates
+    const scaleFactor = 1920 / 842;
+    const layout = {
+      recipientName: {
+        x: customLayout?.recipientName?.x
+          ? customLayout.recipientName.x * scaleFactor
+          : 960,
+        y: customLayout?.recipientName?.y
+          ? customLayout.recipientName.y * scaleFactor
+          : 638,
+        fontSize: customLayout?.recipientName?.fontSize
+          ? customLayout.recipientName.fontSize * scaleFactor
+          : 50,
+        color: rgb(0, 84 / 255, 166 / 255),
+      },
+      dateText: {
+        paddingRight: customLayout?.dateText?.paddingRight
+          ? customLayout.dateText.paddingRight * scaleFactor
+          : 195,
+        y: customLayout?.dateText?.y
+          ? customLayout.dateText.y * scaleFactor
+          : 410,
+        fontSize: customLayout?.dateText?.fontSize
+          ? customLayout.dateText.fontSize * scaleFactor
+          : 32,
+        color: rgb(51 / 255, 65 / 255, 85 / 255),
+      },
+      decisionNumber: {
+        x: customLayout?.decisionNumber?.x
+          ? customLayout.decisionNumber.x * scaleFactor
+          : 196,
+        y: customLayout?.decisionNumber?.y
+          ? customLayout.decisionNumber.y * scaleFactor
+          : 200,
+        fontSize: customLayout?.decisionNumber?.fontSize
+          ? customLayout.decisionNumber.fontSize * scaleFactor
+          : 32,
+        color: rgb(15 / 255, 23 / 255, 42 / 255),
+      },
+    };
 
-    // 2. Create PDF document
-    const pdfDoc = await PDFDocument.create();
-    // Landscape A4: 842 x 595
-    const page = pdfDoc.addPage([842, 595]);
+    // 2. Load background original vector template and custom fonts
+    const templatePath = path.join(
+      process.cwd(),
+      'src/module/membership-registration/assets/original_template.pdf',
+    );
+    const bgBytes = fs.readFileSync(templatePath);
 
-    // Embed standard fonts
-    const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const helveticaBoldFont = await pdfDoc.embedFont(
-      StandardFonts.HelveticaBold,
+    // System Times New Roman Bold for national motto
+    const timesBoldBytes = fs.readFileSync(
+      '/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf',
     );
 
-    // Embed QR Code png image
-    const qrImage = await pdfDoc.embedPng(qrBuffer);
+    // Project Be Vietnam Pro fonts
+    const fontsPath = path.join(
+      process.cwd(),
+      'src/module/membership-registration/assets/fonts',
+    );
+    const beVietnamRegularBytes = fs.readFileSync(
+      path.join(fontsPath, 'BeVietnamPro-Regular.ttf'),
+    );
+    const beVietnamBoldBytes = fs.readFileSync(
+      path.join(fontsPath, 'BeVietnamPro-Bold.ttf'),
+    );
+    const beVietnamItalicBytes = fs.readFileSync(
+      path.join(fontsPath, 'BeVietnamPro-Italic.ttf'),
+    );
+    const beVietnamExtraBoldBytes = fs.readFileSync(
+      path.join(fontsPath, 'BeVietnamPro-ExtraBold.ttf'),
+    );
+    const beVietnamBlackBytes = fs.readFileSync(
+      path.join(fontsPath, 'BeVietnamPro-Black.ttf'),
+    );
+    const luxuriousBytes = fs.readFileSync(
+      path.join(fontsPath, 'LuxuriousScript-Regular.ttf'),
+    );
 
-    // Draw borders (gold border)
+    // 3. Load original vector PDF page
+    const pdfDoc = await PDFDocument.load(bgBytes);
+    pdfDoc.registerFontkit(fontkit);
+    const pages = pdfDoc.getPages();
+    const page = pages[0];
+
+    const timesBold = await pdfDoc.embedFont(timesBoldBytes);
+    const beVietnamRegular = await pdfDoc.embedFont(beVietnamRegularBytes);
+    const beVietnamBold = await pdfDoc.embedFont(beVietnamBoldBytes);
+    const beVietnamItalic = await pdfDoc.embedFont(beVietnamItalicBytes);
+    const beVietnamExtraBold = await pdfDoc.embedFont(beVietnamExtraBoldBytes);
+    const beVietnamBlack = await pdfDoc.embedFont(beVietnamBlackBytes);
+    const luxuriousScript = await pdfDoc.embedFont(luxuriousBytes);
+
+    // --- Draw white rectangles to cover original text ---
+    const whiteColor = rgb(1, 1, 1);
+
+    // 1. Cover motto (top right)
     page.drawRectangle({
-      x: 20,
-      y: 20,
-      width: 802,
-      height: 555,
-      borderColor: rgb(0.85, 0.65, 0.13), // Gold
-      borderWidth: 3,
+      x: 750,
+      y: 1115,
+      width: 970,
+      height: 110,
+      color: whiteColor,
     });
+
+    // 2. Cover header
     page.drawRectangle({
-      x: 25,
-      y: 25,
-      width: 792,
-      height: 545,
-      borderColor: rgb(0.85, 0.65, 0.13),
-      borderWidth: 1,
+      x: 200,
+      y: 895,
+      width: 1520,
+      height: 140,
+      color: whiteColor,
     });
 
-    // Draw Header Text (HTCAA) - strip accents to avoid Helvetica render crashes
-    page.drawText('HOI TIN HOC VA CAC THANH VIEN HTCAA', {
-      x: 50,
-      y: 500,
-      size: 24,
-      font: helveticaBoldFont,
-      color: rgb(0.1, 0.2, 0.5), // Dark Blue
+    // 2b. Cover original "Giấy Chứng Nhận" (to move it higher)
+    page.drawRectangle({
+      x: 400,
+      y: 700,
+      width: 1120,
+      height: 160,
+      color: whiteColor,
     });
 
-    page.drawText('HTCAA COMPUTER ASSOCIATION', {
-      x: 50,
-      y: 475,
-      size: 13,
-      font: helveticaFont,
-      color: rgb(0.4, 0.4, 0.4),
+    // 3. Cover company name
+    page.drawRectangle({
+      x: 200,
+      y: 525,
+      width: 1520,
+      height: 180,
+      color: whiteColor,
     });
 
-    // Draw Title
-    page.drawText('GIAY CHUNG NHAN HOI VIEN', {
-      x: 240,
+    // 4. Cover description
+    page.drawRectangle({
+      x: 150,
+      y: 480,
+      width: 1600,
+      height: 110,
+      color: whiteColor,
+    });
+
+    // 5. Cover date
+    page.drawRectangle({
+      x: 900,
       y: 380,
-      size: 26,
-      font: helveticaBoldFont,
-      color: rgb(0.8, 0.1, 0.1), // Crimson Red
+      width: 900,
+      height: 85,
+      color: whiteColor,
     });
 
-    page.drawText('MEMBERSHIP CERTIFICATE', {
-      x: 320,
-      y: 355,
-      size: 14,
-      font: helveticaFont,
-      color: rgb(0.3, 0.3, 0.3),
+    // 6. Cover decision number (Số)
+    page.drawRectangle({
+      x: 190,
+      y: 170,
+      width: 510,
+      height: 65,
+      color: whiteColor,
     });
 
-    // Recipient name label
-    page.drawText('Chung nhan Hoi vien chinh thuc (Member Name):', {
-      x: 260,
-      y: 290,
-      size: 14,
-      font: helveticaFont,
-      color: rgb(0.2, 0.2, 0.2),
+    // --- Draw new text on top ---
+
+    // 1. Draw national motto (Times Bold) - Centered around separator center X=1203.5
+    const motto1 = 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM';
+    const motto2 = 'Độc lập - Tự do - Hạnh phúc';
+    const mottoColor = rgb(0, 84 / 255, 166 / 255);
+
+    const mottoWidth1 = timesBold.widthOfTextAtSize(motto1, 40);
+    const mottoX1 = 1203.5 - mottoWidth1 / 2;
+    page.drawText(motto1, {
+      x: mottoX1,
+      y: 1203,
+      size: 40,
+      font: timesBold,
+      color: mottoColor,
     });
 
-    // Draw normalized name
-    const asciiName = this.removeVietnameseTones(name).toUpperCase();
-    page.drawText(asciiName, {
-      x: 260,
-      y: 250,
-      size: 22,
-      font: helveticaBoldFont,
-      color: rgb(0.1, 0.1, 0.1),
+    const mottoWidth2 = timesBold.widthOfTextAtSize(motto2, 36);
+    const mottoX2 = 1203.5 - mottoWidth2 / 2;
+    page.drawText(motto2, {
+      x: mottoX2,
+      y: 1151,
+      size: 36,
+      font: timesBold,
+      color: mottoColor,
     });
 
-    // Member Type
-    let typeText = 'HOI VIEN CA NHAN (INDIVIDUAL MEMBER)';
-    if (memberType === MembershipType.COLLECTIVE) {
-      typeText = 'HOI VIEN TAP THE (COLLECTIVE MEMBER)';
-    } else if (memberType === MembershipType.AFFILIATE) {
-      typeText = 'HOI VIEN LIEN KET (AFFILIATE MEMBER)';
+    // 2. Draw association header (Be Vietnam Pro)
+    const header1 = 'HỘI TƯ VẤN VÀ ĐẠI LÝ THUẾ THÀNH PHỐ HỒ CHÍ MINH';
+    const header2 = 'HO CHI MINH CITY TAX CONSULTANTS AND AGENTS ASSOCIATION';
+
+    const headerWidth1 = beVietnamBlack.widthOfTextAtSize(header1, 50);
+    const headerX1 = (1920 - headerWidth1) / 2;
+    page.drawText(header1, {
+      x: headerX1,
+      y: 996,
+      size: 50,
+      font: beVietnamBlack,
+      color: rgb(0, 84 / 255, 166 / 255),
+    });
+
+    const headerWidth2 = beVietnamRegular.widthOfTextAtSize(header2, 36);
+    const headerX2 = (1920 - headerWidth2) / 2;
+    page.drawText(header2, {
+      x: headerX2,
+      y: 933,
+      size: 36,
+      font: beVietnamRegular,
+      color: rgb(100 / 255, 116 / 255, 139 / 255),
+    });
+
+    // 2b. Draw "Giấy Chứng Nhận" elevated at Y=780 (Luxurious Script)
+    const titleText = 'Giấy Chứng Nhận';
+    const titleWidth = luxuriousScript.widthOfTextAtSize(titleText, 168.83);
+    const titleX = (1920 - titleWidth) / 2;
+    page.drawText(titleText, {
+      x: titleX,
+      y: 780,
+      size: 168.83,
+      font: luxuriousScript,
+      color: rgb(237 / 255, 28 / 255, 36 / 255),
+    });
+
+    // 3. Draw Recipient Name / companyName (Be Vietnam Pro ExtraBold)
+    const upperName = name.toUpperCase();
+    const lines = this.splitTextIntoLines(upperName, 38);
+    const nameColor = rgb(0, 84 / 255, 166 / 255);
+
+    if (lines.length === 1) {
+      const nameFontSize = layout.recipientName.fontSize;
+      const nameWidth = beVietnamExtraBold.widthOfTextAtSize(
+        lines[0],
+        nameFontSize,
+      );
+      const nameX = (1920 - nameWidth) / 2;
+      page.drawText(lines[0], {
+        x: nameX,
+        y: layout.recipientName.y,
+        size: nameFontSize,
+        font: beVietnamExtraBold,
+        color: nameColor,
+      });
+    } else {
+      // Line 1
+      const fontSize1 = layout.recipientName.fontSize - 5;
+      const nameWidth1 = beVietnamExtraBold.widthOfTextAtSize(
+        lines[0],
+        fontSize1,
+      );
+      const nameX1 = (1920 - nameWidth1) / 2;
+      page.drawText(lines[0], {
+        x: nameX1,
+        y: layout.recipientName.y + 33,
+        size: fontSize1,
+        font: beVietnamExtraBold,
+        color: nameColor,
+      });
+      // Line 2
+      const fontSize2 = layout.recipientName.fontSize - 10;
+      const nameWidth2 = beVietnamExtraBold.widthOfTextAtSize(
+        lines[1],
+        fontSize2,
+      );
+      const nameX2 = (1920 - nameWidth2) / 2;
+      page.drawText(lines[1], {
+        x: nameX2,
+        y: layout.recipientName.y - 32,
+        size: fontSize2,
+        font: beVietnamExtraBold,
+        color: nameColor,
+      });
     }
 
-    page.drawText(typeText, {
-      x: 260,
-      y: 215,
-      size: 13,
-      font: helveticaFont,
-      color: rgb(0.3, 0.3, 0.3),
+    // 4. Draw Description (Be Vietnam Pro Bold)
+    const desc =
+      'Là Hội viên Chính thức của Hội Tư Vấn Và Đại Lý Thuế Thành phố Hồ Chí Minh';
+    const descWidth = beVietnamBold.widthOfTextAtSize(desc, 40);
+    const descX = (1920 - descWidth) / 2;
+    page.drawText(desc, {
+      x: descX,
+      y: 523,
+      size: 40,
+      font: beVietnamBold,
+      color: rgb(61 / 255, 61 / 255, 61 / 255),
     });
 
-    // Member details on the left
-    page.drawText(`Ma hoi vien (ID): ${memberCode}`, {
-      x: 50,
-      y: 130,
-      size: 13,
-      font: helveticaBoldFont,
-      color: rgb(0.1, 0.1, 0.1),
-    });
-
+    // 5. Draw Issuance Date (Be Vietnam Pro Italic)
     const day = String(issueDate.getDate()).padStart(2, '0');
     const month = String(issueDate.getMonth() + 1).padStart(2, '0');
     const year = issueDate.getFullYear();
-    page.drawText(`Ngay cap (Issue Date): ${day}/${month}/${year}`, {
-      x: 50,
-      y: 105,
-      size: 12,
-      font: helveticaFont,
-      color: rgb(0.3, 0.3, 0.3),
+    const dateText =
+      customDateText ??
+      `Thành phố Hồ Chí Minh, ngày ${day} tháng ${month} năm ${year}`;
+    const dateFontSize = layout.dateText.fontSize;
+    const dateWidth = beVietnamItalic.widthOfTextAtSize(dateText, dateFontSize);
+    const dateX = 1920 - dateWidth - layout.dateText.paddingRight;
+    page.drawText(dateText, {
+      x: dateX,
+      y: layout.dateText.y,
+      size: dateFontSize,
+      font: beVietnamItalic,
+      color: rgb(61 / 255, 61 / 255, 61 / 255),
     });
 
-    // Draw QR Code on the bottom right
-    page.drawImage(qrImage, {
-      x: 650,
-      y: 50,
-      width: 120,
-      height: 120,
-    });
-
-    page.drawText('Quet de xac thuc', {
-      x: 665,
-      y: 35,
-      size: 9,
-      font: helveticaFont,
-      color: rgb(0.5, 0.5, 0.5),
-    });
-
-    // President Signature Area
-    page.drawText('CHU TICH HOI', {
-      x: 450,
-      y: 130,
-      size: 13,
-      font: helveticaBoldFont,
-      color: rgb(0.1, 0.1, 0.1),
-    });
-    page.drawText('(Signature & Seal)', {
-      x: 450,
-      y: 115,
-      size: 10,
-      font: helveticaFont,
-      color: rgb(0.5, 0.5, 0.5),
-    });
-
-    page.drawLine({
-      start: { x: 440, y: 70 },
-      end: { x: 560, y: 70 },
-      thickness: 1,
-      color: rgb(0.7, 0.7, 0.7),
+    // 6. Draw Decision Number (Be Vietnam Pro Regular)
+    const numberText =
+      customDecisionNumberText ??
+      'Số: ...................................................';
+    page.drawText(numberText, {
+      x: layout.decisionNumber.x,
+      y: layout.decisionNumber.y,
+      size: layout.decisionNumber.fontSize,
+      font: beVietnamRegular,
+      color: rgb(61 / 255, 61 / 255, 61 / 255),
     });
 
     const pdfBytes = await pdfDoc.save();
@@ -1092,14 +1277,16 @@ export class MembershipRegistrationService {
       const memberCode = `HTCAA-${prefix}-${year}-${seq}`;
 
       // 3. Generate PDF Certificate
+      const recipientName = registration.companyName || registration.name;
+
       const pdfBuffer = await this.generateCertificatePdfBuffer(
-        registration.name,
+        recipientName,
         memberCode,
         registration.memberType as MembershipType,
         new Date(),
       );
 
-      // 4. Upload Certificate to MinIO
+      // 4. Upload Certificate (PDF) to MinIO
       const mockFile: any = {
         originalname: `Chung_nhan_HTCAA_${memberCode}.pdf`,
         buffer: pdfBuffer,
@@ -1118,6 +1305,73 @@ export class MembershipRegistrationService {
         mimetype: uploadResult.mimetype,
         size: uploadResult.size,
       };
+
+      // Export certificate in PNG and JPG formats using sips (macOS native)
+      let certificateFilePng = null;
+      let certificateFileJpg = null;
+
+      const tempPdfPath = path.join(os.tmpdir(), `cert_${memberCode}.pdf`);
+      const tempPngPath = path.join(os.tmpdir(), `cert_${memberCode}.png`);
+      const tempJpgPath = path.join(os.tmpdir(), `cert_${memberCode}.jpg`);
+
+      try {
+        fs.writeFileSync(tempPdfPath, pdfBuffer);
+        execSync(`sips -s format png "${tempPdfPath}" --out "${tempPngPath}"`);
+        execSync(`sips -s format jpeg "${tempPdfPath}" --out "${tempJpgPath}"`);
+
+        if (fs.existsSync(tempPngPath)) {
+          const pngBuffer = fs.readFileSync(tempPngPath);
+          const mockPngFile: any = {
+            originalname: `Chung_nhan_HTCAA_${memberCode}.png`,
+            buffer: pngBuffer,
+            size: pngBuffer.length,
+            mimetype: 'image/png',
+          };
+          const uploadPngResult = await this.minioService.uploadFile(
+            mockPngFile,
+            'members/certificates',
+          );
+          certificateFilePng = {
+            originalName: uploadPngResult.originalName,
+            filename: uploadPngResult.objectName,
+            path: `/uploads/members/${uploadPngResult.objectName}`,
+            mimetype: uploadPngResult.mimetype,
+            size: uploadPngResult.size,
+          };
+          fs.unlinkSync(tempPngPath);
+        }
+
+        if (fs.existsSync(tempJpgPath)) {
+          const jpgBuffer = fs.readFileSync(tempJpgPath);
+          const mockJpgFile: any = {
+            originalname: `Chung_nhan_HTCAA_${memberCode}.jpg`,
+            buffer: jpgBuffer,
+            size: jpgBuffer.length,
+            mimetype: 'image/jpeg',
+          };
+          const uploadJpgResult = await this.minioService.uploadFile(
+            mockJpgFile,
+            'members/certificates',
+          );
+          certificateFileJpg = {
+            originalName: uploadJpgResult.originalName,
+            filename: uploadJpgResult.objectName,
+            path: `/uploads/members/${uploadJpgResult.objectName}`,
+            mimetype: uploadJpgResult.mimetype,
+            size: uploadJpgResult.size,
+          };
+          fs.unlinkSync(tempJpgPath);
+        }
+      } catch (err: any) {
+        console.error(
+          'Failed to export certificate image formats:',
+          err.message,
+        );
+      } finally {
+        if (fs.existsSync(tempPdfPath)) {
+          fs.unlinkSync(tempPdfPath);
+        }
+      }
 
       // 5. Create/Link User Account
       const cleanEmail = registration.email.toLowerCase().trim();
@@ -1180,11 +1434,15 @@ export class MembershipRegistrationService {
           status: MemberStatus.ACTIVE,
           cpeHours: 0,
           certificateFile,
+          certificateFilePng,
+          certificateFileJpg,
         });
       } else {
         member.memberCode = memberCode;
         member.status = MemberStatus.ACTIVE;
         member.certificateFile = certificateFile as any;
+        member.certificateFilePng = certificateFilePng as any;
+        member.certificateFileJpg = certificateFileJpg as any;
         await member.save();
       }
 
@@ -1398,5 +1656,105 @@ export class MembershipRegistrationService {
         content: null,
       };
     }
+  }
+
+  async previewCustomCertificate(dto: CustomCertificateDto) {
+    try {
+      const memberCode = dto.memberCode || 'HTCAA-TT-2026-0001';
+      const memberType = (dto.memberType || 'collective') as MembershipType;
+      const pdfBuffer = await this.generateCertificatePdfBuffer(
+        dto.name,
+        memberCode,
+        memberType,
+        new Date(),
+        dto.layout,
+        dto.customDateText,
+        dto.customDecisionNumberText,
+      );
+
+      let pngBase64 = null;
+      let jpgBase64 = null;
+
+      const tempPdfPath = path.join(os.tmpdir(), `preview_${Date.now()}.pdf`);
+      const tempPngPath = path.join(os.tmpdir(), `preview_${Date.now()}.png`);
+      const tempJpgPath = path.join(os.tmpdir(), `preview_${Date.now()}.jpg`);
+
+      try {
+        fs.writeFileSync(tempPdfPath, pdfBuffer);
+        execSync(`sips -s format png "${tempPdfPath}" --out "${tempPngPath}"`);
+        execSync(`sips -s format jpeg "${tempPdfPath}" --out "${tempJpgPath}"`);
+
+        if (fs.existsSync(tempPngPath)) {
+          pngBase64 = fs.readFileSync(tempPngPath).toString('base64');
+          fs.unlinkSync(tempPngPath);
+        }
+        if (fs.existsSync(tempJpgPath)) {
+          jpgBase64 = fs.readFileSync(tempJpgPath).toString('base64');
+          fs.unlinkSync(tempJpgPath);
+        }
+      } catch (err: any) {
+        console.error(
+          'Failed to export preview images using sips:',
+          err.message,
+        );
+      } finally {
+        if (fs.existsSync(tempPdfPath)) {
+          fs.unlinkSync(tempPdfPath);
+        }
+      }
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Tạo bản xem trước thành công.',
+        content: {
+          pdfBase64: pdfBuffer.toString('base64'),
+          pngBase64,
+          jpgBase64,
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `Không thể tạo bản xem trước: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async previewCustomCertificatePdf(query: {
+    name: string;
+    memberCode?: string;
+    memberType?: string;
+    customDateText?: string;
+    customDecisionNumberText?: string;
+  }): Promise<Buffer> {
+    const memberCode = query.memberCode || 'HTCAA-TT-2026-0001';
+    const memberType = (query.memberType || 'collective') as MembershipType;
+    return this.generateCertificatePdfBuffer(
+      query.name,
+      memberCode,
+      memberType,
+      new Date(),
+      undefined,
+      query.customDateText,
+      query.customDecisionNumberText,
+    );
+  }
+
+  async previewCertificatePdfById(id: string): Promise<Buffer> {
+    const registration = await this.membershipRegistrationModel.findById(id);
+    if (!registration) {
+      throw new NotFoundException('Không tìm thấy đơn đăng ký hội viên.');
+    }
+    const memberCode = 'HTCAA-PREVIEW-0001';
+    const recipientName = registration.companyName || registration.name;
+    return this.generateCertificatePdfBuffer(
+      recipientName,
+      memberCode,
+      registration.memberType as MembershipType,
+      registration.createdAt || new Date(),
+    );
   }
 }

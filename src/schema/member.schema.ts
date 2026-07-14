@@ -104,6 +104,12 @@ export class Member {
   @Prop({ type: MemberProfileFileSchema, default: null })
   certificateFile?: MemberProfileFile | null;
 
+  @Prop({ type: MemberProfileFileSchema, default: null })
+  certificateFilePng?: MemberProfileFile | null;
+
+  @Prop({ type: MemberProfileFileSchema, default: null })
+  certificateFileJpg?: MemberProfileFile | null;
+
   @Prop({
     type: String,
     enum: MemberStatus,

@@ -44,7 +44,7 @@ export class MembershipRegistration {
   @Prop({ type: String, required: true, trim: true })
   address: string;
 
-  @Prop({ type: String, required: true, trim: true })
+  @Prop({ type: String, default: '', trim: true })
   taxCode: string;
 
   @Prop({ type: String, required: true, trim: true })
@@ -127,10 +127,10 @@ export class MembershipRegistration {
   @Prop({ type: Boolean, required: true })
   isProfessionalCertification: boolean;
 
-  @Prop({ type: String, required: true, trim: true })
+  @Prop({ type: String, default: '', trim: true })
   professionalCertificationNumber: string;
 
-  @Prop({ type: String, required: true, trim: true })
+  @Prop({ type: String, default: '', trim: true })
   companyName: string;
 
   @Prop({ type: String, default: null, trim: true })

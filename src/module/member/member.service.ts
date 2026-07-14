@@ -67,6 +67,22 @@ export class MemberService {
         obj.certificateFile.path = presignedUrl;
       }
     }
+    if (obj.certificateFilePng?.filename) {
+      if (obj.certificateFilePng.filename.includes('/')) {
+        const presignedUrl = await this.minioService.getPresignedUrl(
+          obj.certificateFilePng.filename,
+        );
+        obj.certificateFilePng.path = presignedUrl;
+      }
+    }
+    if (obj.certificateFileJpg?.filename) {
+      if (obj.certificateFileJpg.filename.includes('/')) {
+        const presignedUrl = await this.minioService.getPresignedUrl(
+          obj.certificateFileJpg.filename,
+        );
+        obj.certificateFileJpg.path = presignedUrl;
+      }
+    }
     return obj;
   }
 

@@ -24,6 +24,7 @@ import { RegistrationModule } from './module/registration/registration.module';
 import { MembershipRegistrationModule } from './module/membership-registration/membership-registration.module';
 import { SocialPostModule } from './module/social-post/social-post.module';
 import { PartnerModule } from './module/partner/partner.module';
+import { ShutdownService } from './common/shutdowns/shutdown.service';
 
 @Module({
   imports: [
@@ -66,6 +67,6 @@ import { PartnerModule } from './module/partner/partner.module';
     PartnerModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, ShutdownService],
 })
 export class AppModule {}
