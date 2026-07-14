@@ -80,7 +80,7 @@ export class CreateMembershipRegistrationDto {
   })
   @ValidateIf((o) => o.isProfessionalCertification === true)
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   professionalCertificationNumber: string;
 
   @ApiPropertyOptional({
