@@ -388,8 +388,13 @@ export class MembershipRegistrationController {
   @ApiOperation({
     summary: 'Public: Preview certificate dynamically as PDF stream',
   })
-  async previewCustomCertificatePdf(@Query() query: any): Promise<StreamableFile> {
-    const pdfBuffer = await this.membershipRegistrationService.previewCustomCertificatePdf(query);
+  async previewCustomCertificatePdf(
+    @Query() query: any,
+  ): Promise<StreamableFile> {
+    const pdfBuffer =
+      await this.membershipRegistrationService.previewCustomCertificatePdf(
+        query,
+      );
     return new StreamableFile(pdfBuffer);
   }
 
@@ -400,8 +405,11 @@ export class MembershipRegistrationController {
     summary: 'Public: Preview certificate PDF by registration ID as PDF stream',
   })
   @ApiParam({ name: 'id', description: 'Membership registration ID' })
-  async previewCertificatePdfById(@Param('id') id: string): Promise<StreamableFile> {
-    const pdfBuffer = await this.membershipRegistrationService.previewCertificatePdfById(id);
+  async previewCertificatePdfById(
+    @Param('id') id: string,
+  ): Promise<StreamableFile> {
+    const pdfBuffer =
+      await this.membershipRegistrationService.previewCertificatePdfById(id);
     return new StreamableFile(pdfBuffer);
   }
 }
