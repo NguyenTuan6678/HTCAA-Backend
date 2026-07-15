@@ -1,20 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Resend } from 'resend';
+import * as nodemailer from 'nodemailer';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class MailService {
-  private readonly resend: Resend;
+  private readonly transporter: nodemailer.Transporter;
 
   constructor(private readonly configService: ConfigService) {
-    const apiKey = this.configService.get<string>('RESEND_API_KEY');
-
-    if (!apiKey) {
-      throw new Error('RESEND_API_KEY is missing');
-    }
-
-    this.resend = new Resend(apiKey);
+    this.transporter = nodemailer.createTransport({
+      host: this.configService.get<string>('SMTP_HOST'),
+      port: this.configService.get<number>('SMTP_PORT') ?? 587,
+      secure: this.configService.get<boolean>('SMTP_SECURE') ?? false,
+      auth: {
+        user: this.configService.get<string>('SMTP_USER'),
+        pass: this.configService.get<string>('SMTP_PASS'),
+      },
+    });
   }
 
   async sendResetPasswordEmail(
@@ -25,14 +27,15 @@ export class MailService {
 
     const from =
       this.configService.get<string>('MAIL_FROM') ??
-      'Your App <onboarding@resend.dev>';
+      'Your App <no-reply@example.com>';
 
-    const { error } = await this.resend.emails.send({
-      from,
-      to: email,
-      subject: `Reset your ${appName} password`,
-      html: this.getResetPasswordTemplate(appName, resetLink),
-      text: `
+    try {
+      await this.transporter.sendMail({
+        from,
+        to: email,
+        subject: `Reset your ${appName} password`,
+        html: this.getResetPasswordTemplate(appName, resetLink),
+        text: `
 Reset your ${appName} password
 
 You requested to reset your password.
@@ -43,10 +46,9 @@ ${resetLink}
 
 If you did not request this, you can ignore this email.
     `,
-    });
-
-    if (error) {
-      throw new Error(error.message);
+      });
+    } catch (error: any) {
+      throw new Error(`Failed to send password reset email: ${error.message}`);
     }
   }
 
@@ -58,7 +60,7 @@ If you did not request this, you can ignore this email.
 
     const from =
       this.configService.get<string>('MAIL_FROM') ??
-      'Your App <onboarding@resend.dev>';
+      'Your App <no-reply@example.com>';
 
     const backendUrl =
       this.configService.get<string>('BACKEND_URL') || 'http://localhost:4000';
@@ -71,12 +73,13 @@ If you did not request this, you can ignore this email.
       .digest('hex');
     const unsubscribeLink = `${backendUrl}/api/newsletter-subscriber/unsubscribe?email=${encodeURIComponent(targetEmail)}&token=${token}`;
 
-    const { error } = await this.resend.emails.send({
-      from,
-      to: email,
-      subject: `Xác nhận đăng ký nhận bản tin của ${appName}`,
-      html: this.getNewsletterConfirmationTemplate(appName, confirmationLink),
-      text: `
+    try {
+      await this.transporter.sendMail({
+        from,
+        to: email,
+        subject: `Xác nhận đăng ký nhận bản tin của ${appName}`,
+        html: this.getNewsletterConfirmationTemplate(appName, confirmationLink),
+        text: `
 Xác nhận đăng ký nhận bản tin của ${appName}
 
 Cảm ơn bạn đã đăng ký nhận bản tin của chúng tôi! Vui lòng nhấn vào liên kết bên dưới để xác nhận đăng ký:
@@ -86,14 +89,13 @@ ${confirmationLink}
 
 Nếu bạn không thực hiện yêu cầu này, bạn có thể an tâm bỏ qua email này.
     `,
-      headers: {
-        'List-Unsubscribe': `<${unsubscribeLink}>`,
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-      },
-    });
-
-    if (error) {
-      throw new Error(error.message);
+        headers: {
+          'List-Unsubscribe': `<${unsubscribeLink}>`,
+          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        },
+      });
+    } catch (error: any) {
+      throw new Error(`Failed to send newsletter confirmation email: ${error.message}`);
     }
   }
 
@@ -114,7 +116,7 @@ Nếu bạn không thực hiện yêu cầu này, bạn có thể an tâm bỏ q
 
     const from =
       this.configService.get<string>('MAIL_FROM') ??
-      'Your App <onboarding@resend.dev>';
+      'Your App <no-reply@example.com>';
 
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
@@ -142,7 +144,7 @@ Nếu bạn không thực hiện yêu cầu này, bạn có thể an tâm bỏ q
             .digest('hex');
           const unsubscribeLink = `${backendUrl}/api/newsletter-subscriber/unsubscribe?email=${encodeURIComponent(targetEmail)}&token=${token}`;
 
-          return this.resend.emails.send({
+          return this.transporter.sendMail({
             from,
             to: targetEmail,
             subject: `[${appName}] Tin tức mới: ${news.title}`,
@@ -174,12 +176,12 @@ ${unsubscribeLink}
       results.forEach((result, idx) => {
         const email = chunk[idx];
 
-        if (result.status === 'fulfilled' && !result.value.error) {
+        if (result.status === 'fulfilled') {
           sent++;
         } else {
           failed.push(email);
           const reason =
-            result.status === 'rejected' ? result.reason : result.value.error;
+            result.status === 'rejected' ? result.reason : '';
           console.error(
             `Failed to send news notification to ${email}:`,
             reason,
@@ -521,22 +523,23 @@ ${unsubscribeLink}
     const appName = this.configService.get<string>('APP_NAME') ?? 'HTCAA';
     const from =
       this.configService.get<string>('MAIL_FROM') ??
-      'HTCAA <onboarding@resend.dev>';
+      'HTCAA <no-reply@example.com>';
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const supplementLink = `${frontendUrl}/bo-sung-ho-so?token=${token}`;
 
-    const { error } = await this.resend.emails.send({
-      from,
-      to: email,
-      subject: `[${appName}] Yêu cầu bổ sung hồ sơ đăng ký hội viên`,
-      html: this.getSupplementRequestTemplate(
-        appName,
-        name,
-        supplementLink,
-        notes,
-      ),
-      text: `
+    try {
+      await this.transporter.sendMail({
+        from,
+        to: email,
+        subject: `[${appName}] Yêu cầu bổ sung hồ sơ đăng ký hội viên`,
+        html: this.getSupplementRequestTemplate(
+          appName,
+          name,
+          supplementLink,
+          notes,
+        ),
+        text: `
 Kính gửi ${name},
 
 Cảm ơn bạn đã đăng ký tham gia hội viên ${appName}. 
@@ -551,10 +554,9 @@ ${supplementLink}
 Trân trọng,
 Ban thư ký ${appName}
       `,
-    });
-
-    if (error) {
-      throw new Error(error.message);
+      });
+    } catch (error: any) {
+      throw new Error(`Failed to send supplement request email: ${error.message}`);
     }
   }
 
@@ -567,24 +569,25 @@ Ban thư ký ${appName}
     const appName = this.configService.get<string>('APP_NAME') ?? 'HTCAA';
     const from =
       this.configService.get<string>('MAIL_FROM') ??
-      'HTCAA <onboarding@resend.dev>';
+      'HTCAA <no-reply@example.com>';
 
     const formattedFee = new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND',
     }).format(fee);
 
-    const { error } = await this.resend.emails.send({
-      from,
-      to: email,
-      subject: `[${appName}] Thông báo chấp thuận hồ sơ hội viên & Hướng dẫn thanh toán`,
-      html: this.getApprovalNotificationTemplate(
-        appName,
-        name,
-        applicationCode,
-        formattedFee,
-      ),
-      text: `
+    try {
+      await this.transporter.sendMail({
+        from,
+        to: email,
+        subject: `[${appName}] Thông báo chấp thuận hồ sơ hội viên & Hướng dẫn thanh toán`,
+        html: this.getApprovalNotificationTemplate(
+          appName,
+          name,
+          applicationCode,
+          formattedFee,
+        ),
+        text: `
 Kính gửi ${name},
 
 Chúc mừng bạn! Hồ sơ đăng ký hội viên ${appName} của bạn đã được Ban thư ký phê duyệt thành công.
@@ -603,10 +606,9 @@ Vui lòng hoàn thành chuyển khoản thanh toán hội phí để kích hoạ
 Trân trọng,
 Ban thư ký ${appName}
       `,
-    });
-
-    if (error) {
-      throw new Error(error.message);
+      });
+    } catch (error: any) {
+      throw new Error(`Failed to send approval notification email: ${error.message}`);
     }
   }
 
@@ -788,22 +790,23 @@ Ban thư ký ${appName}
     const appName = this.configService.get<string>('APP_NAME') ?? 'HTCAA';
     const from =
       this.configService.get<string>('MAIL_FROM') ??
-      'HTCAA <onboarding@resend.dev>';
+      'HTCAA <no-reply@example.com>';
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const activationLink = `${frontendUrl}/dat-mat-khau?token=${activationToken}`;
 
-    const { error } = await this.resend.emails.send({
-      from,
-      to: email,
-      subject: `[${appName}] Chúc mừng bạn đã trở thành Hội viên chính thức - Mã hội viên: ${memberCode}`,
-      html: this.getCertificateTemplate(
-        appName,
-        name,
-        memberCode,
-        activationLink,
-      ),
-      text: `
+    try {
+      await this.transporter.sendMail({
+        from,
+        to: email,
+        subject: `[${appName}] Chúc mừng bạn đã trở thành Hội viên chính thức - Mã hội viên: ${memberCode}`,
+        html: this.getCertificateTemplate(
+          appName,
+          name,
+          memberCode,
+          activationLink,
+        ),
+        text: `
 Kính gửi ${name},
 
 Chúc mừng bạn đã hoàn thành việc đóng phí hội viên và trở thành Hội viên chính thức của ${appName}.
@@ -818,16 +821,15 @@ Chúng tôi cũng đã đính kèm Giấy chứng nhận hội viên chính th�
 Trân trọng,
 Ban thư ký ${appName}
       `,
-      attachments: [
-        {
-          filename: `Chung_nhan_HTCAA_${memberCode}.pdf`,
-          content: pdfBuffer,
-        },
-      ],
-    });
-
-    if (error) {
-      throw new Error(error.message);
+        attachments: [
+          {
+            filename: `Chung_nhan_HTCAA_${memberCode}.pdf`,
+            content: pdfBuffer,
+          },
+        ],
+      });
+    } catch (error: any) {
+      throw new Error(`Failed to send certificate email: ${error.message}`);
     }
   }
 
