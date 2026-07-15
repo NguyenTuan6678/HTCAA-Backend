@@ -39,6 +39,7 @@ import { UpdateMembershipRegistrationDto } from './dto/update-membership-registr
 import { CheckExistsDto } from './dto/check-exists.req';
 import { ConfirmPaymentDto } from './dto/confirm-payment.req';
 import { CustomCertificateDto } from './dto/custom-certificate.req';
+import { RequestSupplementDto } from './dto/request-supplement.req';
 
 @ApiTags('Membership Registration')
 @Controller('membership-registrations')
@@ -252,6 +253,108 @@ export class MembershipRegistrationController {
   ) {
     return this.membershipRegistrationService.updateSupplementByToken(
       token,
+      dto,
+      {
+        avatar: files?.avatar?.[0],
+        banner: files?.banner?.[0],
+        attachments: files?.attachments || [],
+      },
+    );
+  }
+
+  @Patch(':id/request-supplement')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({
+    summary:
+      'Admin/editor: request supplementation of missing/invalid info or files',
+  })
+  @ApiParam({ name: 'id', description: 'Membership registration id' })
+  @ApiBody({ type: RequestSupplementDto })
+  requestSupplement(
+    @Param('id') id: string,
+    @Body() dto: RequestSupplementDto,
+  ) {
+    return this.membershipRegistrationService.requestSupplement(id, dto);
+  }
+
+  @Get('supplements/:recordId')
+  @ApiOperation({
+    summary:
+      'Public: get registration details to supplement missing info/files using supplement record ID',
+  })
+  @ApiParam({ name: 'recordId', description: 'Supplement record ID (ObjectId)' })
+  getSupplementByRecordId(@Param('recordId') recordId: string) {
+    return this.membershipRegistrationService.getSupplementByRecordId(recordId);
+  }
+
+  @Patch('supplements/:recordId')
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'avatar', maxCount: 1 },
+        { name: 'banner', maxCount: 1 },
+        { name: 'attachments', maxCount: 10 },
+      ],
+      {
+        storage: memoryStorage(),
+        limits: { fileSize: 30 * 1024 * 1024 },
+      },
+    ),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        memberType: {
+          type: 'string',
+          enum: ['individual', 'collective', 'affiliate'],
+        },
+        address: { type: 'string' },
+        taxCode: { type: 'string' },
+        identityCode: { type: 'string' },
+        job: { type: 'string' },
+        position: { type: 'string' },
+        dateOfBirth: { type: 'string' },
+        phoneNumber: { type: 'string' },
+        email: { type: 'string' },
+        isProfessionalCertification: { type: 'boolean' },
+        professionalCertificationNumber: { type: 'string' },
+        companyName: { type: 'string' },
+        companyLicense: { type: 'string' },
+        companyWebsiteUrl: { type: 'string' },
+        companyPhoneNumber: { type: 'string' },
+        companyJobType: { type: 'string' },
+        companySlogan: { type: 'string' },
+        introduceBy: { type: 'string' },
+        avatar: { type: 'string', format: 'binary' },
+        banner: { type: 'string', format: 'binary' },
+        attachments: {
+          type: 'array',
+          items: { type: 'string', format: 'binary' },
+        },
+      },
+    },
+  })
+  @ApiOperation({
+    summary: 'Public: supplement files/info using supplement record ID',
+  })
+  @ApiParam({ name: 'recordId', description: 'Supplement record ID (ObjectId)' })
+  updateSupplementByRecordId(
+    @Param('recordId') recordId: string,
+    @Body() dto: UpdateMembershipRegistrationDto,
+    @UploadedFiles()
+    files: {
+      avatar?: Express.Multer.File[];
+      banner?: Express.Multer.File[];
+      attachments?: Express.Multer.File[];
+    },
+  ) {
+    return this.membershipRegistrationService.updateSupplementByRecordId(
+      recordId,
       dto,
       {
         avatar: files?.avatar?.[0],

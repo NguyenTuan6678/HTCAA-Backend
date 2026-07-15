@@ -10,6 +10,10 @@ import {
 import { Member, MemberSchema } from '../../schema/member.schema';
 import { Counter, CounterSchema } from '../../schema/counter.schema';
 import { User, UserSchema } from '../../schema/user.schema';
+import {
+  MembershipRegistrationSupplement,
+  MembershipRegistrationSupplementSchema,
+} from '../../schema/membership-registration-supplement.schema';
 import { MembershipRegistrationController } from './membership-registration.controller';
 import { MembershipRegistrationService } from './membership-registration.service';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
@@ -33,6 +37,10 @@ import { RolesGuard } from '../../users/auth/guards/roles.guard';
       {
         name: User.name,
         schema: UserSchema,
+      },
+      {
+        name: MembershipRegistrationSupplement.name,
+        schema: MembershipRegistrationSupplementSchema,
       },
     ]),
     MinioModule,

@@ -526,7 +526,7 @@ ${unsubscribeLink}
   async sendSupplementRequestEmail(
     email: string,
     name: string,
-    token: string,
+    recordId: string,
     notes: string,
   ): Promise<void> {
     const appName = this.configService.get<string>('APP_NAME') ?? 'HTCAA';
@@ -535,7 +535,7 @@ ${unsubscribeLink}
       'HTCAA <no-reply@example.com>';
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    const supplementLink = `${frontendUrl}/bo-sung-ho-so?token=${token}`;
+    const supplementLink = `${frontendUrl}/bo-sung-ho-so?recordId=${recordId}`;
 
     try {
       await this.transporter.sendMail({
@@ -552,12 +552,12 @@ ${unsubscribeLink}
 Kính gửi ${name},
 
 Cảm ơn bạn đã đăng ký tham gia hội viên ${appName}. 
-Hồ sơ đăng ký của bạn hiện chưa đạt yêu cầu tự động và cần bổ sung/chỉnh sửa các thông tin sau:
+Hồ sơ đăng ký của bạn cần được bổ sung/chỉnh sửa thông tin theo yêu cầu kiểm tra từ Ban Thư ký:
 
-Lý do/Nội dung cần bổ sung:
+Nội dung yêu cầu bổ sung từ Quản trị viên:
 ${notes}
 
-Vui lòng nhấp vào liên kết sau để cập nhật hồ sơ:
+Vui lòng nhấp vào liên kết sau để cập nhật hồ sơ của bạn:
 ${supplementLink}
 
 Trân trọng,

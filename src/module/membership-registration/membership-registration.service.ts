@@ -27,6 +27,8 @@ import { QueryMembershipRegistrationDto } from './dto/query-membership-registrat
 import { UpdateMembershipRegistrationDto } from './dto/update-membership-registration.req';
 import { ConfirmPaymentDto } from './dto/confirm-payment.req';
 import { CustomCertificateDto } from './dto/custom-certificate.req';
+import { RequestSupplementDto } from './dto/request-supplement.req';
+import { MembershipRegistrationSupplement } from '../../schema/membership-registration-supplement.schema';
 import { MinioService } from '../minio/minio.service';
 import { MailService } from '../mail/mail.service';
 import { MembershipType } from '../../utils/membership-type.enum';
@@ -47,6 +49,8 @@ export class MembershipRegistrationService {
     private readonly counterModel: Model<Counter>,
     @InjectModel(User.name)
     private readonly userModel: Model<User>,
+    @InjectModel(MembershipRegistrationSupplement.name)
+    private readonly supplementModel: Model<MembershipRegistrationSupplement>,
     private readonly minioService: MinioService,
     private readonly mailService: MailService,
   ) {}
@@ -707,8 +711,6 @@ export class MembershipRegistrationService {
 
       // Determine status and tokens based on auto validation results
       const status = errors.length > 0 ? 'need_info' : 'pending';
-      const supplementToken =
-        errors.length > 0 ? crypto.randomBytes(32).toString('hex') : null;
       const validationNotes = errors.length > 0 ? errors.join('\n') : null;
 
       const registration = await this.membershipRegistrationModel.create({
@@ -726,7 +728,7 @@ export class MembershipRegistrationService {
         fee,
         priority,
         attachments: attachmentsMetadata,
-        supplementToken,
+        supplementToken: null,
         validationNotes,
         joinAt: null,
         avatar: avatarFile,
@@ -751,11 +753,32 @@ export class MembershipRegistrationService {
 
       // Async hooks: email / real-time notifications
       if (status === 'need_info') {
+        const missingFields: string[] = [];
+        for (const err of errors) {
+          if (err.includes('Tên công ty')) missingFields.push('companyName');
+          if (err.includes('Mã số thuế')) missingFields.push('taxCode');
+          if (err.includes('Chứng chỉ hành nghề'))
+            missingFields.push('professionalCertificationNumber');
+          if (err.includes('chân dung')) missingFields.push('avatar');
+          if (err.includes('tài liệu đính kèm') || err.includes('giấy phép'))
+            missingFields.push('attachments');
+        }
+        if (missingFields.length === 0) {
+          missingFields.push('attachments');
+        }
+
+        const supplement = await this.supplementModel.create({
+          registrationId: registration._id,
+          missingFields,
+          adminNotes: validationNotes || 'Hồ sơ thiếu thông tin bắt buộc.',
+          status: 'pending',
+        });
+
         this.mailService
           .sendSupplementRequestEmail(
             dto.email,
             dto.name,
-            supplementToken!,
+            supplement._id.toString(),
             validationNotes!,
           )
           .catch((err) =>
@@ -1284,6 +1307,15 @@ export class MembershipRegistrationService {
         );
       }
 
+      // Mark all supplement requests as resolved
+      await this.supplementModel.updateMany(
+        {
+          registrationId: registration._id,
+          status: { $in: ['pending', 'submitted'] },
+        },
+        { status: 'resolved', resolvedAt: new Date() },
+      );
+
       // 2. Generate Member Code: CN (Cá nhân), TT (Tổ chức), LK (Liên kết)
       let prefix = 'CN';
       if (registration.memberType === MembershipType.COLLECTIVE) {
@@ -1784,5 +1816,404 @@ export class MembershipRegistrationService {
       registration.memberType as MembershipType,
       registration.createdAt || new Date(),
     );
+  }
+
+  async requestSupplement(id: string, dto: RequestSupplementDto) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid membership registration id',
+          content: null,
+        };
+      }
+
+      const registration = await this.membershipRegistrationModel.findOne({
+        _id: new Types.ObjectId(id),
+        isActive: true,
+      });
+
+      if (!registration) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Không tìm thấy hồ sơ đăng ký tương ứng',
+          content: null,
+        };
+      }
+
+      // Update registration status to need_info
+      await this.membershipRegistrationModel.updateOne(
+        { _id: registration._id },
+        { status: 'need_info', validationNotes: dto.adminNotes },
+      );
+
+      // Create new supplement record
+      const supplement = await this.supplementModel.create({
+        registrationId: registration._id,
+        missingFields: dto.missingFields,
+        adminNotes: dto.adminNotes,
+        status: 'pending',
+      });
+
+      // Send email
+      this.mailService
+        .sendSupplementRequestEmail(
+          registration.email,
+          registration.name,
+          supplement._id.toString(),
+          dto.adminNotes,
+        )
+        .catch((err) =>
+          console.error(
+            `Failed to send supplement email to ${registration.email}:`,
+            err.message,
+          ),
+        );
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Gửi yêu cầu bổ sung hồ sơ thành công.',
+        content: { supplement },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `Có lỗi xảy ra: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async getSupplementByRecordId(recordId: string) {
+    try {
+      if (!Types.ObjectId.isValid(recordId)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid supplement record ID',
+          content: null,
+        };
+      }
+
+      const supplement = await this.supplementModel.findById(recordId);
+      if (!supplement) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Không tìm thấy yêu cầu bổ sung tương ứng hoặc đã hết hạn.',
+          content: null,
+        };
+      }
+
+      const registration = await this.membershipRegistrationModel.findOne({
+        _id: supplement.registrationId,
+        isActive: true,
+      });
+
+      if (!registration) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Không tìm thấy hồ sơ đăng ký tương ứng.',
+          content: null,
+        };
+      }
+
+      const registrationWithUrls = await this.attachFileUrls(registration);
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Lấy thông tin bổ sung hồ sơ thành công.',
+        content: { supplement, registration: registrationWithUrls },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `Có lỗi xảy ra: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async updateSupplementByRecordId(
+    recordId: string,
+    dto: UpdateMembershipRegistrationDto,
+    files: {
+      avatar?: Express.Multer.File;
+      banner?: Express.Multer.File;
+      attachments?: Express.Multer.File[];
+    },
+  ) {
+    if (!Types.ObjectId.isValid(recordId)) {
+      throw new BadRequestException('Mã yêu cầu bổ sung không hợp lệ.');
+    }
+
+    const supplement = await this.supplementModel.findById(recordId);
+    if (!supplement) {
+      throw new NotFoundException('Không tìm thấy bản ghi bổ sung tương ứng.');
+    }
+
+    if (supplement.status !== 'pending') {
+      throw new BadRequestException('Yêu cầu bổ sung này đã được cập nhật trước đó.');
+    }
+
+    const existing = await this.membershipRegistrationModel.findOne({
+      _id: supplement.registrationId,
+      status: 'need_info',
+      isActive: true,
+    });
+
+    if (!existing) {
+      throw new NotFoundException(
+        'Không tìm thấy đơn đăng ký tương ứng ở trạng thái cần bổ sung.',
+      );
+    }
+
+    const mergedData = {
+      ...existing.toObject(),
+      ...dto,
+    };
+
+    const errors: string[] = [];
+
+    const cleanEmail = mergedData.email.toLowerCase().trim();
+    const cleanPhone = mergedData.phoneNumber.trim();
+
+    if (cleanEmail !== existing.email.toLowerCase().trim()) {
+      const [emailInMember, emailInReg] = await Promise.all([
+        this.memberModel.findOne({ email: cleanEmail, isActive: true }),
+        this.membershipRegistrationModel.findOne({
+          email: cleanEmail,
+          status: { $in: ['pending', 'approved'] },
+          _id: { $ne: existing._id },
+          isActive: true,
+        }),
+      ]);
+      if (emailInMember || emailInReg) {
+        errors.push('Email này đã được sử dụng bởi tài khoản khác.');
+      }
+    }
+
+    if (cleanPhone !== existing.phoneNumber.trim()) {
+      const [phoneInMember, phoneInReg] = await Promise.all([
+        this.memberModel.findOne({ phone: cleanPhone, isActive: true }),
+        this.membershipRegistrationModel.findOne({
+          phoneNumber: cleanPhone,
+          status: { $in: ['pending', 'approved'] },
+          _id: { $ne: existing._id },
+          isActive: true,
+        }),
+      ]);
+      if (phoneInMember || phoneInReg) {
+        errors.push('Số điện thoại này đã được sử dụng bởi tài khoản khác.');
+      }
+    }
+
+    if (mergedData.memberType === MembershipType.COLLECTIVE) {
+      if (!mergedData.companyName?.trim()) {
+        errors.push('Đối với hội viên Tổ chức, bắt buộc phải nhập Tên công ty.');
+      }
+      if (!mergedData.taxCode?.trim()) {
+        errors.push('Đối với hội viên Tổ chức, bắt buộc phải nhập Mã số thuế.');
+      }
+    }
+
+    const isProfessional =
+      mergedData.isProfessionalCertification === true ||
+      (typeof mergedData.isProfessionalCertification === 'string' &&
+        mergedData.isProfessionalCertification === 'true');
+
+    if (isProfessional) {
+      if (!mergedData.professionalCertificationNumber?.trim()) {
+        errors.push(
+          'Đối với hội viên có Chứng chỉ hành nghề, bắt buộc phải nhập Số quyết định/Số chứng chỉ hành nghề.',
+        );
+      }
+    }
+
+    let finalAttachments = [...(existing.attachments || [])];
+    const allowedMimetypes = ['image/jpeg', 'image/png', 'application/pdf'];
+    const maxFileSize = 5 * 1024 * 1024;
+
+    if (files?.attachments?.length) {
+      for (let i = 0; i < files.attachments.length; i++) {
+        const file = files.attachments[i];
+        if (!allowedMimetypes.includes(file.mimetype)) {
+          errors.push(
+            `Tài liệu đính kèm "${file.originalname}" không đúng định dạng (Chỉ cho phép .pdf, .png, .jpg).`,
+          );
+        }
+        if (file.size > maxFileSize) {
+          errors.push(
+            `Tài liệu đính kèm "${file.originalname}" vượt quá dung lượng tối đa (tối đa 5MB).`,
+          );
+        }
+      }
+
+      if (errors.length === 0) {
+        for (const file of existing.attachments) {
+          if (file.objectName) {
+            try {
+              await this.minioService.removeFile(file.objectName);
+            } catch (err: any) {
+              console.error(
+                `Failed to delete old attachment ${file.objectName}:`,
+                err.message,
+              );
+            }
+          }
+        }
+        const newAttachments: any[] = [];
+        for (const file of files.attachments) {
+          const uploadResult = await this.minioService.uploadFile(
+            file,
+            'membership-registrations/attachments',
+          );
+          newAttachments.push(this.buildFileMetadata(uploadResult));
+        }
+        finalAttachments = newAttachments;
+      }
+    } else if (finalAttachments.length === 0) {
+      errors.push('Vui lòng tải lên ít nhất 1 tài liệu đính kèm.');
+    }
+
+    let avatarFile = existing.avatar;
+    if (files?.avatar) {
+      if (avatarFile?.objectName) {
+        try {
+          await this.minioService.removeFile(avatarFile.objectName);
+        } catch (err: any) {
+          console.error(
+            `Failed to delete old avatar ${avatarFile.objectName}:`,
+            err.message,
+          );
+        }
+      }
+      const uploadResult = await this.minioService.uploadFile(
+        files.avatar,
+        'membership-registrations/avatars',
+      );
+      avatarFile = this.buildFileMetadata(uploadResult);
+    }
+
+    let bannerFile = existing.banner;
+    if (files?.banner) {
+      if (bannerFile?.objectName) {
+        try {
+          await this.minioService.removeFile(bannerFile.objectName);
+        } catch (err: any) {
+          console.error(
+            `Failed to delete old banner ${bannerFile.objectName}:`,
+            err.message,
+          );
+        }
+      }
+      const uploadResult = await this.minioService.uploadFile(
+        files.banner,
+        'membership-registrations/banners',
+      );
+      bannerFile = this.buildFileMetadata(uploadResult);
+    }
+
+    const updateData: any = {
+      name: mergedData.name,
+      memberType: mergedData.memberType,
+      address: mergedData.address,
+      taxCode: mergedData.taxCode ?? '',
+      identityCode: mergedData.identityCode,
+      job: mergedData.job,
+      position: mergedData.position,
+      dateOfBirth: new Date(mergedData.dateOfBirth),
+      phoneNumber: mergedData.phoneNumber,
+      email: mergedData.email,
+      avatar: avatarFile,
+      banner: bannerFile,
+      attachments: finalAttachments,
+      isProfessionalCertification: mergedData.isProfessionalCertification,
+      professionalCertificationNumber:
+        mergedData.professionalCertificationNumber ?? '',
+      companyName: mergedData.companyName ?? '',
+      companyLicense: mergedData.companyLicense ?? null,
+      companyWebsiteUrl: mergedData.companyWebsiteUrl ?? null,
+      companyPhoneNumber: mergedData.companyPhoneNumber ?? null,
+      companyJobType: mergedData.companyJobType ?? null,
+      companySlogan: mergedData.companySlogan ?? null,
+      introduceBy: mergedData.introduceBy ?? null,
+    };
+
+    if (mergedData.memberType === MembershipType.INDIVIDUAL) {
+      updateData.fee = 1200000;
+    } else if (mergedData.memberType === MembershipType.COLLECTIVE) {
+      updateData.fee = 3600000;
+    } else if (mergedData.memberType === MembershipType.AFFILIATE) {
+      updateData.fee = 0;
+    }
+
+    if (
+      mergedData.memberType === MembershipType.COLLECTIVE ||
+      mergedData.memberType === MembershipType.AFFILIATE ||
+      mergedData.isProfessionalCertification === true ||
+      (typeof mergedData.isProfessionalCertification === 'string' &&
+        mergedData.isProfessionalCertification === 'true')
+    ) {
+      updateData.priority = 'high';
+    } else {
+      updateData.priority = 'medium';
+    }
+
+    if (errors.length === 0) {
+      updateData.status = 'pending';
+      updateData.validationNotes = null;
+    } else {
+      updateData.validationNotes = errors.join('\n');
+    }
+
+    const updated = await this.membershipRegistrationModel.findOneAndUpdate(
+      { _id: existing._id },
+      updateData,
+      { returnDocument: 'after' },
+    );
+
+    if (!updated) {
+      throw new NotFoundException('Không tìm thấy đơn đăng ký để cập nhật.');
+    }
+
+    if (errors.length === 0) {
+      await this.supplementModel.findByIdAndUpdate(recordId, {
+        status: 'submitted',
+      });
+
+      this.registrationNotifications$.next({
+        event: 'new-registration',
+        data: {
+          id: updated._id,
+          name: updated.name,
+          memberType: updated.memberType,
+          priority: updated.priority,
+          createdAt: updated.createdAt,
+        },
+      });
+    }
+
+    const resultWithUrls = await this.attachFileUrls(updated);
+
+    return {
+      code: errors.length === 0 ? ERROR_RES.SUCCESS.statusCode : 400,
+      info: errors.length === 0 ? ERROR_INFO.SUCCESS : ERROR_INFO.FAIL,
+      message:
+        errors.length === 0
+          ? 'Cập nhật hồ sơ bổ sung thành công.'
+          : 'Hồ sơ cập nhật chưa đầy đủ. Vui lòng điều chỉnh lại.',
+      content: {
+        registration: resultWithUrls,
+        errors: errors.length > 0 ? errors : null,
+      },
+    };
   }
 }
