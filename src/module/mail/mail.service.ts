@@ -95,7 +95,9 @@ Nếu bạn không thực hiện yêu cầu này, bạn có thể an tâm bỏ q
         },
       });
     } catch (error: any) {
-      throw new Error(`Failed to send newsletter confirmation email: ${error.message}`);
+      throw new Error(
+        `Failed to send newsletter confirmation email: ${error.message}`,
+      );
     }
   }
 
@@ -180,8 +182,7 @@ ${unsubscribeLink}
           sent++;
         } else {
           failed.push(email);
-          const reason =
-            result.status === 'rejected' ? result.reason : '';
+          const reason = result.status === 'rejected' ? result.reason : '';
           console.error(
             `Failed to send news notification to ${email}:`,
             reason,
@@ -556,7 +557,9 @@ Ban thư ký ${appName}
       `,
       });
     } catch (error: any) {
-      throw new Error(`Failed to send supplement request email: ${error.message}`);
+      throw new Error(
+        `Failed to send supplement request email: ${error.message}`,
+      );
     }
   }
 
@@ -608,7 +611,9 @@ Ban thư ký ${appName}
       `,
       });
     } catch (error: any) {
-      throw new Error(`Failed to send approval notification email: ${error.message}`);
+      throw new Error(
+        `Failed to send approval notification email: ${error.message}`,
+      );
     }
   }
 
