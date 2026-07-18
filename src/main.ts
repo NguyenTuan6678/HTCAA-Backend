@@ -14,6 +14,7 @@ import { ResponseErrorInterceptor } from './common/interceptors/response-error.i
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { printServerBanner } from './banner/server-banner';
+import { SecurityRedirectMiddleware } from './middleware/security-redirect.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -80,6 +81,7 @@ async function bootstrap() {
   );
 
   app.use(cookieParser());
+  app.use(new SecurityRedirectMiddleware().use);
 
   app.enableCors({
     origin: (origin, callback) => {

@@ -12,7 +12,8 @@ export class RequestSupplementDto {
   missingFields: string[];
 
   @ApiProperty({
-    example: 'Ảnh chân dung không rõ nét, mã số thuế không trùng khớp với cơ quan thuế.',
+    example:
+      'Ảnh chân dung không rõ nét, mã số thuế không trùng khớp với cơ quan thuế.',
     description: 'Detailed instructions from administrator on what to correct',
   })
   @IsNotEmpty()
