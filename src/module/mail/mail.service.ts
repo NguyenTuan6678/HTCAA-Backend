@@ -662,8 +662,7 @@ Ngân hàng TMCP Ngoại Thương Việt Nam (Vietcombank)
 STK: 7011326979
 Tên TK: HOI TU VAN VA DAI LY THUE TP.HCM
 Số tiền cần thanh toán: ${formattedFee}
-Nội dung: Họ và tên-số điện thoại-KDTDB2026
-Ví dụ: NguyenVanA-09123456789-KDTDB2026
+Nội dung: ${applicationCode}
 
 LIÊN HỆ HỖ TRỢ: 
 Ms.Kiều:  0931 778 562
@@ -808,7 +807,11 @@ Ban thư ký ${appName}
                   <h3 style="margin: 0 0 14px; color: #0054A6; font-size: 16px; border-bottom: 2px solid #93c5fd; padding-bottom: 8px;">THÔNG TIN THANH TOÁN</h3>
                   <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 14px; color: #1e293b; line-height: 1.8;">
                     <tr>
-                      <td width="35%" style="font-weight: bold; color: #0054A6;">Ngân hàng:</td>
+                      <td width="35%" style="font-weight: bold; color: #0054A6;">Mã đơn đăng ký:</td>
+                      <td style="font-family: monospace; font-size: 15px; font-weight: bold; color: #0054A6;">${applicationCode}</td>
+                    </tr>
+                    <tr>
+                      <td style="font-weight: bold; color: #0054A6;">Ngân hàng:</td>
                       <td style="font-weight: bold;">Ngân hàng TMCP Ngoại Thương Việt Nam (Vietcombank)</td>
                     </tr>
                     <tr>
@@ -829,7 +832,7 @@ Ban thư ký ${appName}
                         <div style="font-weight: bold; color: #b91c1c; background-color: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; display: inline-block;">
                           Họ và tên-số điện thoại-KDTDB2026
                         </div>
-                        <div style="font-size: 13px; color: #475569; margin-top: 4px;">Ví dụ: <strong>NguyenVanA-09123456789-KDTDB2026</strong></div>
+                        <div style="font-size: 13px; color: #475569; margin-top: 4px;">Ví dụ: <strong>NguyenVanA-09123456789-KDTDB2026</strong> (Mã đơn: <strong>${applicationCode}</strong>)</div>
                       </td>
                     </tr>
                     <tr>
