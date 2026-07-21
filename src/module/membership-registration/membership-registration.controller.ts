@@ -58,7 +58,8 @@ export class MembershipRegistrationController {
 
   @Get('check-exists')
   @ApiOperation({
-    summary: 'Public: check if email or phone number is already registered',
+    summary:
+      'Public: check if email, phone number, taxCode, or identityCode is already registered',
   })
   checkExists(@Query() query: CheckExistsDto) {
     return this.membershipRegistrationService.checkExists(query);

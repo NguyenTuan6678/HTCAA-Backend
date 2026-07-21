@@ -506,15 +506,17 @@ export class MembershipRegistrationService {
   // ─── CORE LOGIC ─────────────────────────────────────────────────────────────
 
   async checkExists(query: CheckExistsDto) {
-    const { email, phoneNumber } = query;
-    if (!email && !phoneNumber) {
+    const { email, phoneNumber, taxCode, identityCode } = query;
+    if (!email && !phoneNumber && !taxCode && !identityCode) {
       throw new BadRequestException(
-        'Vui lòng cung cấp email hoặc số điện thoại để kiểm tra.',
+        'Vui lòng cung cấp ít nhất một thông tin (email, số điện thoại, mã số thuế, căn cước công dân) để kiểm tra.',
       );
     }
 
     let emailExists = false;
     let phoneExists = false;
+    let taxCodeExists = false;
+    let identityCodeExists = false;
 
     if (email) {
       const cleanEmail = email.toLowerCase().trim();
@@ -544,11 +546,35 @@ export class MembershipRegistrationService {
       phoneExists = !!(member || reg);
     }
 
+    if (taxCode && taxCode.trim() !== '') {
+      const cleanTaxCode = taxCode.trim();
+      const member = await this.memberModel.findOne({
+        'organization.taxCode': cleanTaxCode,
+        isActive: true,
+      });
+      const reg = await this.membershipRegistrationModel.findOne({
+        taxCode: cleanTaxCode,
+        status: { $in: ['pending', 'approved', 'need_info'] },
+        isActive: true,
+      });
+      taxCodeExists = !!(member || reg);
+    }
+
+    if (identityCode && identityCode.trim() !== '') {
+      const cleanIdentityCode = identityCode.trim();
+      const reg = await this.membershipRegistrationModel.findOne({
+        identityCode: cleanIdentityCode,
+        status: { $in: ['pending', 'approved', 'need_info'] },
+        isActive: true,
+      });
+      identityCodeExists = !!reg;
+    }
+
     return {
       code: ERROR_RES.SUCCESS.statusCode,
       info: ERROR_INFO.SUCCESS,
       message: 'Kiểm tra thông tin trùng lặp hoàn tất',
-      content: { emailExists, phoneExists },
+      content: { emailExists, phoneExists, taxCodeExists, identityCodeExists },
     };
   }
 
@@ -563,15 +589,20 @@ export class MembershipRegistrationService {
     try {
       const errors: string[] = [];
 
-      // 1. Check duplicate email/phone
+      // 1. Check duplicate email/phone/taxCode/identityCode
       const cleanEmail = dto.email.toLowerCase().trim();
       const cleanPhone = dto.phoneNumber.trim();
+      const cleanTaxCode = dto.taxCode ? dto.taxCode.trim() : '';
+      const cleanIdentityCode = dto.identityCode ? dto.identityCode.trim() : '';
 
       const [
         existingMemberEmail,
         existingRegEmail,
         existingMemberPhone,
         existingRegPhone,
+        existingMemberTaxCode,
+        existingRegTaxCode,
+        existingRegIdentityCode,
       ] = await Promise.all([
         this.memberModel.findOne({ email: cleanEmail, isActive: true }),
         this.membershipRegistrationModel.findOne({
@@ -585,17 +616,52 @@ export class MembershipRegistrationService {
           status: { $in: ['pending', 'need_info', 'approved'] },
           isActive: true,
         }),
+        cleanTaxCode
+          ? this.memberModel.findOne({
+              'organization.taxCode': cleanTaxCode,
+              isActive: true,
+            })
+          : null,
+        cleanTaxCode
+          ? this.membershipRegistrationModel.findOne({
+              taxCode: cleanTaxCode,
+              status: { $in: ['pending', 'need_info', 'approved'] },
+              isActive: true,
+            })
+          : null,
+        cleanIdentityCode
+          ? this.membershipRegistrationModel.findOne({
+              identityCode: cleanIdentityCode,
+              status: { $in: ['pending', 'need_info', 'approved'] },
+              isActive: true,
+            })
+          : null,
       ]);
 
+      const duplicateErrors: string[] = [];
       if (existingMemberEmail || existingRegEmail) {
-        errors.push(
+        duplicateErrors.push(
           'Email này đã được đăng ký hoặc đang trong quá trình xét duyệt.',
         );
       }
       if (existingMemberPhone || existingRegPhone) {
-        errors.push(
+        duplicateErrors.push(
           'Số điện thoại này đã được sử dụng hoặc đang trong quá trình xét duyệt.',
         );
+      }
+      if (cleanTaxCode && (existingMemberTaxCode || existingRegTaxCode)) {
+        duplicateErrors.push(
+          'Mã số thuế này đã được đăng ký hoặc đang trong quá trình xét duyệt.',
+        );
+      }
+      if (cleanIdentityCode && existingRegIdentityCode) {
+        duplicateErrors.push(
+          'Căn cước công dân (identityCode) này đã được đăng ký hoặc đang trong quá trình xét duyệt.',
+        );
+      }
+
+      if (duplicateErrors.length > 0) {
+        throw new BadRequestException(duplicateErrors.join(' '));
       }
 
       // 2. Validate dynamic fields for collective member
@@ -813,6 +879,9 @@ export class MembershipRegistrationService {
         },
       };
     } catch (error: any) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       return {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
