@@ -400,6 +400,19 @@ export class MembershipRegistrationController {
     return this.membershipRegistrationService.approve(id);
   }
 
+  @Post(':id/resend-payment-notification')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({
+    summary:
+      'Admin/editor: resend payment notification email for approved registration',
+  })
+  @ApiParam({ name: 'id', description: 'Membership registration id' })
+  resendPaymentNotification(@Param('id') id: string) {
+    return this.membershipRegistrationService.resendPaymentNotification(id);
+  }
+
   @Patch(':id/confirm-payment')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN, Role.EDITOR)

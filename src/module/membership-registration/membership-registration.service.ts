@@ -1322,6 +1322,73 @@ export class MembershipRegistrationService {
     }
   }
 
+  async resendPaymentNotification(id: string) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Mã đơn đăng ký không hợp lệ',
+          content: null,
+        };
+      }
+
+      const existing = await this.membershipRegistrationModel.findOne({
+        _id: new Types.ObjectId(id),
+        isActive: true,
+      });
+
+      if (!existing) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Không tìm thấy đơn đăng ký hội viên',
+          content: null,
+        };
+      }
+
+      if (existing.status !== 'approved') {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message:
+            existing.status === 'payment_reconciled'
+              ? 'Đơn đăng ký này đã hoàn tất thanh toán trước đó.'
+              : 'Đơn đăng ký chưa được phê duyệt. Không thể gửi lại email thanh toán.',
+          content: null,
+        };
+      }
+
+      let applicationCode = existing.applicationCode;
+      if (!applicationCode) {
+        applicationCode = await this.generateApplicationCode();
+        existing.applicationCode = applicationCode;
+        await existing.save();
+      }
+
+      await this.mailService.sendApprovalNotificationEmail(
+        existing.email,
+        existing.name,
+        applicationCode,
+        existing.fee,
+      );
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: `Đã gửi lại email hướng dẫn thanh toán tới ${existing.email} thành công.`,
+        content: { applicationCode },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `Có lỗi xảy ra khi gửi lại email thanh toán: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
   async confirmPayment(id: string, dto: ConfirmPaymentDto) {
     try {
       if (!Types.ObjectId.isValid(id)) {
