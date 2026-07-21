@@ -109,7 +109,7 @@ async function bootstrap() {
       },
       'authorization',
     )
-    .setDescription('The HTCAA API Development by Mikan')
+    .setDescription('The HTCAA API Development by HTCAA')
     .setVersion('1.0')
     .build();
   const documentFactory = () => SwaggerModule.createDocument(app, config);

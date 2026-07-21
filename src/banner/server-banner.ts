@@ -39,7 +39,7 @@ ${reset}
     return str.replace(/\x1b\[[0-9;]*m/g, '').length;
   };
 
-  const footer1 = `✦ Made with care by Mikan ✦`;
+  const footer1 = `✦ Made with care by HTCAA ✦`;
   const footer2 = `✦ "I love cute stuff and dream of flying freely in the sky" ✦`;
   const header = `SYSTEM STATUS`;
 

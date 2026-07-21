@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import * as crypto from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class MailService {
@@ -27,32 +29,79 @@ export class MailService {
     });
   }
 
+  private getMailAttachments(includeQr = false): nodemailer.SendMailOptions['attachments'] {
+    const logoPath = fs.existsSync(path.join(process.cwd(), 'src/assets/mail/logoHtcaa.png'))
+      ? path.join(process.cwd(), 'src/assets/mail/logoHtcaa.png')
+      : path.join(__dirname, '../../assets/mail/logoHtcaa.png');
+
+    const attachments: nodemailer.SendMailOptions['attachments'] = [
+      {
+        filename: 'logoHtcaa.png',
+        path: logoPath,
+        cid: 'logoHtcaa',
+      },
+    ];
+
+    if (includeQr) {
+      const qrPath = fs.existsSync(path.join(process.cwd(), 'src/assets/mail/qrHtcaa.png'))
+        ? path.join(process.cwd(), 'src/assets/mail/qrHtcaa.png')
+        : path.join(__dirname, '../../assets/mail/qrHtcaa.png');
+
+      attachments.push({
+        filename: 'qrHtcaa.png',
+        path: qrPath,
+        cid: 'qrHtcaa',
+      });
+    }
+
+    return attachments;
+  }
+
+  private getFrontendUrl(): string {
+    let url =
+      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = `http://${url}`;
+    }
+    return url;
+  }
+
+  private getBackendUrl(): string {
+    let url =
+      this.configService.get<string>('BACKEND_URL') || 'http://localhost:4000';
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = `http://${url}`;
+    }
+    return url;
+  }
+
   async sendResetPasswordEmail(
     email: string,
     resetLink: string,
   ): Promise<void> {
-    const appName = this.configService.get<string>('APP_NAME') ?? 'Your App';
+    const appName = this.configService.get<string>('APP_NAME') ?? 'HTCAA';
 
     const from =
       this.configService.get<string>('MAIL_FROM') ??
-      'Your App <no-reply@example.com>';
+      'HTCAA <no-reply@minvoicehcm.vn>';
 
     try {
       await this.transporter.sendMail({
         from,
         to: email,
-        subject: `Reset your ${appName} password`,
+        subject: `[${appName}] Yêu cầu đặt lại mật khẩu tài khoản`,
         html: this.getResetPasswordTemplate(appName, resetLink),
+        attachments: this.getMailAttachments(false),
         text: `
-Reset your ${appName} password
+Đặt lại mật khẩu tài khoản ${appName} của bạn
 
-You requested to reset your password.
-This link will expire in 10 minutes.
+Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.
+Liên kết này sẽ hết hạn trong 10 phút.
 
-Reset link:
+Liên kết đặt lại mật khẩu:
 ${resetLink}
 
-If you did not request this, you can ignore this email.
+Nếu bạn không thực hiện yêu cầu này, bạn có thể an tâm bỏ qua email này.
     `,
       });
     } catch (error: any) {
@@ -64,14 +113,13 @@ If you did not request this, you can ignore this email.
     email: string,
     confirmationLink: string,
   ): Promise<void> {
-    const appName = this.configService.get<string>('APP_NAME') ?? 'Your App';
+    const appName = this.configService.get<string>('APP_NAME') ?? 'HTCAA';
 
     const from =
       this.configService.get<string>('MAIL_FROM') ??
-      'Your App <no-reply@example.com>';
+      'HTCAA <no-reply@minvoicehcm.vn>';
 
-    const backendUrl =
-      this.configService.get<string>('BACKEND_URL') || 'http://localhost:4000';
+    const backendUrl = this.getBackendUrl();
     const secret =
       this.configService.get<string>('JWT_REFRESH_SECRET') || 'fallback_secret';
     const targetEmail = email.toLowerCase().trim();
@@ -85,8 +133,9 @@ If you did not request this, you can ignore this email.
       await this.transporter.sendMail({
         from,
         to: email,
-        subject: `Xác nhận đăng ký nhận bản tin của ${appName}`,
+        subject: `[${appName}] Xác nhận đăng ký nhận bản tin`,
         html: this.getNewsletterConfirmationTemplate(appName, confirmationLink),
+        attachments: this.getMailAttachments(false),
         text: `
 Xác nhận đăng ký nhận bản tin của ${appName}
 
@@ -122,17 +171,14 @@ Nếu bạn không thực hiện yêu cầu này, bạn có thể an tâm bỏ q
       return { sent: 0, failed: [] };
     }
 
-    const appName = this.configService.get<string>('APP_NAME') ?? 'Your App';
+    const appName = this.configService.get<string>('APP_NAME') ?? 'HTCAA';
 
     const from =
       this.configService.get<string>('MAIL_FROM') ??
-      'Your App <no-reply@example.com>';
+      'HTCAA <no-reply@minvoicehcm.vn>';
 
-    const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-
-    const backendUrl =
-      this.configService.get<string>('BACKEND_URL') || 'http://localhost:4000';
+    const frontendUrl = this.getFrontendUrl();
+    const backendUrl = this.getBackendUrl();
     const secret =
       this.configService.get<string>('JWT_REFRESH_SECRET') || 'fallback_secret';
 
@@ -164,6 +210,7 @@ Nếu bạn không thực hiện yêu cầu này, bạn có thể an tâm bỏ q
               newsUrl,
               unsubscribeLink,
             ),
+            attachments: this.getMailAttachments(false),
             text: `
 ${news.title}
 
@@ -250,11 +297,11 @@ ${unsubscribeLink}
           <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);">
 
             <tr>
-              <td style="background: linear-gradient(135deg, #111827, #374151); padding: 32px 28px; text-align: center;">
-                <h1 style="margin: 0; color: #ffffff; font-size: 24px; line-height: 1.3;">
-                  ${appName}
-                </h1>
-                <p style="margin: 8px 0 0; color: #d1d5db; font-size: 14px;">
+              <td style="background-color: #0054A6; padding: 28px 24px; text-align: center;">
+                <div style="background-color: #ffffff; padding: 12px 24px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
+                  <img src="cid:logoHtcaa" alt="${appName}" style="max-height: 60px; max-width: 220px; width: auto; height: auto; display: block; margin: 0 auto;" />
+                </div>
+                <p style="margin: 10px 0 0; color: #e0f2fe; font-size: 14px; font-weight: 500;">
                   Tin tức mới nhất
                 </p>
               </td>
@@ -270,20 +317,22 @@ ${unsubscribeLink}
 
                 ${summaryBlock}
 
-                <table cellpadding="0" cellspacing="0" align="center" style="margin: 24px auto;">
+                <table cellpadding="0" cellspacing="0" align="center" style="margin: 24px auto; border-collapse: separate;">
                   <tr>
-                    <td>
+                    <td align="center" bgcolor="#0054A6" style="border-radius: 10px; background-color: #0054A6;">
                       <a
                         href="${newsUrl}"
+                        target="_blank"
                         style="
                           display: inline-block;
-                          background-color: #111827;
-                          color: #ffffff;
-                          text-decoration: none;
-                          padding: 13px 22px;
-                          border-radius: 10px;
+                          padding: 13px 24px;
+                          font-family: Arial, sans-serif;
                           font-size: 15px;
-                          font-weight: 700;
+                          font-weight: bold;
+                          color: #ffffff !important;
+                          text-decoration: none !important;
+                          border-radius: 10px;
+                          border: 1px solid #0054A6;
                         "
                       >
                         Đọc bài viết
@@ -299,11 +348,11 @@ ${unsubscribeLink}
                 <div style="border-top: 1px solid #e5e7eb; padding-top: 20px;">
                   <p style="margin: 0 0 8px; color: #6b7280; font-size: 13px; line-height: 1.6;">
                     Bạn nhận được email này vì đã đăng ký nhận bản tin của ${appName}.
-                    <a href="${unsubscribeLink}" style="color: #6b7280;">Hủy đăng ký</a> bất cứ lúc nào.
+                    <a href="${unsubscribeLink}" target="_blank" style="color: #6b7280;">Hủy đăng ký</a> bất cứ lúc nào.
                   </p>
 
                   <p style="margin: 0; color: #9ca3af; font-size: 12px; line-height: 1.6;">
-                    Đây là email tự động từ ${appName}. Vui lòng không trả lời email này.
+                    Đây là email tự động từ ${appName}. Vui lòng không trả lời trực tiếp email này.
                   </p>
                 </div>
               </td>
@@ -342,11 +391,11 @@ ${unsubscribeLink}
           <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);">
             
             <tr>
-              <td style="background: linear-gradient(135deg, #111827, #374151); padding: 32px 28px; text-align: center;">
-                <h1 style="margin: 0; color: #ffffff; font-size: 24px; line-height: 1.3;">
-                  ${appName}
-                </h1>
-                <p style="margin: 8px 0 0; color: #d1d5db; font-size: 14px;">
+              <td style="background-color: #0054A6; padding: 28px 24px; text-align: center;">
+                <div style="background-color: #ffffff; padding: 12px 24px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
+                  <img src="cid:logoHtcaa" alt="${appName}" style="max-height: 60px; max-width: 220px; width: auto; height: auto; display: block; margin: 0 auto;" />
+                </div>
+                <p style="margin: 10px 0 0; color: #e0f2fe; font-size: 14px; font-weight: 500;">
                   Đăng ký nhận bản tin
                 </p>
               </td>
@@ -363,20 +412,22 @@ ${unsubscribeLink}
                   Vui lòng xác nhận đăng ký của bạn bằng cách nhấp vào nút bên dưới.
                 </p>
 
-                <table cellpadding="0" cellspacing="0" align="center" style="margin: 28px auto;">
+                <table cellpadding="0" cellspacing="0" align="center" style="margin: 28px auto; border-collapse: separate;">
                   <tr>
-                    <td>
+                    <td align="center" bgcolor="#0054A6" style="border-radius: 10px; background-color: #0054A6;">
                       <a 
                         href="${confirmationLink}"
+                        target="_blank"
                         style="
                           display: inline-block;
-                          background-color: #111827;
-                          color: #ffffff;
-                          text-decoration: none;
-                          padding: 13px 22px;
-                          border-radius: 10px;
+                          padding: 13px 24px;
+                          font-family: Arial, sans-serif;
                           font-size: 15px;
-                          font-weight: 700;
+                          font-weight: bold;
+                          color: #ffffff !important;
+                          text-decoration: none !important;
+                          border-radius: 10px;
+                          border: 1px solid #0054A6;
                         "
                       >
                         Xác nhận đăng ký
@@ -385,13 +436,13 @@ ${unsubscribeLink}
                   </tr>
                 </table>
 
-                <p style="margin: 0 0 12px; color: #6b7280; font-size: 13px; line-height: 1.6;">
+                <p style="margin: 0 0 8px; color: #6b7280; font-size: 13px; line-height: 1.6;">
                   Nếu nút trên không hoạt động, vui lòng sao chép và dán liên kết này vào trình duyệt của bạn:
                 </p>
 
-                <p style="margin: 0; word-break: break-all; background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; color: #374151; font-size: 13px; line-height: 1.6;">
-                  ${confirmationLink}
-                </p>
+                <div style="background-color: #f8fafc; border: 1px solid #daebff; border-radius: 10px; padding: 12px; word-break: break-all;">
+                  <a href="${confirmationLink}" target="_blank" style="color: #0054a6; font-size: 13px; line-height: 1.6; text-decoration: underline; word-break: break-all;">${confirmationLink}</a>
+                </div>
               </td>
             </tr>
 
@@ -403,7 +454,7 @@ ${unsubscribeLink}
                   </p>
 
                   <p style="margin: 0; color: #9ca3af; font-size: 12px; line-height: 1.6;">
-                    Đây là email tự động từ ${appName}. Vui lòng không trả lời email này.
+                    Đây là email tự động từ ${appName}. Vui lòng không trả lời trực tiếp email này.
                   </p>
                 </div>
               </td>
@@ -425,11 +476,11 @@ ${unsubscribeLink}
   private getResetPasswordTemplate(appName: string, resetLink: string): string {
     return `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Reset Password</title>
+    <title>Đặt lại mật khẩu</title>
   </head>
 
   <body style="margin: 0; padding: 0; background-color: #f3f4f6; font-family: Arial, Helvetica, sans-serif;">
@@ -439,12 +490,12 @@ ${unsubscribeLink}
           <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);">
             
             <tr>
-              <td style="background: linear-gradient(135deg, #111827, #374151); padding: 32px 28px; text-align: center;">
-                <h1 style="margin: 0; color: #ffffff; font-size: 24px; line-height: 1.3;">
-                  ${appName}
-                </h1>
-                <p style="margin: 8px 0 0; color: #d1d5db; font-size: 14px;">
-                  Password reset request
+              <td style="background-color: #0054A6; padding: 28px 24px; text-align: center;">
+                <div style="background-color: #ffffff; padding: 12px 24px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
+                  <img src="cid:logoHtcaa" alt="${appName}" style="max-height: 60px; max-width: 220px; width: auto; height: auto; display: block; margin: 0 auto;" />
+                </div>
+                <p style="margin: 10px 0 0; color: #e0f2fe; font-size: 14px; font-weight: 500;">
+                  Yêu cầu đặt lại mật khẩu
                 </p>
               </td>
             </tr>
@@ -452,47 +503,49 @@ ${unsubscribeLink}
             <tr>
               <td style="padding: 36px 32px 24px;">
                 <h2 style="margin: 0 0 16px; color: #111827; font-size: 22px;">
-                  Reset your password
+                  Đặt lại mật khẩu của bạn
                 </h2>
 
                 <p style="margin: 0 0 16px; color: #4b5563; font-size: 15px; line-height: 1.7;">
-                  We received a request to reset the password for your account.
-                  Click the button below to create a new password.
+                  Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.
+                  Nhấp vào nút bên dưới để tạo mật khẩu mới.
                 </p>
 
                 <p style="margin: 0 0 24px; color: #4b5563; font-size: 15px; line-height: 1.7;">
-                  This link will expire in <strong style="color: #111827;">10 minutes</strong>.
+                  Liên kết này sẽ hết hạn sau <strong style="color: #111827;">10 phút</strong>.
                 </p>
 
-                <table cellpadding="0" cellspacing="0" align="center" style="margin: 28px auto;">
+                <table cellpadding="0" cellspacing="0" align="center" style="margin: 28px auto; border-collapse: separate;">
                   <tr>
-                    <td>
+                    <td align="center" bgcolor="#0054A6" style="border-radius: 10px; background-color: #0054A6;">
                       <a 
                         href="${resetLink}"
+                        target="_blank"
                         style="
                           display: inline-block;
-                          background-color: #111827;
-                          color: #ffffff;
-                          text-decoration: none;
-                          padding: 13px 22px;
-                          border-radius: 10px;
+                          padding: 13px 24px;
+                          font-family: Arial, sans-serif;
                           font-size: 15px;
-                          font-weight: 700;
+                          font-weight: bold;
+                          color: #ffffff !important;
+                          text-decoration: none !important;
+                          border-radius: 10px;
+                          border: 1px solid #0054A6;
                         "
                       >
-                        Reset Password
+                        Đặt lại mật khẩu
                       </a>
                     </td>
                   </tr>
                 </table>
 
-                <p style="margin: 0 0 12px; color: #6b7280; font-size: 13px; line-height: 1.6;">
-                  If the button does not work, copy and paste this link into your browser:
+                <p style="margin: 0 0 8px; color: #6b7280; font-size: 13px; line-height: 1.6;">
+                  Nếu nút bấm không hoạt động, vui lòng sao chép và dán liên kết này vào trình duyệt của bạn:
                 </p>
 
-                <p style="margin: 0; word-break: break-all; background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; color: #374151; font-size: 13px; line-height: 1.6;">
-                  ${resetLink}
-                </p>
+                <div style="background-color: #f8fafc; border: 1px solid #daebff; border-radius: 10px; padding: 12px; word-break: break-all;">
+                  <a href="${resetLink}" target="_blank" style="color: #0054a6; font-size: 13px; line-height: 1.6; text-decoration: underline; word-break: break-all;">${resetLink}</a>
+                </div>
               </td>
             </tr>
 
@@ -500,11 +553,11 @@ ${unsubscribeLink}
               <td style="padding: 0 32px 32px;">
                 <div style="border-top: 1px solid #e5e7eb; padding-top: 20px;">
                   <p style="margin: 0 0 8px; color: #6b7280; font-size: 13px; line-height: 1.6;">
-                    If you did not request a password reset, you can safely ignore this email.
+                    Nếu bạn không yêu cầu đặt lại mật khẩu, bạn có thể an tâm bỏ qua email này.
                   </p>
 
                   <p style="margin: 0; color: #9ca3af; font-size: 12px; line-height: 1.6;">
-                    This is an automated email from ${appName}. Please do not reply.
+                    Đây là email tự động từ ${appName}. Vui lòng không trả lời trực tiếp email này.
                   </p>
                 </div>
               </td>
@@ -513,7 +566,7 @@ ${unsubscribeLink}
           </table>
 
           <p style="margin: 20px 0 0; color: #9ca3af; font-size: 12px;">
-            © ${new Date().getFullYear()} ${appName}. All rights reserved.
+            © ${new Date().getFullYear()} ${appName}. Tất cả các quyền được bảo lưu.
           </p>
         </td>
       </tr>
@@ -532,9 +585,8 @@ ${unsubscribeLink}
     const appName = this.configService.get<string>('APP_NAME') ?? 'HTCAA';
     const from =
       this.configService.get<string>('MAIL_FROM') ??
-      'HTCAA <no-reply@example.com>';
-    const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+      'HTCAA <no-reply@minvoicehcm.vn>';
+    const frontendUrl = this.getFrontendUrl();
     const supplementLink = `${frontendUrl}/bo-sung-ho-so?recordId=${recordId}`;
 
     try {
@@ -548,6 +600,7 @@ ${unsubscribeLink}
           supplementLink,
           notes,
         ),
+        attachments: this.getMailAttachments(false),
         text: `
 Kính gửi ${name},
 
@@ -580,7 +633,7 @@ Ban thư ký ${appName}
     const appName = this.configService.get<string>('APP_NAME') ?? 'HTCAA';
     const from =
       this.configService.get<string>('MAIL_FROM') ??
-      'HTCAA <no-reply@example.com>';
+      'HTCAA <no-reply@minvoicehcm.vn>';
 
     const formattedFee = new Intl.NumberFormat('vi-VN', {
       style: 'currency',
@@ -598,21 +651,22 @@ Ban thư ký ${appName}
           applicationCode,
           formattedFee,
         ),
+        attachments: this.getMailAttachments(true),
         text: `
 Kính gửi ${name},
 
 Chúc mừng bạn! Hồ sơ đăng ký hội viên ${appName} của bạn đã được Ban thư ký phê duyệt thành công.
 
-Thông tin thanh toán hội phí:
-- Mã đơn đối chiếu: ${applicationCode} (Bắt buộc ghi vào nội dung chuyển khoản)
-- Số tiền cần thanh toán: ${formattedFee}
-- Tài khoản ngân hàng HTCAA:
-  + Ngân hàng: BIDV - Chi nhánh Hà Nội
-  + Số tài khoản: 12410001234567
-  + Chủ tài khoản: HOI TIN HOC HTCAA
-  + Nội dung chuyển khoản: Chuyen khoan hoi phi ${applicationCode}
+Thông tin thanh toán:
+Ngân hàng TMCP Ngoại Thương Việt Nam (Vietcombank)
+STK: 7011326979
+Tên TK: HOI TU VAN VA DAI LY THUE TP.HCM
+Số tiền cần thanh toán: ${formattedFee}
+Nội dung: Họ và tên-số điện thoại-KDTDB2026
+Ví dụ: NguyenVanA-09123456789-KDTDB2026
 
-Vui lòng hoàn thành chuyển khoản thanh toán hội phí để kích hoạt tài khoản hội viên chính thức.
+LIÊN HỆ HỖ TRỢ: 
+Ms.Kiều:  0931 778 562
 
 Trân trọng,
 Ban thư ký ${appName}
@@ -645,9 +699,11 @@ Ban thư ký ${appName}
         <td align="center">
           <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);">
             <tr>
-              <td style="background: linear-gradient(135deg, #b91c1c, #991b1b); padding: 32px 28px; text-align: center;">
-                <h1 style="margin: 0; color: #ffffff; font-size: 24px; line-height: 1.3;">${appName}</h1>
-                <p style="margin: 8px 0 0; color: #fca5a5; font-size: 14px;">Thông báo bổ sung hồ sơ đăng ký</p>
+              <td style="background-color: #0054A6; padding: 28px 24px; text-align: center;">
+                <div style="background-color: #ffffff; padding: 12px 24px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
+                  <img src="cid:logoHtcaa" alt="${appName}" style="max-height: 60px; max-width: 220px; width: auto; height: auto; display: block; margin: 0 auto;" />
+                </div>
+                <p style="margin: 10px 0 0; color: #e0f2fe; font-size: 14px; font-weight: 500;">Thông báo bổ sung hồ sơ đăng ký</p>
               </td>
             </tr>
             <tr>
@@ -660,19 +716,35 @@ Ban thư ký ${appName}
                   <strong style="color: #991b1b; display: block; margin-bottom: 8px; font-size: 15px;">Nội dung cần bổ sung / chỉnh sửa:</strong>
                   <p style="margin: 0; color: #7f1d1d; font-size: 14px; line-height: 1.6; white-space: pre-line;">${notes}</p>
                 </div>
-                <table cellpadding="0" cellspacing="0" align="center" style="margin: 28px auto;">
+                <table cellpadding="0" cellspacing="0" align="center" style="margin: 28px auto; border-collapse: separate;">
                   <tr>
-                    <td>
-                      <a href="${supplementLink}" style="display: inline-block; background-color: #111827; color: #ffffff; text-decoration: none; padding: 13px 24px; border-radius: 10px; font-size: 15px; font-weight: 700;">Cập nhật hồ sơ đăng ký</a>
+                    <td align="center" bgcolor="#0054A6" style="border-radius: 10px; background-color: #0054A6;">
+                      <a
+                        href="${supplementLink}"
+                        target="_blank"
+                        style="
+                          display: inline-block;
+                          padding: 13px 24px;
+                          font-family: Arial, sans-serif;
+                          font-size: 15px;
+                          font-weight: bold;
+                          color: #ffffff !important;
+                          text-decoration: none !important;
+                          border-radius: 10px;
+                          border: 1px solid #0054A6;
+                        "
+                      >
+                        Cập nhật hồ sơ đăng ký
+                      </a>
                     </td>
                   </tr>
                 </table>
-                <p style="margin: 0 0 12px; color: #6b7280; font-size: 13px; line-height: 1.6;">
+                <p style="margin: 0 0 8px; color: #6b7280; font-size: 13px; line-height: 1.6;">
                   Nếu nút trên không hoạt động, vui lòng sao chép và dán liên kết này vào trình duyệt của bạn:
                 </p>
-                <p style="margin: 0; word-break: break-all; background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; color: #374151; font-size: 13px; line-height: 1.6;">
-                  ${supplementLink}
-                </p>
+                <div style="background-color: #f8fafc; border: 1px solid #daebff; border-radius: 10px; padding: 12px; word-break: break-all;">
+                  <a href="${supplementLink}" target="_blank" style="color: #0054a6; font-size: 13px; line-height: 1.6; text-decoration: underline; word-break: break-all;">${supplementLink}</a>
+                </div>
               </td>
             </tr>
             <tr>
@@ -719,61 +791,69 @@ Ban thư ký ${appName}
         <td align="center">
           <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);">
             <tr>
-              <td style="background: linear-gradient(135deg, #047857, #065f46); padding: 32px 28px; text-align: center;">
-                <h1 style="margin: 0; color: #ffffff; font-size: 24px; line-height: 1.3;">${appName}</h1>
-                <p style="margin: 8px 0 0; color: #a7f3d0; font-size: 14px;">Chúc mừng bạn đã được chấp thuận hội viên</p>
+              <td style="background-color: #0054A6; padding: 28px 24px; text-align: center;">
+                <div style="background-color: #ffffff; padding: 12px 24px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
+                  <img src="cid:logoHtcaa" alt="${appName}" style="max-height: 60px; max-width: 220px; width: auto; height: auto; display: block; margin: 0 auto;" />
+                </div>
+                <p style="margin: 10px 0 0; color: #e0f2fe; font-size: 14px; font-weight: 500;">Thông báo chấp thuận hồ sơ & Hướng dẫn thanh toán</p>
               </td>
             </tr>
             <tr>
               <td style="padding: 36px 32px 24px;">
                 <h2 style="margin: 0 0 16px; color: #111827; font-size: 20px;">Kính gửi ${name},</h2>
                 <p style="margin: 0 0 20px; color: #4b5563; font-size: 15px; line-height: 1.7;">
-                  Hồ sơ đăng ký hội viên của bạn đã được <strong>Ban thư ký ${appName}</strong> phê duyệt thành công. Vui lòng thực hiện chuyển khoản thanh toán phí hội viên theo hướng dẫn chi tiết dưới đây để kích hoạt tài khoản chính thức:
+                  Hồ sơ đăng ký hội viên của bạn đã được <strong>Ban thư ký ${appName}</strong> phê duyệt thành công. Vui lòng thực hiện chuyển khoản thanh toán phí hội viên theo thông tin bên dưới để hoàn tất đăng ký:
                 </p>
-                <div style="background-color: #f0fdf4; border: 1px solid #d1fae5; padding: 20px; margin: 20px 0; border-radius: 8px;">
-                  <h3 style="margin: 0 0 14px; color: #065f46; font-size: 16px; border-bottom: 1px solid #a7f3d0; padding-bottom: 8px;">Thông Tin Thanh Toán</h3>
-                  <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 14px; color: #374151; line-height: 1.8;">
+                <div style="background-color: #daebff; border: 1px solid #93c5fd; padding: 20px; margin: 20px 0; border-radius: 12px; color: #1e3a8a;">
+                  <h3 style="margin: 0 0 14px; color: #0054A6; font-size: 16px; border-bottom: 2px solid #93c5fd; padding-bottom: 8px;">THÔNG TIN THANH TOÁN</h3>
+                  <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 14px; color: #1e293b; line-height: 1.8;">
                     <tr>
-                      <td width="40%" style="font-weight: bold; color: #065f46;">Số tiền cần nộp:</td>
+                      <td width="35%" style="font-weight: bold; color: #0054A6;">Ngân hàng:</td>
+                      <td style="font-weight: bold;">Ngân hàng TMCP Ngoại Thương Việt Nam (Vietcombank)</td>
+                    </tr>
+                    <tr>
+                      <td style="font-weight: bold; color: #0054A6;">STK:</td>
+                      <td style="font-family: monospace; font-size: 16px; font-weight: bold; color: #0054A6;">7011326979</td>
+                    </tr>
+                    <tr>
+                      <td style="font-weight: bold; color: #0054A6;">Tên TK:</td>
+                      <td style="font-weight: bold;">HOI TU VAN VA DAI LY THUE TP.HCM</td>
+                    </tr>
+                    <tr>
+                      <td style="font-weight: bold; color: #0054A6;">Số tiền cần nộp:</td>
                       <td style="font-size: 16px; font-weight: bold; color: #b91c1c;">${fee}</td>
                     </tr>
                     <tr>
-                      <td style="font-weight: bold; color: #065f46;">Mã đơn đối chiếu:</td>
-                      <td style="font-family: monospace; font-size: 15px; font-weight: bold; background-color: #e6f4ea; padding: 2px 6px; border-radius: 4px; display: inline-block;">${applicationCode}</td>
+                      <td style="font-weight: bold; color: #0054A6; vertical-align: top;">Nội dung:</td>
+                      <td>
+                        <div style="font-weight: bold; color: #b91c1c; background-color: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; display: inline-block;">
+                          Họ và tên-số điện thoại-KDTDB2026
+                        </div>
+                        <div style="font-size: 13px; color: #475569; margin-top: 4px;">Ví dụ: <strong>NguyenVanA-09123456789-KDTDB2026</strong></div>
+                      </td>
                     </tr>
                     <tr>
-                      <td colspan="2" style="padding: 8px 0;"><hr style="border: 0; border-top: 1px dashed #a7f3d0; margin: 4px 0;" /></td>
+                      <td colspan="2" style="padding: 10px 0;">
+                        <hr style="border: 0; border-top: 1px dashed #93c5fd; margin: 0;" />
+                      </td>
                     </tr>
                     <tr>
-                      <td style="font-weight: bold; color: #065f46;">Tên ngân hàng:</td>
-                      <td>BIDV - Chi nhánh Hà Nội</td>
-                    </tr>
-                    <tr>
-                      <td style="font-weight: bold; color: #065f46;">Số tài khoản:</td>
-                      <td style="font-weight: bold;">12410001234567</td>
-                    </tr>
-                    <tr>
-                      <td style="font-weight: bold; color: #065f46;">Chủ tài khoản:</td>
-                      <td>HOI TIN HOC HTCAA</td>
-                    </tr>
-                    <tr>
-                      <td style="font-weight: bold; color: #065f46; vertical-align: top;">Nội dung chuyển khoản:</td>
-                      <td style="font-weight: bold; color: #b91c1c; background-color: #fef2f2; padding: 4px 8px; border-radius: 4px;">Chuyen khoan hoi phi ${applicationCode}</td>
+                      <td style="font-weight: bold; color: #0054A6;">LIÊN HỆ HỖ TRỢ:</td>
+                      <td style="font-weight: bold; color: #1e293b;">Ms.Kiều: <a href="tel:0931778562" style="color: #0054A6; text-decoration: none;">0931 778 562</a></td>
                     </tr>
                   </table>
-                </div>
-                <div style="background-color: #fffbeb; border-left: 4px solid #f59e0b; padding: 12px 16px; border-radius: 4px; margin-top: 20px;">
-                  <p style="margin: 0; color: #78350f; font-size: 13px; line-height: 1.6;">
-                    <strong>Lưu ý quan trọng:</strong> Vui lòng ghi chính xác nội dung chuyển khoản là <strong style="color: #b91c1c;">Chuyen khoan hoi phi ${applicationCode}</strong> để hệ thống tự động nhận diện và kích hoạt thẻ hội viên của bạn nhanh chóng.
-                  </p>
+                  <div style="text-align: center; margin-top: 20px;">
+                    <p style="margin: 0 0 10px; font-weight: bold; color: #0054A6; font-size: 14px;">Quét mã QR Vietcombank để chuyển khoản nhanh:</p>
+                    <img src="cid:qrHtcaa" alt="Mã QR Thanh Toán Vietcombank" style="max-width: 240px; width: 100%; height: auto; border-radius: 10px; border: 2px solid #ffffff; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);" />
+                  </div>
                 </div>
               </td>
             </tr>
             <tr>
               <td style="padding: 0 32px 32px;">
                 <div style="border-top: 1px solid #e5e7eb; padding-top: 20px;">
-                  <p style="margin: 0; color: #9ca3af; font-size: 12px; line-height: 1.6;">
-                    Mọi thắc mắc vui lòng liên hệ Ban thư ký qua email hỗ trợ của ${appName}.
+                  <p style="margin: 0 0 8px; color: #6b7280; font-size: 13px; line-height: 1.6;">
+                    Mọi thắc mắc vui lòng liên hệ Ban thư ký qua hotline <strong>0931 778 562 (Ms.Kiều)</strong>.
                   </p>
                   <p style="margin: 0; color: #9ca3af; font-size: 12px; line-height: 1.6;">
                     Đây là email tự động từ ${appName}. Vui lòng không trả lời trực tiếp email này.
@@ -803,12 +883,13 @@ Ban thư ký ${appName}
     const appName = this.configService.get<string>('APP_NAME') ?? 'HTCAA';
     const from =
       this.configService.get<string>('MAIL_FROM') ??
-      'HTCAA <no-reply@example.com>';
-    const frontendUrl =
-      this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
-    const activationLink = `${frontendUrl}/dat-mat-khau?token=${activationToken}`;
+      'HTCAA <no-reply@minvoicehcm.vn>';
+    const frontendUrl = this.getFrontendUrl();
+    const activationLink = `${frontendUrl}/set-password?token=${activationToken}`;
 
     try {
+      const defaultAttachments = this.getMailAttachments(false) || [];
+
       await this.transporter.sendMail({
         from,
         to: email,
@@ -819,6 +900,13 @@ Ban thư ký ${appName}
           memberCode,
           activationLink,
         ),
+        attachments: [
+          ...defaultAttachments,
+          {
+            filename: `Chung_nhan_HTCAA_${memberCode}.pdf`,
+            content: pdfBuffer,
+          },
+        ],
         text: `
 Kính gửi ${name},
 
@@ -834,12 +922,6 @@ Chúng tôi cũng đã đính kèm Giấy chứng nhận hội viên chính th�
 Trân trọng,
 Ban thư ký ${appName}
       `,
-        attachments: [
-          {
-            filename: `Chung_nhan_HTCAA_${memberCode}.pdf`,
-            content: pdfBuffer,
-          },
-        ],
       });
     } catch (error: any) {
       throw new Error(`Failed to send certificate email: ${error.message}`);
@@ -866,9 +948,11 @@ Ban thư ký ${appName}
         <td align="center">
           <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);">
             <tr>
-              <td style="background: linear-gradient(135deg, #1e3a8a, #1d4ed8); padding: 32px 28px; text-align: center;">
-                <h1 style="margin: 0; color: #ffffff; font-size: 24px; line-height: 1.3;">${appName}</h1>
-                <p style="margin: 8px 0 0; color: #93c5fd; font-size: 14px;">Chúc mừng Hội viên chính thức</p>
+              <td style="background-color: #0054A6; padding: 28px 24px; text-align: center;">
+                <div style="background-color: #ffffff; padding: 12px 24px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
+                  <img src="cid:logoHtcaa" alt="${appName}" style="max-height: 60px; max-width: 220px; width: auto; height: auto; display: block; margin: 0 auto;" />
+                </div>
+                <p style="margin: 10px 0 0; color: #e0f2fe; font-size: 14px; font-weight: 500;">Chúc mừng Hội viên chính thức</p>
               </td>
             </tr>
             <tr>
@@ -892,22 +976,38 @@ Ban thư ký ${appName}
                 <p style="margin: 0 0 16px; color: #4b5563; font-size: 15px; line-height: 1.7;">
                   Vui lòng nhấp vào liên kết bên dưới để đặt mật khẩu kích hoạt tài khoản của bạn và đăng nhập lần đầu vào Cổng hội viên HTCAA:
                 </p>
-                <table cellpadding="0" cellspacing="0" align="center" style="margin: 28px auto;">
+                <table cellpadding="0" cellspacing="0" align="center" style="margin: 28px auto; border-collapse: separate;">
                   <tr>
-                    <td>
-                      <a href="${activationLink}" style="display: inline-block; background-color: #1e3a8a; color: #ffffff; text-decoration: none; padding: 13px 24px; border-radius: 10px; font-size: 15px; font-weight: 700;">Đặt mật khẩu & Kích hoạt</a>
+                    <td align="center" bgcolor="#0054A6" style="border-radius: 10px; background-color: #0054A6;">
+                      <a
+                        href="${activationLink}"
+                        target="_blank"
+                        style="
+                          display: inline-block;
+                          padding: 13px 24px;
+                          font-family: Arial, sans-serif;
+                          font-size: 15px;
+                          font-weight: bold;
+                          color: #ffffff !important;
+                          text-decoration: none !important;
+                          border-radius: 10px;
+                          border: 1px solid #0054A6;
+                        "
+                      >
+                        Đặt mật khẩu & Kích hoạt
+                      </a>
                     </td>
                   </tr>
                 </table>
                 <p style="margin: 0 0 12px; color: #6b7280; font-size: 13px; line-height: 1.6;">
                   Chúng tôi cũng đã đính kèm tệp PDF Giấy chứng nhận hội viên trực tiếp trong thư này để bạn lưu trữ và sử dụng.
                 </p>
-                <p style="margin: 0 0 12px; color: #6b7280; font-size: 13px; line-height: 1.6;">
+                <p style="margin: 0 0 8px; color: #6b7280; font-size: 13px; line-height: 1.6;">
                   Nếu nút trên không hoạt động, vui lòng sao chép và dán liên kết này vào trình duyệt của bạn:
                 </p>
-                <p style="margin: 0; word-break: break-all; background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; color: #374151; font-size: 13px; line-height: 1.6;">
-                  ${activationLink}
-                </p>
+                <div style="background-color: #f8fafc; border: 1px solid #daebff; border-radius: 10px; padding: 12px; word-break: break-all;">
+                  <a href="${activationLink}" target="_blank" style="color: #0054a6; font-size: 13px; line-height: 1.6; text-decoration: underline; word-break: break-all;">${activationLink}</a>
+                </div>
               </td>
             </tr>
             <tr>

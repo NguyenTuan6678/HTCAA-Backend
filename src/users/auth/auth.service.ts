@@ -503,9 +503,16 @@ export class AuthService {
 
         await user.save();
 
-        const frontendUrl =
+        let frontendUrl =
           this.configService.get<string>('FRONTEND_URL') ??
           'http://localhost:3000';
+
+        if (
+          !frontendUrl.startsWith('http://') &&
+          !frontendUrl.startsWith('https://')
+        ) {
+          frontendUrl = `http://${frontendUrl}`;
+        }
 
         const resetLink = `${frontendUrl}/reset-password/${resetToken}`;
 
