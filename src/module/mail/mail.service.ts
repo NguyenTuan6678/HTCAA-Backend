@@ -662,7 +662,7 @@ Ngân hàng TMCP Ngoại Thương Việt Nam (Vietcombank)
 STK: 7011326979
 Tên TK: HOI TU VAN VA DAI LY THUE TP.HCM
 Số tiền cần thanh toán: ${formattedFee}
-Nội dung: ${applicationCode}
+Nội dung thanh toán: ${applicationCode}
 
 LIÊN HỆ HỖ TRỢ: 
 Ms.Kiều:  0931 778 562
