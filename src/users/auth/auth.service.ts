@@ -522,7 +522,7 @@ export class AuthService {
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
-        message: 'Reset password link has been sent successfully',
+        message: `Reset password link has been sent to ${email} successfully`,
       };
     } catch (error: any) {
       if (error instanceof BadRequestException) {

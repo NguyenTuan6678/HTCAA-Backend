@@ -573,7 +573,7 @@ export class MembershipRegistrationService {
     return {
       code: ERROR_RES.SUCCESS.statusCode,
       info: ERROR_INFO.SUCCESS,
-      message: 'Kiểm tra thông tin trùng lặp hoàn tất',
+      message: 'Check duplicate information completed',
       content: { emailExists, phoneExists, taxCodeExists, identityCodeExists },
     };
   }
@@ -871,8 +871,8 @@ export class MembershipRegistrationService {
         info: ERROR_INFO.SUCCESS,
         message:
           status === 'need_info'
-            ? 'Đăng ký hội viên thành công nhưng hồ sơ cần bổ sung. Vui lòng kiểm tra email.'
-            : 'Đăng ký hội viên thành công. Hồ sơ đã chuyển đến hàng đợi xét duyệt.',
+            ? 'Membership registration submitted successfully, but profile supplementation is required. Please check your email.'
+            : 'Membership registration submitted successfully and placed in review queue.',
         content: {
           registration: resultWithUrls,
           errors: errors.length > 0 ? errors : null,
@@ -970,7 +970,7 @@ export class MembershipRegistrationService {
 
     if (!registration) {
       throw new NotFoundException(
-        'Không tìm thấy hồ sơ hoặc token bổ sung không hợp lệ.',
+        'Supplement record or token not found or invalid.',
       );
     }
 
@@ -979,7 +979,7 @@ export class MembershipRegistrationService {
     return {
       code: ERROR_RES.SUCCESS.statusCode,
       info: ERROR_INFO.SUCCESS,
-      message: 'Lấy thông tin bổ sơ hồ sơ thành công',
+      message: 'Get supplement information successfully',
       content: { registration: registrationWithUrls },
     };
   }
@@ -1001,7 +1001,7 @@ export class MembershipRegistrationService {
 
     if (!existing) {
       throw new NotFoundException(
-        'Không tìm thấy đơn đăng ký tương ứng hoặc token không hợp lệ.',
+        'Membership registration not found or token is invalid.',
       );
     }
 
@@ -1238,8 +1238,8 @@ export class MembershipRegistrationService {
       info: ERROR_INFO.SUCCESS,
       message:
         errors.length === 0
-          ? 'Cập nhật bổ sung hồ sơ thành công. Hồ sơ đã chuyển đến hàng đợi xét duyệt.'
-          : 'Hồ sơ cập nhật chưa đầy đủ lỗi. Vui lòng điều chỉnh theo hướng dẫn.',
+          ? 'Supplement updated successfully and placed in review queue.'
+          : 'Supplemented profile is incomplete. Please revise according to instructions.',
       content: {
         registration: resultWithUrls,
         errors: errors.length > 0 ? errors : null,
@@ -1276,7 +1276,7 @@ export class MembershipRegistrationService {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
-          message: 'Đơn đăng ký hội viên này đã được phê duyệt từ trước.',
+          message: 'This membership registration has already been approved.',
           content: null,
         };
       }
@@ -1309,7 +1309,7 @@ export class MembershipRegistrationService {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message:
-          'Duyệt đơn đăng ký hội viên thành công. Email hướng dẫn thanh toán đã được gửi.',
+          'Membership registration approved successfully. Payment instruction email has been sent.',
         content: { registration: updatedWithUrls },
       };
     } catch (error: any) {
@@ -1328,7 +1328,7 @@ export class MembershipRegistrationService {
         return {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
-          message: 'Mã đơn đăng ký không hợp lệ',
+          message: 'Invalid membership registration ID',
           content: null,
         };
       }
@@ -1342,7 +1342,7 @@ export class MembershipRegistrationService {
         return {
           code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
-          message: 'Không tìm thấy đơn đăng ký hội viên',
+          message: 'Membership registration not found',
           content: null,
         };
       }
@@ -1353,8 +1353,8 @@ export class MembershipRegistrationService {
           info: ERROR_INFO.FAIL,
           message:
             existing.status === 'payment_reconciled'
-              ? 'Đơn đăng ký này đã hoàn tất thanh toán trước đó.'
-              : 'Đơn đăng ký chưa được phê duyệt. Không thể gửi lại email thanh toán.',
+              ? 'This registration has already completed payment.'
+              : 'Registration has not been approved yet. Cannot resend payment email.',
           content: null,
         };
       }
@@ -1376,14 +1376,14 @@ export class MembershipRegistrationService {
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
-        message: `Đã gửi lại email hướng dẫn thanh toán tới ${existing.email} thành công.`,
+        message: `Payment instruction email has been resent to ${existing.email} successfully.`,
         content: { applicationCode },
       };
     } catch (error: any) {
       return {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
-        message: `Có lỗi xảy ra khi gửi lại email thanh toán: ${error.message}`,
+        message: `Failed to resend payment instruction email: ${error.message}`,
         content: null,
       };
     }
@@ -1409,7 +1409,7 @@ export class MembershipRegistrationService {
         return {
           code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
-          message: 'Không tìm thấy đơn đăng ký tương ứng',
+          message: 'Membership registration not found',
           content: null,
         };
       }
@@ -1419,7 +1419,7 @@ export class MembershipRegistrationService {
           code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
           message:
-            'Đơn đăng ký hội viên này đã được đối soát xác nhận thanh toán trước đó.',
+            'This membership registration payment has already been confirmed.',
           content: null,
         };
       }
@@ -1664,7 +1664,7 @@ export class MembershipRegistrationService {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message:
-          'Xác nhận thanh toán thành công. Chứng nhận và thông tin tài khoản đã được cấp.',
+          'Payment confirmed successfully. Certificate and user account credentials have been issued.',
         content: { registration: resultWithUrls, memberCode },
       };
     } catch (error: any) {
@@ -1902,7 +1902,7 @@ export class MembershipRegistrationService {
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
-        message: 'Tạo bản xem trước thành công.',
+        message: 'Certificate preview generated successfully.',
         content: {
           pdfBase64: pdfBuffer.toString('base64'),
           pngBase64,
@@ -1913,7 +1913,7 @@ export class MembershipRegistrationService {
       return {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
-        message: `Không thể tạo bản xem trước: ${error.message}`,
+        message: `Failed to generate preview: ${error.message}`,
         content: null,
       };
     }
@@ -1942,7 +1942,7 @@ export class MembershipRegistrationService {
   async previewCertificatePdfById(id: string): Promise<Buffer> {
     const registration = await this.membershipRegistrationModel.findById(id);
     if (!registration) {
-      throw new NotFoundException('Không tìm thấy đơn đăng ký hội viên.');
+      throw new NotFoundException('Membership registration not found.');
     }
     const memberCode = 'HTCAA-PREVIEW-0001';
     const recipientName = registration.companyName || registration.name;
@@ -1974,7 +1974,7 @@ export class MembershipRegistrationService {
         return {
           code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
-          message: 'Không tìm thấy hồ sơ đăng ký tương ứng',
+          message: 'Membership registration not found',
           content: null,
         };
       }
@@ -2011,14 +2011,14 @@ export class MembershipRegistrationService {
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
-        message: 'Gửi yêu cầu bổ sung hồ sơ thành công.',
+        message: 'Supplementation request sent successfully.',
         content: { supplement },
       };
     } catch (error: any) {
       return {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
-        message: `Có lỗi xảy ra: ${error.message}`,
+        message: `An error occurred while requesting supplementation: ${error.message}`,
         content: null,
       };
     }
@@ -2040,7 +2040,7 @@ export class MembershipRegistrationService {
         return {
           code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
-          message: 'Không tìm thấy yêu cầu bổ sung tương ứng hoặc đã hết hạn.',
+          message: 'Supplement request record not found or expired.',
           content: null,
         };
       }
@@ -2054,7 +2054,7 @@ export class MembershipRegistrationService {
         return {
           code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
-          message: 'Không tìm thấy hồ sơ đăng ký tương ứng.',
+          message: 'Membership registration not found.',
           content: null,
         };
       }
@@ -2064,14 +2064,14 @@ export class MembershipRegistrationService {
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
-        message: 'Lấy thông tin bổ sung hồ sơ thành công.',
+        message: 'Get supplement information successfully.',
         content: { supplement, registration: registrationWithUrls },
       };
     } catch (error: any) {
       return {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
-        message: `Có lỗi xảy ra: ${error.message}`,
+        message: `An error occurred while getting supplement information: ${error.message}`,
         content: null,
       };
     }
@@ -2087,16 +2087,16 @@ export class MembershipRegistrationService {
     },
   ) {
     if (!Types.ObjectId.isValid(recordId)) {
-      throw new BadRequestException('Mã yêu cầu bổ sung không hợp lệ.');
+      throw new BadRequestException('Invalid supplement record ID.');
     }
 
     const supplement = await this.supplementModel.findById(recordId);
     if (!supplement) {
-      throw new NotFoundException('Không tìm thấy bản ghi bổ sung tương ứng.');
+      throw new NotFoundException('Supplement record not found.');
     }
 
     if (supplement.status !== 'pending') {
-      throw new BadRequestException('Yêu cầu bổ sung này đã được cập nhật trước đó.');
+      throw new BadRequestException('This supplement request has already been updated.');
     }
 
     const existing = await this.membershipRegistrationModel.findOne({
@@ -2107,7 +2107,7 @@ export class MembershipRegistrationService {
 
     if (!existing) {
       throw new NotFoundException(
-        'Không tìm thấy đơn đăng ký tương ứng ở trạng thái cần bổ sung.',
+        'Membership registration not found in need_info status.',
       );
     }
 
@@ -2317,7 +2317,7 @@ export class MembershipRegistrationService {
     );
 
     if (!updated) {
-      throw new NotFoundException('Không tìm thấy đơn đăng ký để cập nhật.');
+      throw new NotFoundException('Membership registration not found to update.');
     }
 
     if (errors.length === 0) {
@@ -2344,8 +2344,8 @@ export class MembershipRegistrationService {
       info: errors.length === 0 ? ERROR_INFO.SUCCESS : ERROR_INFO.FAIL,
       message:
         errors.length === 0
-          ? 'Cập nhật hồ sơ bổ sung thành công.'
-          : 'Hồ sơ cập nhật chưa đầy đủ. Vui lòng điều chỉnh lại.',
+          ? 'Supplement profile updated successfully.'
+          : 'Supplement profile is incomplete. Please revise according to instructions.',
       content: {
         registration: resultWithUrls,
         errors: errors.length > 0 ? errors : null,
