@@ -61,78 +61,78 @@ const pdfFileFilter = (
 export class MemberController {
   constructor(private readonly memberService: MemberService) {}
 
-  @Post('register')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth('authorization')
-  @ApiOperation({ summary: 'Register member profile' })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        name: { type: 'string', example: 'Nguyễn Văn An' },
-        dateOfBirth: { type: 'string', example: '1998-01-01' },
-        email: { type: 'string', example: 'user@example.com' },
-        phone: { type: 'string', example: '0900000000' },
-        certificateNumber: { type: 'string', example: 'ĐLTCC-0001/TCT' },
-        workplace: { type: 'string', example: 'Công ty ABC' },
-        district: { type: 'string', example: 'Quận 1' },
-        memberType: {
-          type: 'string',
-          enum: ['individual', 'organization'],
-          example: 'individual',
-        },
-        paymentMethod: {
-          type: 'string',
-          enum: ['vnpay', 'bank'],
-          example: 'bank',
-        },
-        organizationName: {
-          type: 'string',
-          example: 'Công ty TNHH Tư vấn Thuế ABC',
-        },
-        organizationTaxCode: {
-          type: 'string',
-          example: '0123456789',
-        },
-        organizationEmployeeScale: {
-          type: 'string',
-          example: '2–5 người',
-        },
-        profileFile: {
-          type: 'string',
-          format: 'binary',
-          description: 'Optional PDF file, max 5MB',
-        },
-      },
-      required: [
-        'name',
-        'dateOfBirth',
-        'email',
-        'phone',
-        'certificateNumber',
-        'memberType',
-        'paymentMethod',
-      ],
-    },
-  })
-  @UseInterceptors(
-    FileInterceptor('profileFile', {
-      storage: memoryStorage(),
-      fileFilter: pdfFileFilter,
-      limits: { fileSize: 30 * 1024 * 1024 }, // 30 MB
-    }),
-  )
-  register(
-    @Body() registerMemberDto: RegisterMemberDto,
-    @UploadedFile() file: Express.Multer.File,
-    @CurrentUser('id') userId: string,
-  ) {
-    if (file) {
-      registerMemberDto.profileFile = file;
-    }
-    return this.memberService.register(userId, registerMemberDto);
-  }
+  // @Post('register')
+  // @UseGuards(JwtAuthGuard)
+  // @ApiBearerAuth('authorization')
+  // @ApiOperation({ summary: 'Register member profile' })
+  // @ApiConsumes('multipart/form-data')
+  // @ApiBody({
+  //   schema: {
+  //     type: 'object',
+  //     properties: {
+  //       name: { type: 'string', example: 'Nguyễn Văn An' },
+  //       dateOfBirth: { type: 'string', example: '1998-01-01' },
+  //       email: { type: 'string', example: 'user@example.com' },
+  //       phone: { type: 'string', example: '0900000000' },
+  //       certificateNumber: { type: 'string', example: 'ĐLTCC-0001/TCT' },
+  //       workplace: { type: 'string', example: 'Công ty ABC' },
+  //       district: { type: 'string', example: 'Quận 1' },
+  //       memberType: {
+  //         type: 'string',
+  //         enum: ['individual', 'organization'],
+  //         example: 'individual',
+  //       },
+  //       paymentMethod: {
+  //         type: 'string',
+  //         enum: ['vnpay', 'bank'],
+  //         example: 'bank',
+  //       },
+  //       organizationName: {
+  //         type: 'string',
+  //         example: 'Công ty TNHH Tư vấn Thuế ABC',
+  //       },
+  //       organizationTaxCode: {
+  //         type: 'string',
+  //         example: '0123456789',
+  //       },
+  //       organizationEmployeeScale: {
+  //         type: 'string',
+  //         example: '2–5 người',
+  //       },
+  //       profileFile: {
+  //         type: 'string',
+  //         format: 'binary',
+  //         description: 'Optional PDF file, max 5MB',
+  //       },
+  //     },
+  //     required: [
+  //       'name',
+  //       'dateOfBirth',
+  //       'email',
+  //       'phone',
+  //       'certificateNumber',
+  //       'memberType',
+  //       'paymentMethod',
+  //     ],
+  //   },
+  // })
+  // @UseInterceptors(
+  //   FileInterceptor('profileFile', {
+  //     storage: memoryStorage(),
+  //     fileFilter: pdfFileFilter,
+  //     limits: { fileSize: 30 * 1024 * 1024 }, // 30 MB
+  //   }),
+  // )
+  // register(
+  //   @Body() registerMemberDto: RegisterMemberDto,
+  //   @UploadedFile() file: Express.Multer.File,
+  //   @CurrentUser('id') userId: string,
+  // ) {
+  //   if (file) {
+  //     registerMemberDto.profileFile = file;
+  //   }
+  //   return this.memberService.register(userId, registerMemberDto);
+  // }
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
