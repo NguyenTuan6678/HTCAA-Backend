@@ -285,7 +285,10 @@ export class MembershipRegistrationController {
     summary:
       'Public: get registration details to supplement missing info/files using supplement record ID',
   })
-  @ApiParam({ name: 'recordId', description: 'Supplement record ID (ObjectId)' })
+  @ApiParam({
+    name: 'recordId',
+    description: 'Supplement record ID (ObjectId)',
+  })
   getSupplementByRecordId(@Param('recordId') recordId: string) {
     return this.membershipRegistrationService.getSupplementByRecordId(recordId);
   }
@@ -343,7 +346,10 @@ export class MembershipRegistrationController {
   @ApiOperation({
     summary: 'Public: supplement files/info using supplement record ID',
   })
-  @ApiParam({ name: 'recordId', description: 'Supplement record ID (ObjectId)' })
+  @ApiParam({
+    name: 'recordId',
+    description: 'Supplement record ID (ObjectId)',
+  })
   updateSupplementByRecordId(
     @Param('recordId') recordId: string,
     @Body() dto: UpdateMembershipRegistrationDto,

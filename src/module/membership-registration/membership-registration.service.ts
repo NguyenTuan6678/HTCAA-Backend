@@ -1688,11 +1688,10 @@ export class MembershipRegistrationService {
         };
       }
 
-      const deleted = await this.membershipRegistrationModel.findOneAndUpdate(
-        { _id: new Types.ObjectId(id), isActive: true },
-        { isActive: false },
-        { returnDocument: 'after' },
-      );
+      const deleted = await this.membershipRegistrationModel.findOneAndDelete({
+        _id: new Types.ObjectId(id),
+        isActive: true,
+      });
 
       if (!deleted) {
         return {
@@ -2096,7 +2095,9 @@ export class MembershipRegistrationService {
     }
 
     if (supplement.status !== 'pending') {
-      throw new BadRequestException('This supplement request has already been updated.');
+      throw new BadRequestException(
+        'This supplement request has already been updated.',
+      );
     }
 
     const existing = await this.membershipRegistrationModel.findOne({
@@ -2153,7 +2154,9 @@ export class MembershipRegistrationService {
 
     if (mergedData.memberType === MembershipType.COLLECTIVE) {
       if (!mergedData.companyName?.trim()) {
-        errors.push('Đối với hội viên Tổ chức, bắt buộc phải nhập Tên công ty.');
+        errors.push(
+          'Đối với hội viên Tổ chức, bắt buộc phải nhập Tên công ty.',
+        );
       }
       if (!mergedData.taxCode?.trim()) {
         errors.push('Đối với hội viên Tổ chức, bắt buộc phải nhập Mã số thuế.');
@@ -2317,7 +2320,9 @@ export class MembershipRegistrationService {
     );
 
     if (!updated) {
-      throw new NotFoundException('Membership registration not found to update.');
+      throw new NotFoundException(
+        'Membership registration not found to update.',
+      );
     }
 
     if (errors.length === 0) {

@@ -919,7 +919,7 @@ Ban thư ký ${appName}
         text: `
 Kính gửi ${name},
 
-Chúc mừng bạn đã hoàn thành việc đóng phí hội viên và trở thành Hội viên chính thức của ${appName}.
+Bạn đã hoàn tất nghĩa vụ hội phí và trở thành hội viên chính thức của ${appName}.
 Mã hội viên của bạn là: ${memberCode}
 
 Vui lòng nhấp vào liên kết sau để đặt mật khẩu kích hoạt tài khoản của bạn trên cổng thông tin hội viên:
@@ -961,7 +961,7 @@ Ban thư ký ${appName}
                 <div style="background-color: #ffffff; padding: 12px 24px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
                   <img src="cid:logoHtcaa" alt="${appName}" style="max-height: 60px; max-width: 220px; width: auto; height: auto; display: block; margin: 0 auto;" />
                 </div>
-                <p style="margin: 10px 0 0; color: #e0f2fe; font-size: 14px; font-weight: 500;">Chúc mừng Hội viên chính thức</p>
+                <p style="margin: 10px 0 0; color: #e0f2fe; font-size: 14px; font-weight: 500;">Chào mừng Hội viên chính thức</p>
               </td>
             </tr>
             <tr>
