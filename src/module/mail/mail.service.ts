@@ -29,8 +29,12 @@ export class MailService {
     });
   }
 
-  private getMailAttachments(includeQr = false): nodemailer.SendMailOptions['attachments'] {
-    const logoPath = fs.existsSync(path.join(process.cwd(), 'src/assets/mail/logoHtcaa.png'))
+  private getMailAttachments(
+    includeQr = false,
+  ): nodemailer.SendMailOptions['attachments'] {
+    const logoPath = fs.existsSync(
+      path.join(process.cwd(), 'src/assets/mail/logoHtcaa.png'),
+    )
       ? path.join(process.cwd(), 'src/assets/mail/logoHtcaa.png')
       : path.join(__dirname, '../../assets/mail/logoHtcaa.png');
 
@@ -43,7 +47,9 @@ export class MailService {
     ];
 
     if (includeQr) {
-      const qrPath = fs.existsSync(path.join(process.cwd(), 'src/assets/mail/qrHtcaa.png'))
+      const qrPath = fs.existsSync(
+        path.join(process.cwd(), 'src/assets/mail/qrHtcaa.png'),
+      )
         ? path.join(process.cwd(), 'src/assets/mail/qrHtcaa.png')
         : path.join(__dirname, '../../assets/mail/qrHtcaa.png');
 
@@ -830,9 +836,9 @@ Ban thư ký ${appName}
                       <td style="font-weight: bold; color: #0054A6; vertical-align: top;">Nội dung:</td>
                       <td>
                         <div style="font-weight: bold; color: #b91c1c; background-color: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #cbd5e1; display: inline-block;">
-                          Họ và tên-số điện thoại-KDTDB2026
+                          ${applicationCode}
                         </div>
-                        <div style="font-size: 13px; color: #475569; margin-top: 4px;">Ví dụ: <strong>NguyenVanA-09123456789-KDTDB2026</strong> (Mã đơn: <strong>${applicationCode}</strong>)</div>
+                        <div style="font-size: 13px; color: #475569; margin-top: 4px;">Ví dụ: <strong>${applicationCode}</strong> (Mã đơn: <strong>${applicationCode}</strong>)</div>
                       </td>
                     </tr>
                     <tr>
