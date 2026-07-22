@@ -8,7 +8,6 @@ import { ERROR_INFO, ERROR_RES } from '../../constants/error.const';
 import { RegisterMemberDto } from './dto/register-member.req';
 import { UpdateMemberDto } from './dto/update-member.req';
 import { QueryMemberDirectoryDto } from './dto/query-member-directory.req';
-import { RejectMemberDto } from './dto/reject-member.req';
 import { MemberStatus } from '../../utils/member-status.enum';
 import { MemberType } from '../../utils/member-type.enum';
 import { Counter } from '../../schema/counter.schema';
@@ -402,7 +401,7 @@ export class MemberService {
     }
   }
 
-  async approve(id: string, adminId: string) {
+  async delete(id: string) {
     try {
       if (!Types.ObjectId.isValid(id)) {
         return {
@@ -413,18 +412,9 @@ export class MemberService {
         };
       }
 
-      if (!Types.ObjectId.isValid(adminId)) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid admin id',
-          content: null,
-        };
-      }
+      const deleted = await this.memberModel.findByIdAndDelete(id);
 
-      const existing = await this.memberModel.findById(id);
-
-      if (!existing) {
+      if (!deleted) {
         return {
           code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
           info: ERROR_INFO.FAIL,
@@ -432,216 +422,18 @@ export class MemberService {
           content: null,
         };
       }
-
-      if (existing.status !== MemberStatus.PENDING) {
-        return {
-          code: ERROR_RES.CONFLICT_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: `Cannot approve a member with status "${existing.status}". Only PENDING profiles can be approved.`,
-          content: null,
-        };
-      }
-
-      const member = await this.memberModel
-        .findByIdAndUpdate(
-          id,
-          {
-            status: MemberStatus.ACTIVE,
-            approvedBy: new Types.ObjectId(adminId),
-            approvedAt: new Date(),
-            rejectedBy: null,
-            rejectedAt: null,
-            rejectReason: null,
-          },
-          {
-            returnDocument: 'after',
-            runValidators: true,
-          },
-        )
-        .populate({
-          path: 'userId',
-          select: 'name email role memberType isActive',
-        })
-        .populate({
-          path: 'approvedBy',
-          select: 'name email role',
-        });
-
-      if (!member) {
-        return {
-          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Member profile not found',
-          content: null,
-        };
-      }
-
-      const memberWithUrl = await this.attachPresignedUrl(member);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
-        message: 'Approve member successfully',
-        content: {
-          member: memberWithUrl,
-        },
-      };
-    } catch (error: any) {
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while approving member: ${error.message}`,
+        message: 'Delete member profile successfully',
         content: null,
       };
-    }
-  }
-
-  async reject(id: string, adminId: string, rejectMemberDto: RejectMemberDto) {
-    try {
-      if (!Types.ObjectId.isValid(id)) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid member id',
-          content: null,
-        };
-      }
-
-      if (!Types.ObjectId.isValid(adminId)) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid admin id',
-          content: null,
-        };
-      }
-
-      const existing = await this.memberModel.findById(id);
-
-      if (!existing) {
-        return {
-          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Member profile not found',
-          content: null,
-        };
-      }
-
-      if (existing.status !== MemberStatus.PENDING) {
-        return {
-          code: ERROR_RES.CONFLICT_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: `Cannot reject a member with status "${existing.status}". Only PENDING profiles can be rejected.`,
-          content: null,
-        };
-      }
-
-      const member = await this.memberModel
-        .findByIdAndUpdate(
-          id,
-          {
-            status: MemberStatus.REJECTED,
-            rejectedBy: new Types.ObjectId(adminId),
-            rejectedAt: new Date(),
-            rejectReason: rejectMemberDto.reason,
-            approvedBy: null,
-            approvedAt: null,
-          },
-          {
-            returnDocument: 'after',
-            runValidators: true,
-          },
-        )
-        .populate({
-          path: 'userId',
-          select: 'name email role memberType isActive',
-        })
-        .populate({
-          path: 'rejectedBy',
-          select: 'name email role',
-        });
-
-      if (!member) {
-        return {
-          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Member profile not found',
-          content: null,
-        };
-      }
-
-      const memberWithUrl = await this.attachPresignedUrl(member);
-
-      return {
-        code: ERROR_RES.SUCCESS.statusCode,
-        info: ERROR_INFO.SUCCESS,
-        message: 'Reject member successfully',
-        content: {
-          member: memberWithUrl,
-        },
-      };
     } catch (error: any) {
       return {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
-        message: `There is a problem while rejecting member: ${error.message}`,
-        content: null,
-      };
-    }
-  }
-
-  async expire(id: string) {
-    try {
-      if (!Types.ObjectId.isValid(id)) {
-        return {
-          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Invalid member id',
-          content: null,
-        };
-      }
-
-      const member = await this.memberModel
-        .findByIdAndUpdate(
-          id,
-          {
-            status: MemberStatus.EXPIRED,
-            expiredAt: new Date(),
-          },
-          {
-            returnDocument: 'after',
-            runValidators: true,
-          },
-        )
-        .populate({
-          path: 'userId',
-          select: 'name email role memberType isActive',
-        });
-
-      if (!member) {
-        return {
-          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
-          info: ERROR_INFO.FAIL,
-          message: 'Member profile not found',
-          content: null,
-        };
-      }
-
-      const memberWithUrl = await this.attachPresignedUrl(member);
-
-      return {
-        code: ERROR_RES.SUCCESS.statusCode,
-        info: ERROR_INFO.SUCCESS,
-        message: 'Expire member successfully',
-        content: {
-          member: memberWithUrl,
-        },
-      };
-    } catch (error: any) {
-      return {
-        code: ERROR_RES.INTERNAL_ERROR.statusCode,
-        info: ERROR_INFO.FAIL,
-        message: `There is a problem while expiring member: ${error.message}`,
+        message: `There is a problem while deleting member profile: ${error.message}`,
         content: null,
       };
     }

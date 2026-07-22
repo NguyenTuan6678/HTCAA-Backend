@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -30,7 +31,6 @@ import { MemberService } from './member.service';
 import { RegisterMemberDto } from './dto/register-member.req';
 import { UpdateMemberDto } from './dto/update-member.req';
 import { QueryMemberDirectoryDto } from './dto/query-member-directory.req';
-import { RejectMemberDto } from './dto/reject-member.req';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { CurrentUser } from '../../users/auth/decorators/current-user.decorator';
@@ -174,38 +174,13 @@ export class MemberController {
     return this.memberService.adminFindAll(query);
   }
 
-  @Patch(':id/approve')
+  @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiBearerAuth('authorization')
-  @ApiOperation({ summary: 'Approve member profile' })
+  @ApiOperation({ summary: 'Delete member profile' })
   @ApiParam({ name: 'id', description: 'Member id' })
-  approve(@Param('id') id: string, @CurrentUser('id') adminId: string) {
-    return this.memberService.approve(id, adminId);
-  }
-
-  @Patch(':id/reject')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
-  @ApiBearerAuth('authorization')
-  @ApiOperation({ summary: 'Reject member profile' })
-  @ApiParam({ name: 'id', description: 'Member id' })
-  @ApiBody({ type: RejectMemberDto })
-  reject(
-    @Param('id') id: string,
-    @Body() rejectMemberDto: RejectMemberDto,
-    @CurrentUser('id') adminId: string,
-  ) {
-    return this.memberService.reject(id, adminId, rejectMemberDto);
-  }
-
-  @Patch(':id/expire')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
-  @ApiBearerAuth('authorization')
-  @ApiOperation({ summary: 'Expire member profile' })
-  @ApiParam({ name: 'id', description: 'Member id' })
-  expire(@Param('id') id: string) {
-    return this.memberService.expire(id);
+  delete(@Param('id') id: string) {
+    return this.memberService.delete(id);
   }
 }
