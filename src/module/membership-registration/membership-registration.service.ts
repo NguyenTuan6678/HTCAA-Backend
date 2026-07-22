@@ -234,15 +234,15 @@ export class MembershipRegistrationService {
     );
     const bgBytes = fs.readFileSync(templatePath);
 
-    // System Times New Roman Bold for national motto
-    const timesBoldBytes = fs.readFileSync(
-      '/System/Library/Fonts/Supplemental/Times New Roman Bold.ttf',
-    );
-
-    // Project Be Vietnam Pro fonts
+    // Project custom fonts path
     const fontsPath = path.join(
       process.cwd(),
       'src/module/membership-registration/assets/fonts',
+    );
+
+    // Times New Roman Bold for national motto
+    const timesBoldBytes = fs.readFileSync(
+      path.join(fontsPath, 'Times New Roman Bold.ttf'),
     );
     const beVietnamRegularBytes = fs.readFileSync(
       path.join(fontsPath, 'BeVietnamPro-Regular.ttf'),
