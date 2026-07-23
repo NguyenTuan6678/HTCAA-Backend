@@ -44,9 +44,12 @@ export class SecurityRedirectMiddleware implements NestMiddleware {
     // 3. Nếu truy cập trực tiếp bằng trình duyệt (Accept: text/html)
     // nhưng không phải là Swagger Docs (khi ở dev) và không phải tài nguyên tĩnh
     const isHtmlRequest = acceptHeader.includes('text/html');
-    const isStaticAsset = url.startsWith('/uploads');
+    const isStaticAsset =
+      url.startsWith('/uploads') ||
+      url.startsWith('/api/media') ||
+      url.includes('/media/');
 
-    if (isHtmlRequest && !isSwaggerPath && !isStaticAsset) {
+    if (isProduction && isHtmlRequest && !isSwaggerPath && !isStaticAsset) {
       return res.redirect(redirectUrl);
     }
 
