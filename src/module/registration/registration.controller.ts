@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -6,15 +7,21 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
+import { memoryStorage } from 'multer';
+import { extname } from 'path';
 
 import { Role } from '../../utils/role.enum';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
@@ -28,6 +35,36 @@ import { RegistrationService } from './registration.service';
 import { GuestRegisterCourseDto } from './dto/guest-registration-course.req';
 import { VerifyMembershipDto } from './dto/verify-membership.req';
 
+const paymentProofFileFilter = (
+  req: any,
+  file: Express.Multer.File,
+  callback: any,
+) => {
+  const allowedMimeTypes = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/webp',
+    'application/pdf',
+  ];
+  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
+  const fileExt = extname(file.originalname).toLowerCase();
+  const isValid =
+    allowedMimeTypes.includes(file.mimetype) &&
+    allowedExtensions.includes(fileExt);
+
+  if (!isValid) {
+    return callback(
+      new BadRequestException(
+        'Chỉ cho phép tải lên minh chứng thanh toán định dạng JPG, JPEG, PNG, WEBP hoặc PDF',
+      ),
+      false,
+    );
+  }
+
+  callback(null, true);
+};
+
 @ApiTags('Registration')
 @Controller('registration')
 export class RegistrationController {
@@ -36,18 +73,38 @@ export class RegistrationController {
   @Post('register')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('authorization')
-  @ApiOperation({ summary: 'Register for a course' })
+  @ApiOperation({ summary: 'Register for a course (supports optional paymentProof file)' })
+  @ApiConsumes('multipart/form-data', 'application/json')
+  @UseInterceptors(
+    FileInterceptor('paymentProof', {
+      storage: memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: paymentProofFileFilter,
+    }),
+  )
   register(
     @Body() registerDto: RegisterCourseDto,
     @CurrentUser('id') userId: string,
+    @UploadedFile() file?: Express.Multer.File,
   ) {
-    return this.registrationService.register(userId, registerDto);
+    return this.registrationService.register(userId, registerDto, file);
   }
 
   @Post('guest-register')
-  @ApiOperation({ summary: 'Public: register for a course as a guest' })
-  guestRegister(@Body() guestRegisterDto: GuestRegisterCourseDto) {
-    return this.registrationService.guestRegister(guestRegisterDto);
+  @ApiOperation({ summary: 'Public: register for a course as a guest (supports optional paymentProof file)' })
+  @ApiConsumes('multipart/form-data', 'application/json')
+  @UseInterceptors(
+    FileInterceptor('paymentProof', {
+      storage: memoryStorage(),
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: paymentProofFileFilter,
+    }),
+  )
+  guestRegister(
+    @Body() guestRegisterDto: GuestRegisterCourseDto,
+    @UploadedFile() file?: Express.Multer.File,
+  ) {
+    return this.registrationService.guestRegister(guestRegisterDto, file);
   }
 
   @Get('me')
@@ -80,6 +137,8 @@ export class RegistrationController {
   @ApiQuery({ name: 'courseId', required: false })
   @ApiQuery({ name: 'memberId', required: false })
   @ApiQuery({ name: 'membershipVerified', required: false })
+  @ApiQuery({ name: 'registrationCode', required: false })
+  @ApiQuery({ name: 'search', required: false })
   @ApiQuery({ name: 'page', required: false, example: 1 })
   @ApiQuery({ name: 'limit', required: false, example: 20 })
   adminFindAll(@Query() query: QueryAdminRegistrationDto) {
@@ -129,5 +188,18 @@ export class RegistrationController {
       id,
       verifyMembershipDto,
     );
+  }
+
+  @Patch(':id/confirm-payment')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN, Role.EDITOR)
+  @ApiBearerAuth('authorization')
+  @ApiOperation({
+    summary:
+      'Admin/editor: confirm payment for a course registration and send confirmation email to student',
+  })
+  @ApiParam({ name: 'id', description: 'Registration id' })
+  confirmPayment(@Param('id') id: string) {
+    return this.registrationService.confirmPayment(id);
   }
 }

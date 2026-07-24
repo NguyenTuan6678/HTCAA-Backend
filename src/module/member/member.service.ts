@@ -50,6 +50,22 @@ export class MemberService {
     if (!member) return member;
     const obj =
       typeof member.toObject === 'function' ? member.toObject() : member;
+    if (obj.avatar) {
+      if (obj.avatar.objectName) {
+        obj.avatar.url = await this.minioService.getPresignedUrl(
+          obj.avatar.objectName,
+        );
+      } else if (obj.avatar.filename && obj.avatar.filename.includes('/')) {
+        obj.avatar.path = await this.minioService.getPresignedUrl(
+          obj.avatar.filename,
+        );
+      }
+    }
+    if (obj.organization?.banner?.objectName) {
+      obj.organization.banner.url = await this.minioService.getPresignedUrl(
+        obj.organization.banner.objectName,
+      );
+    }
     if (obj.profileFile?.filename) {
       if (obj.profileFile.filename.includes('/')) {
         const presignedUrl = await this.minioService.getPresignedUrl(
@@ -246,6 +262,149 @@ export class MemberService {
     }
   }
 
+  private async buildUpdateData(
+    updateMemberDto: UpdateMemberDto,
+  ): Promise<any> {
+    const updateData: any = {};
+
+    const directStringFields = [
+      'memberCode',
+      'name',
+      'email',
+      'phone',
+      'certificateNumber',
+      'workplace',
+      'district',
+      'address',
+      'identityCode',
+      'job',
+      'position',
+      'introduceBy',
+      'memberType',
+      'paymentMethod',
+      'status',
+      'rejectReason',
+      'starRating',
+      'tenure',
+      'tag',
+    ];
+
+    directStringFields.forEach((field) => {
+      if ((updateMemberDto as any)[field] !== undefined) {
+        updateData[field] = (updateMemberDto as any)[field];
+      }
+    });
+
+    if (updateMemberDto.professionalCertificationNumber !== undefined) {
+      updateData.certificateNumber = updateMemberDto.professionalCertificationNumber;
+    }
+
+    if (updateMemberDto.isProfessionalCertification !== undefined) {
+      updateData.isProfessionalCertification =
+        String(
+          updateMemberDto.isProfessionalCertification,
+        ).toLowerCase() === 'true';
+    }
+
+    if (updateMemberDto.isFeatured !== undefined) {
+      updateData.isFeatured =
+        String(updateMemberDto.isFeatured).toLowerCase() === 'true';
+    }
+
+    if (updateMemberDto.isActive !== undefined) {
+      updateData.isActive =
+        String(updateMemberDto.isActive).toLowerCase() === 'true';
+    }
+
+    if (
+      updateMemberDto.cpeHours !== undefined &&
+      updateMemberDto.cpeHours !== null &&
+      (updateMemberDto as any).cpeHours !== ''
+    ) {
+      updateData.cpeHours = Number(updateMemberDto.cpeHours);
+    }
+
+    if (
+      updateMemberDto.featuredOrder !== undefined &&
+      updateMemberDto.featuredOrder !== null &&
+      (updateMemberDto as any).featuredOrder !== ''
+    ) {
+      updateData.featuredOrder = Number(updateMemberDto.featuredOrder);
+    }
+
+    if (
+      updateMemberDto.dateOfBirth !== undefined &&
+      updateMemberDto.dateOfBirth
+    ) {
+      updateData.dateOfBirth = new Date(updateMemberDto.dateOfBirth);
+    }
+
+    if (updateMemberDto.expiredAt !== undefined) {
+      updateData.expiredAt = updateMemberDto.expiredAt
+        ? new Date(updateMemberDto.expiredAt)
+        : null;
+    }
+
+    const orgFieldsMap: Record<string, string> = {
+      organizationName: 'name',
+      companyName: 'name',
+      organizationTaxCode: 'taxCode',
+      organizationEmployeeScale: 'employeeScale',
+      organizationLicense: 'license',
+      companyLicense: 'license',
+      organizationWebsiteUrl: 'websiteUrl',
+      companyWebsiteUrl: 'websiteUrl',
+      organizationPhoneNumber: 'phoneNumber',
+      companyPhoneNumber: 'phoneNumber',
+      organizationJobType: 'jobType',
+      companyJobType: 'jobType',
+      organizationSlogan: 'slogan',
+      companySlogan: 'slogan',
+    };
+
+    Object.entries(orgFieldsMap).forEach(([dtoKey, schemaKey]) => {
+      if ((updateMemberDto as any)[dtoKey] !== undefined) {
+        updateData[`organization.${schemaKey}`] = (updateMemberDto as any)[
+          dtoKey
+        ];
+      }
+    });
+
+    if (updateMemberDto.avatarFile) {
+      const uploadResult = await this.minioService.uploadFile(
+        updateMemberDto.avatarFile,
+        'members/avatars',
+      );
+      updateData.avatar = this.toPublicFile(uploadResult);
+    }
+
+    if (updateMemberDto.bannerFile) {
+      const uploadResult = await this.minioService.uploadFile(
+        updateMemberDto.bannerFile,
+        'members/banners',
+      );
+      updateData['organization.banner'] = this.toPublicFile(uploadResult);
+    }
+
+    if (updateMemberDto.profileFile) {
+      const uploadResult = await this.minioService.uploadFile(
+        updateMemberDto.profileFile,
+        'members/files',
+      );
+      updateData.profileFile = this.toPublicFile(uploadResult);
+    }
+
+    if (updateMemberDto.certificateFile) {
+      const uploadResult = await this.minioService.uploadFile(
+        updateMemberDto.certificateFile,
+        'members/certificates',
+      );
+      updateData.certificateFile = this.toPublicFile(uploadResult);
+    }
+
+    return updateData;
+  }
+
   async updateMe(userId: string, updateMemberDto: UpdateMemberDto) {
     try {
       if (!Types.ObjectId.isValid(userId)) {
@@ -257,35 +416,7 @@ export class MemberService {
         };
       }
 
-      const updateData: any = {};
-
-      if (updateMemberDto.name !== undefined) {
-        updateData.name = updateMemberDto.name;
-      }
-
-      if (updateMemberDto.dateOfBirth !== undefined) {
-        updateData.dateOfBirth = new Date(updateMemberDto.dateOfBirth);
-      }
-
-      if (updateMemberDto.email !== undefined) {
-        updateData.email = updateMemberDto.email;
-      }
-
-      if (updateMemberDto.phone !== undefined) {
-        updateData.phone = updateMemberDto.phone;
-      }
-
-      if (updateMemberDto.certificateNumber !== undefined) {
-        updateData.certificateNumber = updateMemberDto.certificateNumber;
-      }
-
-      if (updateMemberDto.workplace !== undefined) {
-        updateData.workplace = updateMemberDto.workplace;
-      }
-
-      if (updateMemberDto.district !== undefined) {
-        updateData.district = updateMemberDto.district;
-      }
+      const updateData = await this.buildUpdateData(updateMemberDto);
 
       const member = await this.memberModel
         .findOneAndUpdate(
@@ -328,6 +459,65 @@ export class MemberService {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
         message: `There is a problem while updating member profile: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async adminUpdate(id: string, updateMemberDto: UpdateMemberDto) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid member id',
+          content: null,
+        };
+      }
+
+      const updateData = await this.buildUpdateData(updateMemberDto);
+
+      const member = await this.memberModel
+        .findOneAndUpdate(
+          {
+            _id: new Types.ObjectId(id),
+            isActive: true,
+          },
+          updateData,
+          {
+            returnDocument: 'after',
+            runValidators: true,
+          },
+        )
+        .populate({
+          path: 'userId',
+          select: 'name email role memberType isActive',
+        });
+
+      if (!member) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Member profile not found',
+          content: null,
+        };
+      }
+
+      const memberWithUrl = await this.attachPresignedUrl(member);
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Admin update member profile successfully',
+        content: {
+          member: memberWithUrl,
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while admin updating member profile: ${error.message}`,
         content: null,
       };
     }

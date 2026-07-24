@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
@@ -56,6 +57,7 @@ export class GuestRegisterCourseDto {
     description:
       'Khách tự khai mình có phải hội viên không. Admin sẽ đối chiếu và xác thực lại trước khi tính giá.',
   })
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   @IsNotEmpty()
   claimedIsMember: boolean;

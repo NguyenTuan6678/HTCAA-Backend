@@ -36,6 +36,14 @@ export class QueryAdminRegistrationDto {
   @IsOptional()
   membershipVerified?: boolean;
 
+  @ApiPropertyOptional({ example: 'KC-2026-00001' })
+  @IsOptional()
+  registrationCode?: string;
+
+  @ApiPropertyOptional({ description: 'Tìm kiếm theo mã đăng ký, email hoặc họ tên học viên' })
+  @IsOptional()
+  search?: string;
+
   @ApiPropertyOptional({ example: 1 })
   @Transform(({ value }) => Number(value ?? 1))
   @IsNumber()

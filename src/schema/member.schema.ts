@@ -9,21 +9,6 @@ import { PaymentMethod } from '../utils/payment-method.enum';
 export type MemberDocument = HydratedDocument<Member>;
 
 @Schema({ _id: false })
-export class OrganizationInfo {
-  @Prop({ type: String, trim: true, default: null })
-  name?: string | null;
-
-  @Prop({ type: String, trim: true, default: null })
-  taxCode?: string | null;
-
-  @Prop({ type: String, trim: true, default: null })
-  employeeScale?: string | null;
-}
-
-export const OrganizationInfoSchema =
-  SchemaFactory.createForClass(OrganizationInfo);
-
-@Schema({ _id: false })
 export class MemberProfileFile {
   @Prop({ type: String, required: true })
   originalName: string;
@@ -43,6 +28,39 @@ export class MemberProfileFile {
 
 export const MemberProfileFileSchema =
   SchemaFactory.createForClass(MemberProfileFile);
+
+@Schema({ _id: false })
+export class OrganizationInfo {
+  @Prop({ type: String, trim: true, default: null })
+  name?: string | null;
+
+  @Prop({ type: String, trim: true, default: null })
+  taxCode?: string | null;
+
+  @Prop({ type: String, trim: true, default: null })
+  employeeScale?: string | null;
+
+  @Prop({ type: String, trim: true, default: null })
+  license?: string | null;
+
+  @Prop({ type: String, trim: true, default: null })
+  websiteUrl?: string | null;
+
+  @Prop({ type: String, trim: true, default: null })
+  phoneNumber?: string | null;
+
+  @Prop({ type: String, trim: true, default: null })
+  jobType?: string | null;
+
+  @Prop({ type: String, trim: true, default: null })
+  slogan?: string | null;
+
+  @Prop({ type: MemberProfileFileSchema, default: null })
+  banner?: MemberProfileFile | null;
+}
+
+export const OrganizationInfoSchema =
+  SchemaFactory.createForClass(OrganizationInfo);
 
 @Schema({
   timestamps: true,
@@ -75,6 +93,27 @@ export class Member {
 
   @Prop({ type: String, trim: true, default: null })
   district?: string | null;
+
+  @Prop({ type: MemberProfileFileSchema, default: null })
+  avatar?: MemberProfileFile | null;
+
+  @Prop({ type: String, trim: true, default: null })
+  address?: string | null;
+
+  @Prop({ type: String, trim: true, default: null })
+  identityCode?: string | null;
+
+  @Prop({ type: String, trim: true, default: null })
+  job?: string | null;
+
+  @Prop({ type: String, trim: true, default: null })
+  position?: string | null;
+
+  @Prop({ type: Boolean, default: false })
+  isProfessionalCertification: boolean;
+
+  @Prop({ type: String, trim: true, default: null })
+  introduceBy?: string | null;
 
   @Prop({
     type: String,
@@ -141,6 +180,15 @@ export class Member {
 
   @Prop({ type: Date, default: null })
   expiredAt?: Date | null;
+
+  @Prop({ type: String, trim: true, default: null })
+  starRating?: string | null;
+
+  @Prop({ type: String, trim: true, default: null })
+  tenure?: string | null;
+
+  @Prop({ type: String, trim: true, default: null })
+  tag?: string | null;
 
   @Prop({ type: Boolean, default: true })
   isActive: boolean;

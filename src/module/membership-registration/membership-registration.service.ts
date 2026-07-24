@@ -1389,7 +1389,11 @@ export class MembershipRegistrationService {
     }
   }
 
-  async confirmPayment(id: string, dto: ConfirmPaymentDto) {
+  async confirmPayment(
+    id: string,
+    dto: ConfirmPaymentDto,
+    adminUserId?: string,
+  ) {
     try {
       if (!Types.ObjectId.isValid(id)) {
         return {
@@ -1601,14 +1605,28 @@ export class MembershipRegistrationService {
 
       // 6. Create/Update Member Profile
       let member = await this.memberModel.findOne({ userId: user._id });
-      if (!member) {
-        let dbMemberType = MemberType.INDIVIDUAL;
-        if (registration.memberType === MembershipType.COLLECTIVE) {
-          dbMemberType = MemberType.ORGANIZATION;
-        } else if (registration.memberType === MembershipType.AFFILIATE) {
-          dbMemberType = MemberType.AFFILIATE;
-        }
+      let dbMemberType = MemberType.INDIVIDUAL;
+      if (registration.memberType === MembershipType.COLLECTIVE) {
+        dbMemberType = MemberType.ORGANIZATION;
+      } else if (registration.memberType === MembershipType.AFFILIATE) {
+        dbMemberType = MemberType.AFFILIATE;
+      }
 
+      const organizationData = {
+        name: registration.companyName || null,
+        taxCode: registration.taxCode || null,
+        employeeScale: null,
+        license: registration.companyLicense || null,
+        websiteUrl: registration.companyWebsiteUrl || null,
+        phoneNumber: registration.companyPhoneNumber || null,
+        jobType: registration.companyJobType || null,
+        slogan: registration.companySlogan || null,
+        banner: registration.banner ? (registration.banner as any) : null,
+      };
+
+      const avatarData = registration.avatar ? (registration.avatar as any) : null;
+
+      if (!member) {
         member = await this.memberModel.create({
           userId: user._id,
           memberCode,
@@ -1619,26 +1637,46 @@ export class MembershipRegistrationService {
           certificateNumber:
             registration.professionalCertificationNumber || 'HTCAA-CERT',
           workplace: registration.companyName || '',
+          address: registration.address || null,
+          identityCode: registration.identityCode || null,
+          job: registration.job || null,
+          position: registration.position || null,
+          isProfessionalCertification: !!registration.isProfessionalCertification,
+          introduceBy: registration.introduceBy || null,
+          avatar: avatarData,
           memberType: dbMemberType,
-          organization:
-            registration.memberType === MembershipType.COLLECTIVE
-              ? {
-                  name: registration.companyName,
-                  taxCode: registration.taxCode,
-                }
-              : null,
+          organization: organizationData,
           status: MemberStatus.ACTIVE,
           cpeHours: 0,
           certificateFile,
           certificateFilePng,
           certificateFileJpg,
+          approvedAt: new Date(),
+          approvedBy: adminUserId ? new Types.ObjectId(adminUserId) : null,
         });
       } else {
         member.memberCode = memberCode;
         member.status = MemberStatus.ACTIVE;
+        member.name = registration.name || member.name;
+        member.dateOfBirth = registration.dateOfBirth || member.dateOfBirth;
+        member.phone = registration.phoneNumber || member.phone;
+        member.address = registration.address || member.address;
+        member.identityCode = registration.identityCode || member.identityCode;
+        member.job = registration.job || member.job;
+        member.position = registration.position || member.position;
+        member.isProfessionalCertification =
+          registration.isProfessionalCertification ?? member.isProfessionalCertification;
+        member.introduceBy = registration.introduceBy || member.introduceBy;
+        member.avatar = avatarData || member.avatar;
+        member.workplace = registration.companyName || member.workplace;
+        member.organization = organizationData;
         member.certificateFile = certificateFile as any;
         member.certificateFilePng = certificateFilePng as any;
         member.certificateFileJpg = certificateFileJpg as any;
+        member.approvedAt = new Date();
+        if (adminUserId) {
+          member.approvedBy = new Types.ObjectId(adminUserId);
+        }
         await member.save();
       }
 

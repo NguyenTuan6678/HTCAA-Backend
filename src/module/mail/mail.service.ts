@@ -1039,4 +1039,183 @@ Ban thư ký ${appName}
 </html>
     `;
   }
+
+  async sendCourseRegistrationPaymentConfirmation(
+    email: string,
+    name: string,
+    registrationCode: string,
+    courseTitle: string,
+    price: number,
+    courseDate?: Date | string | null,
+    location?: string | null,
+    learningType?: string | null,
+  ): Promise<void> {
+    const appName = this.configService.get<string>('APP_NAME') ?? 'HTCAA';
+    const from =
+      this.configService.get<string>('MAIL_FROM') ??
+      'HTCAA <no-reply@minvoicehcm.vn>';
+
+    const formattedFee = new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }).format(price);
+
+    const formattedDate = courseDate
+      ? new Date(courseDate).toLocaleDateString('vi-VN', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+      : 'Thông báo sau';
+
+    try {
+      await this.transporter.sendMail({
+        from,
+        to: email,
+        subject: `[${appName}] Xác thực thanh toán & Đăng ký thành công khóa học: ${courseTitle}`,
+        html: this.getCoursePaymentConfirmationTemplate(
+          appName,
+          name,
+          registrationCode,
+          courseTitle,
+          formattedFee,
+          formattedDate,
+          location,
+          learningType,
+        ),
+        attachments: this.getMailAttachments(false),
+        text: `
+Kính gửi ${name},
+
+Ban thư ký ${appName} xin thông báo: Minh chứng thanh toán của bạn cho khóa học "${courseTitle}" đã được xác thực thành công.
+
+Thông tin chi tiết lượt đăng ký:
+- Mã đăng ký: ${registrationCode}
+- Tên khóa học: ${courseTitle}
+- Học phí đã thanh toán: ${formattedFee}
+- Thời gian khai giảng: ${formattedDate}
+- Hình thức/Địa điểm: ${learningType ? `${learningType} - ` : ''}${location ?? 'Thông báo sau'}
+
+Cảm ơn bạn đã đăng ký tham gia khóa học của ${appName}!
+
+Trân trọng,
+Ban thư ký ${appName}
+      `,
+      });
+    } catch (error: any) {
+      console.error(
+        `Failed to send course payment confirmation email to ${email}:`,
+        error,
+      );
+    }
+  }
+
+  private getCoursePaymentConfirmationTemplate(
+    appName: string,
+    name: string,
+    registrationCode: string,
+    courseTitle: string,
+    formattedFee: string,
+    formattedDate: string,
+    location?: string | null,
+    learningType?: string | null,
+  ): string {
+    return `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác nhận thanh toán khóa học</title>
+  </head>
+  <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f6f9;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #f4f6f9; padding: 40px 0;">
+      <tr>
+        <td align="center">
+          <table width="600" border="0" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
+            <tr>
+              <td style="background-color: #0054a6; padding: 32px 32px 24px; text-align: center;">
+                <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">${appName}</h1>
+                <p style="color: #daebff; margin: 8px 0 0; font-size: 14px;">Xác Nhận Thanh Toán Khóa Học Thành Công</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 32px;">
+                <p style="margin: 0 0 16px; color: #1f2937; font-size: 15px; line-height: 1.6;">
+                  Kính gửi <strong>${name}</strong>,
+                </p>
+                <p style="margin: 0 0 20px; color: #4b5563; font-size: 14px; line-height: 1.6;">
+                  Ban thư ký <strong>${appName}</strong> trân trọng thông báo minh chứng thanh toán của bạn cho khóa học <strong>${courseTitle}</strong> đã được kiểm tra và xác nhận thành công.
+                </p>
+                
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+                  <h3 style="margin: 0 0 16px; color: #0054a6; font-size: 15px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 8px;">Thông tin chi tiết lượt đăng ký</h3>
+                  
+                  <table width="100%" border="0" cellspacing="0" cellpadding="6" style="font-size: 14px; color: #334155;">
+                    <tr>
+                      <td width="35%" style="color: #64748b; font-weight: 600;">Mã đăng ký:</td>
+                      <td style="font-weight: 700; color: #0054a6;">${registrationCode}</td>
+                    </tr>
+                    <tr>
+                      <td style="color: #64748b; font-weight: 600;">Tên khóa học:</td>
+                      <td style="font-weight: 600;">${courseTitle}</td>
+                    </tr>
+                    <tr>
+                      <td style="color: #64748b; font-weight: 600;">Số tiền đã thanh toán:</td>
+                      <td style="font-weight: 700; color: #16a34a;">${formattedFee}</td>
+                    </tr>
+                    <tr>
+                      <td style="color: #64748b; font-weight: 600;">Thời gian khai giảng:</td>
+                      <td>${formattedDate}</td>
+                    </tr>
+                    ${
+                      learningType
+                        ? `<tr>
+                      <td style="color: #64748b; font-weight: 600;">Hình thức học:</td>
+                      <td>${learningType}</td>
+                    </tr>`
+                        : ''
+                    }
+                    ${
+                      location
+                        ? `<tr>
+                      <td style="color: #64748b; font-weight: 600;">Địa điểm:</td>
+                      <td>${location}</td>
+                    </tr>`
+                        : ''
+                    }
+                  </table>
+                </div>
+
+                <p style="margin: 0 0 16px; color: #4b5563; font-size: 14px; line-height: 1.6;">
+                  Quý học viên vui lòng sắp xếp thời gian tham dự đúng giờ. Nếu có bất kỳ thắc mắc hoặc cần hỗ trợ, xin vui lòng liên hệ với Ban thư ký qua hotline <strong>0931 778 562</strong>.
+                </p>
+
+                <p style="margin: 24px 0 0; color: #1f2937; font-size: 14px; font-weight: 500;">
+                  Trân trọng,<br>
+                  <strong>Ban thư ký ${appName}</strong>
+                </p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 0 32px 32px;">
+                <div style="border-top: 1px solid #e5e7eb; padding-top: 20px;">
+                  <p style="margin: 0; color: #9ca3af; font-size: 12px; line-height: 1.6;">
+                    Đây là email tự động từ ${appName}. Vui lòng không trả lời trực tiếp email này.
+                  </p>
+                </div>
+              </td>
+            </tr>
+          </table>
+          <p style="margin: 20px 0 0; color: #9ca3af; font-size: 12px;">
+            © ${new Date().getFullYear()} ${appName}. Tất cả các quyền được bảo lưu.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+    `;
+  }
 }

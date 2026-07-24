@@ -6,6 +6,9 @@ import { Registration } from '../../schema/registration.schema';
 import { Member } from '../../schema/member.schema';
 import { Course } from '../../schema/course.schema';
 import { User } from '../../schema/user.schema';
+import { Counter } from '../../schema/counter.schema';
+import { MinioService } from '../minio/minio.service';
+import { MailService } from '../mail/mail.service';
 import { ERROR_INFO, ERROR_RES } from '../../constants/error.const';
 import { MemberStatus } from '../../utils/member-status.enum';
 import {
@@ -26,9 +29,49 @@ export class RegistrationService {
     @InjectModel(Member.name) private readonly memberModel: Model<Member>,
     @InjectModel(Course.name) private readonly courseModel: Model<Course>,
     @InjectModel(User.name) private readonly userModel: Model<User>,
+    @InjectModel(Counter.name) private readonly counterModel: Model<Counter>,
+    private readonly minioService: MinioService,
+    private readonly mailService: MailService,
   ) {}
 
-  async register(userId: string, registerDto: RegisterCourseDto) {
+  private async attachPaymentProofUrl<T extends Record<string, any>>(
+    item: T,
+  ): Promise<T> {
+    if (!item) return item;
+    const obj = typeof (item as any).toObject === 'function' ? (item as any).toObject() : { ...item };
+    if (obj.paymentProof) {
+      obj.paymentProof = await this.minioService.attachPresignedUrl(obj.paymentProof);
+    }
+    return obj as T;
+  }
+
+  private async attachPaymentProofUrlToList(items: any[]): Promise<any[]> {
+    return Promise.all(items.map((i) => this.attachPaymentProofUrl(i)));
+  }
+
+  private async generateRegistrationCode(): Promise<string> {
+    const year = new Date().getFullYear();
+    const key = `COURSE_REG_${year}`;
+
+    const counter = await this.counterModel.findOneAndUpdate(
+      { key },
+      { $inc: { seq: 1 } },
+      {
+        returnDocument: 'after',
+        upsert: true,
+        setDefaultsOnInsert: true,
+      },
+    );
+
+    const seq = String(counter.seq).padStart(5, '0');
+    return `KC-${year}-${seq}`;
+  }
+
+  async register(
+    userId: string,
+    registerDto: RegisterCourseDto,
+    file?: Express.Multer.File,
+  ) {
     try {
       if (!Types.ObjectId.isValid(userId)) {
         return {
@@ -141,13 +184,25 @@ export class RegistrationService {
           ? (course.memberPrice ?? course.price)
           : course.price;
 
+        const registrationCode = await this.generateRegistrationCode();
+
+        let paymentProof: any = null;
+        if (file) {
+          paymentProof = await this.minioService.uploadFile(
+            file,
+            'course-registrations',
+          );
+        }
+
         const registration = await this.registrationModel.create({
           userId: new Types.ObjectId(userId),
           memberId: isMember ? member!._id : null,
           courseId: course._id,
+          registrationCode,
           status: RegistrationStatus.PENDING,
           paymentStatus: RegistrationPaymentStatus.UNPAID,
           price,
+          paymentProof,
           note: registerDto.note ?? null,
           registrant: {
             name: user.name,
@@ -165,15 +220,24 @@ export class RegistrationService {
           isActive: true,
         });
 
+        let responsePaymentProof = paymentProof;
+        if (responsePaymentProof) {
+          responsePaymentProof = await this.minioService.attachPresignedUrl(
+            responsePaymentProof,
+          );
+        }
+
         return {
           code: ERROR_RES.SUCCESS.statusCode,
           info: ERROR_INFO.SUCCESS,
           message: 'Register course successfully',
           content: {
             registrationId: registration._id.toString(),
+            registrationCode: registration.registrationCode,
             status: registration.status,
             price: registration.price,
             isMember,
+            paymentProof: responsePaymentProof,
           },
         };
       } catch (innerError) {
@@ -203,7 +267,10 @@ export class RegistrationService {
     }
   }
 
-  async guestRegister(dto: GuestRegisterCourseDto) {
+  async guestRegister(
+    dto: GuestRegisterCourseDto,
+    file?: Express.Multer.File,
+  ) {
     try {
       if (!Types.ObjectId.isValid(dto.courseId)) {
         return {
@@ -272,14 +339,26 @@ export class RegistrationService {
       const hasIncremented = true;
 
       try {
+        const registrationCode = await this.generateRegistrationCode();
+
+        let paymentProof: any = null;
+        if (file) {
+          paymentProof = await this.minioService.uploadFile(
+            file,
+            'course-registrations',
+          );
+        }
+
         const registration = await this.registrationModel.create({
           userId: null,
           memberId: null,
           courseId: course._id,
+          registrationCode,
           status: RegistrationStatus.PENDING,
           paymentStatus: RegistrationPaymentStatus.UNPAID,
           price: null,
           membershipVerified: false,
+          paymentProof,
           note: dto.note ?? null,
           registrant: {
             name: dto.name,
@@ -298,6 +377,13 @@ export class RegistrationService {
           isActive: true,
         });
 
+        let responsePaymentProof = paymentProof;
+        if (responsePaymentProof) {
+          responsePaymentProof = await this.minioService.attachPresignedUrl(
+            responsePaymentProof,
+          );
+        }
+
         return {
           code: ERROR_RES.SUCCESS.statusCode,
           info: ERROR_INFO.SUCCESS,
@@ -305,6 +391,8 @@ export class RegistrationService {
             'Đăng ký thành công. Thông tin của bạn đang chờ được xác thực.',
           content: {
             registrationId: registration._id.toString(),
+            registrationCode: registration.registrationCode,
+            paymentProof: responsePaymentProof,
           },
         };
       } catch (innerError) {
@@ -344,11 +432,15 @@ export class RegistrationService {
         })
         .sort({ createdAt: -1 });
 
+      const itemsWithUrls = await this.attachPaymentProofUrlToList(
+        registrations,
+      );
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Get my registrations successfully',
-        content: { items: registrations },
+        content: { items: itemsWithUrls },
       };
     } catch (error: any) {
       return {
@@ -668,24 +760,40 @@ export class RegistrationService {
         filter.membershipVerified = query.membershipVerified;
       }
 
+      if (query.registrationCode) {
+        filter.registrationCode = new RegExp(query.registrationCode.trim(), 'i');
+      }
+
+      if (query.search) {
+        const searchRegex = new RegExp(query.search.trim(), 'i');
+        filter.$or = [
+          { registrationCode: searchRegex },
+          { 'registrant.name': searchRegex },
+          { 'registrant.email': searchRegex },
+          { 'registrant.phoneNumber': searchRegex },
+        ];
+      }
+
       const [items, total] = await Promise.all([
         this.registrationModel
           .find(filter)
           .populate({ path: 'userId', select: 'name email' })
           .populate({ path: 'memberId', select: 'name memberCode email phone' })
-          .populate({ path: 'courseId', select: 'title date status' })
+          .populate({ path: 'courseId', select: 'title date status location learningType price memberPrice' })
           .sort({ createdAt: -1 })
           .skip(skip)
           .limit(limit),
         this.registrationModel.countDocuments(filter),
       ]);
 
+      const itemsWithUrls = await this.attachPaymentProofUrlToList(items);
+
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Get admin registration list successfully',
         content: {
-          items,
+          items: itemsWithUrls,
           total,
           page,
           limit,
@@ -697,6 +805,90 @@ export class RegistrationService {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
         message: `There is a problem while getting admin registration list: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async confirmPayment(id: string) {
+    try {
+      if (!Types.ObjectId.isValid(id)) {
+        return {
+          code: ERROR_RES.BAD_REQUEST_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Invalid registration id',
+          content: null,
+        };
+      }
+
+      const registration = await this.registrationModel
+        .findById(id)
+        .populate('courseId');
+
+      if (!registration) {
+        return {
+          code: ERROR_RES.NOT_FOUND_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'Registration not found',
+          content: null,
+        };
+      }
+
+      if (registration.paymentStatus === RegistrationPaymentStatus.PAID) {
+        return {
+          code: ERROR_RES.CONFLICT_ERROR.statusCode,
+          info: ERROR_INFO.FAIL,
+          message: 'This registration payment has already been confirmed',
+          content: null,
+        };
+      }
+
+      const course: any = registration.courseId;
+
+      registration.paymentStatus = RegistrationPaymentStatus.PAID;
+      if (registration.status === RegistrationStatus.PENDING) {
+        registration.status = RegistrationStatus.CONFIRMED;
+        registration.confirmedAt = new Date();
+      }
+      await registration.save();
+
+      const registrationWithUrl = await this.attachPaymentProofUrl(
+        registration,
+      );
+
+      const email = registration.registrant?.email;
+      const name = registration.registrant?.name;
+      if (email && name) {
+        this.mailService
+          .sendCourseRegistrationPaymentConfirmation(
+            email,
+            name,
+            registration.registrationCode || '',
+            course?.title || 'Khóa học',
+            registration.price ?? course?.price ?? 0,
+            course?.date,
+            course?.location,
+            course?.learningType,
+          )
+          .catch((err) => {
+            console.error(
+              'Error sending course payment confirmation email:',
+              err,
+            );
+          });
+      }
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Confirm payment and send confirmation email successfully',
+        content: { registration: registrationWithUrl },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while confirming payment: ${error.message}`,
         content: null,
       };
     }

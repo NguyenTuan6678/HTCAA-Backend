@@ -29,6 +29,7 @@ import {
 import { Observable, map } from 'rxjs';
 
 import { Role } from '../../utils/role.enum';
+import { CurrentUser } from '../../users/auth/decorators/current-user.decorator';
 import { Roles } from '../../users/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
@@ -46,7 +47,7 @@ import { RequestSupplementDto } from './dto/request-supplement.req';
 export class MembershipRegistrationController {
   constructor(
     private readonly membershipRegistrationService: MembershipRegistrationService,
-  ) {}
+  ) { }
 
   @Get('homepage')
   @ApiOperation({
@@ -429,8 +430,16 @@ export class MembershipRegistrationController {
   })
   @ApiParam({ name: 'id', description: 'Membership registration id' })
   @ApiBody({ type: ConfirmPaymentDto })
-  confirmPayment(@Param('id') id: string, @Body() dto: ConfirmPaymentDto) {
-    return this.membershipRegistrationService.confirmPayment(id, dto);
+  confirmPayment(
+    @Param('id') id: string,
+    @Body() dto: ConfirmPaymentDto,
+    @CurrentUser('id') adminUserId: string,
+  ) {
+    return this.membershipRegistrationService.confirmPayment(
+      id,
+      dto,
+      adminUserId,
+    );
   }
 
   @Patch(':id')

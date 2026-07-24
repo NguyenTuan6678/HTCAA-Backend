@@ -11,7 +11,6 @@ import { UsersModule } from './users/users.module';
 import { AppConfigModule } from './config/config.module';
 import { MemberModule } from './module/member/member.module';
 import { NewsModule } from './module/news/news.module';
-// import { HomepageModule } from './module/homepage/homepage.module';
 import { CourseModule } from './module/course/course.module';
 import { AboutUsModule } from './module/about/about.module';
 import { LegalDocsModule } from './module/legal-docs/legal-docs.module';
@@ -49,23 +48,23 @@ import { ShutdownService } from './common/shutdowns/shutdown.service';
     }),
     AuthModule,
     UsersModule,
-    AppConfigModule,
-    MemberModule,
-    NewsModule,
-    // HomepageModule,
-    CourseModule,
     AboutUsModule,
-    UploadModule,
-    MinioModule,
+    NewsModule,
     LegalDocsModule,
-    FaqsModule,
     DocumentsModule,
     ContactModule,
-    NewsletterSubscriberModule,
-    RegistrationModule,
-    MembershipRegistrationModule,
-    SocialPostModule,
+    FaqsModule,
     PartnerModule,
+    SocialPostModule,
+    AppConfigModule,
+    MemberModule,
+    MembershipRegistrationModule,
+    RegistrationModule,
+    CourseModule,
+    RegistrationModule,
+    NewsletterSubscriberModule,
+    UploadModule,
+    MinioModule,
   ],
   controllers: [AppController],
   providers: [
@@ -77,4 +76,4 @@ import { ShutdownService } from './common/shutdowns/shutdown.service';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

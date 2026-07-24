@@ -3,7 +3,7 @@ import { HydratedDocument, Types } from 'mongoose';
 
 import { User } from './user.schema';
 import { Member } from './member.schema';
-import { Course } from './course.schema';
+import { Course, CourseFile, CourseFileSchema } from './course.schema';
 import {
   RegistrationStatus,
   RegistrationPaymentStatus,
@@ -99,6 +99,12 @@ export class Registration {
   @Prop({ type: String, trim: true, default: null })
   note?: string | null;
 
+  @Prop({ type: String, trim: true, default: null })
+  registrationCode?: string | null;
+
+  @Prop({ type: CourseFileSchema, default: null })
+  paymentProof?: CourseFile | null;
+
   @Prop({ type: RegistrantSchema, required: true })
   registrant: Registrant;
 
@@ -120,6 +126,7 @@ RegistrationSchema.index(
 );
 
 RegistrationSchema.index({ 'registrant.email': 1, courseId: 1 });
+RegistrationSchema.index({ registrationCode: 1 }, { sparse: true, unique: true });
 RegistrationSchema.index({ userId: 1 });
 RegistrationSchema.index({ memberId: 1 });
 RegistrationSchema.index({ courseId: 1 });

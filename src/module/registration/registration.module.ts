@@ -12,6 +12,9 @@ import {
 import { Course, CourseSchema } from '../../schema/course.schema';
 import { User, UserSchema } from '../../schema/user.schema';
 import { Member, MemberSchema } from '../../schema/member.schema';
+import { Counter, CounterSchema } from '../../schema/counter.schema';
+import { MinioModule } from '../minio/minio.module';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
   imports: [
@@ -20,7 +23,10 @@ import { Member, MemberSchema } from '../../schema/member.schema';
       { name: User.name, schema: UserSchema },
       { name: Course.name, schema: CourseSchema },
       { name: Member.name, schema: MemberSchema },
+      { name: Counter.name, schema: CounterSchema },
     ]),
+    MinioModule,
+    MailModule,
   ],
   providers: [RegistrationService, JwtAuthGuard, RolesGuard],
   controllers: [RegistrationController],
