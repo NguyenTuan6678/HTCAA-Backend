@@ -16,7 +16,7 @@ import * as os from 'os';
 import { execSync } from 'child_process';
 
 import { MembershipRegistration } from '../../schema/membership-registration.schema';
-import { Member } from '../../schema/member.schema';
+import { Member, MemberProfileFile } from '../../schema/member.schema';
 import { Counter } from '../../schema/counter.schema';
 import { User } from '../../schema/user.schema';
 import { Role } from '../../utils/role.enum';
@@ -116,6 +116,30 @@ export class MembershipRegistrationService {
       bucket: uploadResult.bucket || 'htcaa',
       mimetype: uploadResult.mimetype,
       size: uploadResult.size,
+    };
+  }
+
+  private toMemberProfileFile(file?: any): MemberProfileFile | null {
+    if (!file) {
+      return null;
+    }
+
+    const filename = file.filename || file.objectName;
+    if (!filename) {
+      return null;
+    }
+
+    const path =
+      file.path ||
+      file.url ||
+      `/uploads/members/${filename}`;
+
+    return {
+      originalName: file.originalName || file.originalname || filename,
+      filename,
+      path,
+      mimetype: file.mimetype || file.mimeType || 'application/octet-stream',
+      size: typeof file.size === 'number' ? file.size : 0,
     };
   }
 
@@ -1621,10 +1645,10 @@ export class MembershipRegistrationService {
         phoneNumber: registration.companyPhoneNumber || null,
         jobType: registration.companyJobType || null,
         slogan: registration.companySlogan || null,
-        banner: registration.banner ? (registration.banner as any) : null,
+        banner: this.toMemberProfileFile(registration.banner),
       };
 
-      const avatarData = registration.avatar ? (registration.avatar as any) : null;
+      const avatarData = this.toMemberProfileFile(registration.avatar);
 
       if (!member) {
         member = await this.memberModel.create({
