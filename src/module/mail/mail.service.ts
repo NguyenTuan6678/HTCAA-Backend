@@ -1135,9 +1135,13 @@ Ban thư ký ${appName}
         <td align="center">
           <table width="600" border="0" cellspacing="0" cellpadding="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.08);">
             <tr>
-              <td style="background-color: #0054a6; padding: 32px 32px 24px; text-align: center;">
-                <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">${appName}</h1>
-                <p style="color: #daebff; margin: 8px 0 0; font-size: 14px;">Xác Nhận Thanh Toán Khóa Học Thành Công</p>
+              <td style="background-color: #0054a6; padding: 28px 24px; text-align: center;">
+                <div style="background-color: #ffffff; padding: 12px 24px; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);">
+                  <img src="cid:logoHtcaa" alt="${appName}" style="max-height: 60px; max-width: 220px; width: auto; height: auto; display: block; margin: 0 auto;" />
+                </div>
+                <p style="margin: 10px 0 0; color: #e0f2fe; font-size: 14px; font-weight: 500;">
+                  Xác Nhận Thanh Toán Khóa Học Thành Công
+                </p>
               </td>
             </tr>
             <tr>
