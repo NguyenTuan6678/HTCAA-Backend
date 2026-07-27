@@ -746,6 +746,12 @@ export class CourseService {
         }
       }
 
+      if (!course.slug) {
+        course.slug = await this.generateUniqueCourseSlug(
+          course.title || 'course',
+        );
+      }
+
       course.image = this.buildFileMetadata(result);
       await course.save();
 
