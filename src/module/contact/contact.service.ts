@@ -14,7 +14,7 @@ export class ContactService {
   constructor(
     @InjectModel(Contact.name)
     private readonly contactModel: Model<Contact>,
-  ) {}
+  ) { }
 
   // ─── PUBLIC ────────────────────────────────────────────────────────────────
 
@@ -214,7 +214,7 @@ export class ContactService {
         };
       }
 
-      await this.contactModel.findByIdAndUpdate(id, { isActive: false });
+      await this.contactModel.findByIdAndDelete(id);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,

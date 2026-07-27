@@ -24,7 +24,7 @@ export class SocialPostService {
     @InjectModel(SocialPost.name)
     private readonly socialPostModel: Model<SocialPostDocument>,
     private readonly minioService: MinioService,
-  ) {}
+  ) { }
 
   // ─── HELPERS  ────────────────────────────────────────────────────────────────
 
@@ -274,11 +274,7 @@ export class SocialPostService {
       throw new BadRequestException('ID bài viết không hợp lệ.');
     }
 
-    const post = await this.socialPostModel.findByIdAndUpdate(
-      id,
-      { isActive: false },
-      { new: true },
-    );
+    const post = await this.socialPostModel.findByIdAndDelete(id);
 
     if (!post) {
       throw new NotFoundException('Bài viết không tồn tại.');

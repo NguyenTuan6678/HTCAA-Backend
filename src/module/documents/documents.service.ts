@@ -34,7 +34,7 @@ export class DocumentsService {
     private readonly legalDocsCategoryModel: Model<LegalDocsCategory>,
 
     private readonly minioService: MinioService,
-  ) {}
+  ) { }
 
   // ───  HELPERS ────────────────────────────────────────────────────────────────
 
@@ -377,7 +377,7 @@ export class DocumentsService {
         await this.minioService.removeFile((doc as any).file.objectName);
       }
 
-      await this.documentModel.findByIdAndUpdate(id, { isActive: false });
+      await this.documentModel.findByIdAndDelete(id);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
@@ -591,7 +591,7 @@ export class DocumentsService {
       res.setHeader(
         'Content-Type',
         fileInfo.mimeType ??
-          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       );
       res.setHeader(
         'Content-Disposition',

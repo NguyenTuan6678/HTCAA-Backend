@@ -21,7 +21,7 @@ export class FaqsService {
     private readonly faqModel: Model<Faq>,
     @InjectModel(FaqCategory.name)
     private readonly faqCategoryModel: Model<FaqCategory>,
-  ) {}
+  ) { }
 
   // ─── HELPERS  ────────────────────────────────────────────────────────────────
 
@@ -326,7 +326,7 @@ export class FaqsService {
         };
       }
 
-      await this.faqModel.findByIdAndUpdate(id, { isActive: false });
+      await this.faqModel.findByIdAndDelete(id);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
@@ -738,17 +738,13 @@ export class FaqsService {
         };
       }
 
-      const deleted = await this.faqCategoryModel.findByIdAndUpdate(
-        id,
-        { isActive: false },
-        { returnDocument: 'after' },
-      );
+      const deleted = await this.faqCategoryModel.findByIdAndDelete(id);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Delete FAQ category successfully',
-        content: { category: deleted },
+        content: deleted,
       };
     } catch (error: any) {
       return {

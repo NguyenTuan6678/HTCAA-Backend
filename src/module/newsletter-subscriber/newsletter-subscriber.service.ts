@@ -18,7 +18,7 @@ export class NewsletterSubscriberService {
     private readonly subscriberModel: Model<NewsletterSubscriber>,
     private readonly mailService: MailService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   // ─── PUBLIC METHODS  ────────────────────────────────────────────────────────────────
 

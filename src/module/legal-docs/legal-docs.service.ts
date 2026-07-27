@@ -49,7 +49,7 @@ export class LegalDocsService {
     private readonly userModel: Model<User>,
 
     private readonly minioService: MinioService,
-  ) {}
+  ) { }
 
   // ─── HELPERS  ────────────────────────────────────────────────────────────────
 
@@ -395,16 +395,7 @@ export class LegalDocsService {
         };
       }
 
-      const deletedTypeCategory =
-        await this.typeCategoryModel.findByIdAndUpdate(
-          id,
-          {
-            isActive: false,
-          },
-          {
-            returnDocument: 'after',
-          },
-        );
+      const deletedTypeCategory = await this.typeCategoryModel.findByIdAndDelete(id);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
@@ -641,16 +632,7 @@ export class LegalDocsService {
         };
       }
 
-      const deletedCategory =
-        await this.legalDocsCategoryModel.findByIdAndUpdate(
-          id,
-          {
-            isActive: false,
-          },
-          {
-            returnDocument: 'after',
-          },
-        );
+      const deletedCategory = await this.legalDocsCategoryModel.findByIdAndDelete(id);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
@@ -1113,19 +1095,13 @@ export class LegalDocsService {
 
       await this.minioService.removeFile((doc as any).file.objectName);
 
-      const updatedDoc = await this.legalDocModel
-        .findByIdAndUpdate(
-          id,
-          { file: null },
-          { returnDocument: 'after', runValidators: true },
-        )
-        .populate(this.getPopulateQuery());
+      const updatedDoc = await this.legalDocModel.findByIdAndDelete(id);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Delete legal doc file successfully',
-        content: { doc: updatedDoc },
+        content: updatedDoc,
       };
     } catch (error: any) {
       return {

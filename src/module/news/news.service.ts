@@ -42,7 +42,7 @@ export class NewsService {
     private readonly minioService: MinioService,
     private readonly mailService: MailService,
     private readonly newsletterSubscriberService: NewsletterSubscriberService,
-  ) {}
+  ) { }
 
   // ─── HELPERS ────────────────────────────────────────────────────────────────
 
@@ -243,9 +243,9 @@ export class NewsService {
       const MAIL_THUMBNAIL_EXPIRY_SECONDS = 7 * 24 * 60 * 60; // 7 ngày
       const thumbnailUrl = news.thumbnail?.objectName
         ? await this.minioService.getRealPresignedUrl(
-            news.thumbnail.objectName,
-            MAIL_THUMBNAIL_EXPIRY_SECONDS,
-          )
+          news.thumbnail.objectName,
+          MAIL_THUMBNAIL_EXPIRY_SECONDS,
+        )
         : null;
 
       const { sent, failed } =
@@ -477,15 +477,7 @@ export class NewsService {
         };
       }
 
-      const deletedCategory = await this.newsCategoryModel.findByIdAndUpdate(
-        id,
-        {
-          isActive: false,
-        },
-        {
-          returnDocument: 'after',
-        },
-      );
+      const deletedCategory = await this.newsCategoryModel.findByIdAndDelete(id);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
@@ -1069,25 +1061,13 @@ export class NewsService {
         };
       }
 
-      const deletedNews = await this.newsModel
-        .findByIdAndUpdate(
-          id,
-          {
-            isActive: false,
-          },
-          {
-            returnDocument: 'after',
-          },
-        )
-        .populate(this.getNewsPopulateQuery());
+      const deletedNews = await this.newsModel.findByIdAndDelete(id);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Delete news successfully',
-        content: {
-          news: deletedNews,
-        },
+        content: deletedNews,
       };
     } catch (error: any) {
       return {
@@ -1366,28 +1346,13 @@ export class NewsService {
         };
       }
 
-      const deletedComment = await this.newsCommentModel
-        .findByIdAndUpdate(
-          commentId,
-          {
-            isActive: false,
-          },
-          {
-            returnDocument: 'after',
-          },
-        )
-        .populate({
-          path: 'userId',
-          select: 'name email role',
-        });
+      const deletedComment = await this.newsCommentModel.findByIdAndDelete(commentId);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Delete news comment successfully',
-        content: {
-          comment: deletedComment,
-        },
+        content: deletedComment,
       };
     } catch (error: any) {
       return {
@@ -1488,26 +1453,13 @@ export class NewsService {
         await this.minioService.removeFile((news as any).thumbnail.objectName);
       }
 
-      const updatedNews = await this.newsModel
-        .findByIdAndUpdate(
-          id,
-          {
-            thumbnail: null,
-          },
-          {
-            returnDocument: 'after',
-            runValidators: true,
-          },
-        )
-        .populate(this.getNewsPopulateQuery());
+      const updatedNews = await this.newsModel.findByIdAndDelete(id);
 
       return {
         code: ERROR_RES.SUCCESS.statusCode,
         info: ERROR_INFO.SUCCESS,
         message: 'Delete news thumbnail successfully',
-        content: {
-          news: updatedNews,
-        },
+        content: updatedNews,
       };
     } catch (error: any) {
       return {
@@ -1634,7 +1586,7 @@ export class NewsService {
       await this.minioService.removeFile(objectName);
 
       const updatedNews = await this.newsModel
-        .findByIdAndUpdate(
+        .findByIdAndDelete(
           id,
           {
             $pull: {
@@ -1642,11 +1594,7 @@ export class NewsService {
                 objectName,
               },
             },
-          },
-          {
-            returnDocument: 'after',
-            runValidators: true,
-          },
+          }
         )
         .populate(this.getNewsPopulateQuery());
 

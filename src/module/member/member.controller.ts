@@ -37,6 +37,7 @@ import { JwtAuthGuard } from '../../users/auth/guards/auth.guard';
 import { CurrentUser } from '../../users/auth/decorators/current-user.decorator';
 import { RolesGuard } from '../../users/auth/guards/roles.guard';
 import { QueryAdminMemberDto } from './dto/query-admin-member.req';
+import { QueryMemberHomepageDto } from './dto/query-member-homepage.req';
 
 const pdfFileFilter = (
   req: any,
@@ -61,6 +62,14 @@ const pdfFileFilter = (
 @Controller('member')
 export class MemberController {
   constructor(private readonly memberService: MemberService) {}
+
+  @Get('homepage')
+  @ApiOperation({
+    summary: 'Public: Get members for homepage display',
+  })
+  findHomepage(@Query() query: QueryMemberHomepageDto) {
+    return this.memberService.findHomepage(query);
+  }
 
   // @Post('register')
   // @UseGuards(JwtAuthGuard)

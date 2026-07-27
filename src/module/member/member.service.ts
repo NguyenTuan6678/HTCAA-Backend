@@ -12,6 +12,7 @@ import { MemberStatus } from '../../utils/member-status.enum';
 import { MemberType } from '../../utils/member-type.enum';
 import { Counter } from '../../schema/counter.schema';
 import { QueryAdminMemberDto } from './dto/query-admin-member.req';
+import { QueryMemberHomepageDto } from './dto/query-member-homepage.req';
 import { escapeRegex } from '../../utils/escape-regex';
 import { MinioService } from '../minio/minio.service';
 
@@ -22,7 +23,7 @@ export class MemberService {
     @InjectModel(User.name) private readonly userModel: Model<User>,
     @InjectModel(Counter.name) private readonly counterModel: Model<Counter>,
     private readonly minioService: MinioService,
-  ) {}
+  ) { }
 
   private toPublicFile(file?: any) {
     if (!file) {
@@ -144,10 +145,10 @@ export class MemberService {
       const organization =
         registerDto.memberType === MemberType.ORGANIZATION
           ? {
-              name: registerDto.organizationName,
-              taxCode: registerDto.organizationTaxCode,
-              employeeScale: registerDto.organizationEmployeeScale ?? null,
-            }
+            name: registerDto.organizationName,
+            taxCode: registerDto.organizationTaxCode,
+            employeeScale: registerDto.organizationEmployeeScale ?? null,
+          }
           : null;
 
       const memberCode = await this.generateMemberCode();
@@ -704,6 +705,51 @@ export class MemberService {
         code: ERROR_RES.INTERNAL_ERROR.statusCode,
         info: ERROR_INFO.FAIL,
         message: `There is a problem while getting admin member list: ${error.message}`,
+        content: null,
+      };
+    }
+  }
+
+  async findHomepage(query: QueryMemberHomepageDto) {
+    try {
+      const limit = query.limit || 6;
+      const filter: any = {
+        isActive: true,
+        status: MemberStatus.ACTIVE,
+      };
+
+      if (query.isFeatured !== undefined) {
+        filter.isFeatured = query.isFeatured;
+      }
+
+      if (query.memberType) {
+        filter.memberType = query.memberType;
+      }
+
+      const members = await this.memberModel
+        .find(filter)
+        .populate({
+          path: 'userId',
+          select: 'name email role',
+        })
+        .sort({ isFeatured: -1, featuredOrder: 1, createdAt: -1 })
+        .limit(limit);
+
+      const membersWithUrls = await this.attachPresignedUrlToList(members);
+
+      return {
+        code: ERROR_RES.SUCCESS.statusCode,
+        info: ERROR_INFO.SUCCESS,
+        message: 'Get homepage members successfully',
+        content: {
+          members: membersWithUrls,
+        },
+      };
+    } catch (error: any) {
+      return {
+        code: ERROR_RES.INTERNAL_ERROR.statusCode,
+        info: ERROR_INFO.FAIL,
+        message: `There is a problem while getting homepage members: ${error.message}`,
         content: null,
       };
     }

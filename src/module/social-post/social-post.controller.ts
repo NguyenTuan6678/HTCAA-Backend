@@ -68,7 +68,7 @@ const imageFileFilter = (
 @ApiTags('SocialPost')
 @Controller('social-posts')
 export class SocialPostController {
-  constructor(private readonly socialPostService: SocialPostService) {}
+  constructor(private readonly socialPostService: SocialPostService) { }
 
   // ─── PUBLIC  ────────────────────────────────────────────────────────────────
 
