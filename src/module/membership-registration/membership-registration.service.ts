@@ -252,17 +252,19 @@ export class MembershipRegistrationService {
     };
 
     // 2. Load background original vector template and custom fonts
-    const templatePath = path.join(
-      process.cwd(),
-      'src/module/membership-registration/assets/original_template.pdf',
-    );
+    const templatePath = fs.existsSync(
+      path.join(process.cwd(), 'src/assets/original_template.pdf'),
+    )
+      ? path.join(process.cwd(), 'src/assets/original_template.pdf')
+      : path.join(__dirname, '../../assets/original_template.pdf');
     const bgBytes = fs.readFileSync(templatePath);
 
     // Project custom fonts path
-    const fontsPath = path.join(
-      process.cwd(),
-      'src/module/membership-registration/assets/fonts',
-    );
+    const fontsPath = fs.existsSync(
+      path.join(process.cwd(), 'src/assets/fonts'),
+    )
+      ? path.join(process.cwd(), 'src/assets/fonts')
+      : path.join(__dirname, '../../assets/fonts');
 
     // Times New Roman Bold for national motto
     const timesBoldBytes = fs.readFileSync(
