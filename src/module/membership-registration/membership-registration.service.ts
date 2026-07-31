@@ -9,7 +9,6 @@ import * as crypto from 'crypto';
 import { Subject } from 'rxjs';
 import { PDFDocument, rgb } from 'pdf-lib';
 import * as fontkit from '@pdf-lib/fontkit';
-import * as QRCode from 'qrcode';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -129,10 +128,7 @@ export class MembershipRegistrationService {
       return null;
     }
 
-    const path =
-      file.path ||
-      file.url ||
-      `/uploads/members/${filename}`;
+    const path = file.path || file.url || `/uploads/members/${filename}`;
 
     return {
       originalName: file.originalName || file.originalname || filename,
@@ -1667,7 +1663,8 @@ export class MembershipRegistrationService {
           identityCode: registration.identityCode || null,
           job: registration.job || null,
           position: registration.position || null,
-          isProfessionalCertification: !!registration.isProfessionalCertification,
+          isProfessionalCertification:
+            !!registration.isProfessionalCertification,
           introduceBy: registration.introduceBy || null,
           avatar: avatarData,
           memberType: dbMemberType,
@@ -1691,7 +1688,8 @@ export class MembershipRegistrationService {
         member.job = registration.job || member.job;
         member.position = registration.position || member.position;
         member.isProfessionalCertification =
-          registration.isProfessionalCertification ?? member.isProfessionalCertification;
+          registration.isProfessionalCertification ??
+          member.isProfessionalCertification;
         member.introduceBy = registration.introduceBy || member.introduceBy;
         member.avatar = avatarData || member.avatar;
         member.workplace = registration.companyName || member.workplace;

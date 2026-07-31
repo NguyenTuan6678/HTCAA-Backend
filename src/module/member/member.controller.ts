@@ -5,16 +5,13 @@ import {
   Get,
   Param,
   Patch,
-  Post,
-  Put,
   Query,
-  UploadedFile,
   UploadedFiles,
   UseGuards,
   UseInterceptors,
   BadRequestException,
 } from '@nestjs/common';
-import { FileInterceptor, FileFieldsInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -176,24 +173,93 @@ export class MemberController {
       type: 'object',
       properties: {
         // ── Personal & Professional Information ────────────────────────────
-        memberCode: { type: 'string', example: 'HTCAA-0001', description: 'Member code' },
+        memberCode: {
+          type: 'string',
+          example: 'HTCAA-0001',
+          description: 'Member code',
+        },
         name: { type: 'string', example: 'John Doe', description: 'Full name' },
-        dateOfBirth: { type: 'string', example: '1998-01-01', description: 'Date of birth (YYYY-MM-DD)' },
-        email: { type: 'string', example: 'user@example.com', description: 'Email address' },
-        phone: { type: 'string', example: '0900000000', description: 'Contact phone number' },
-        identityCode: { type: 'string', example: '079123456789', description: 'National ID / Passport number' },
-        certificateNumber: { type: 'string', example: 'ĐLTCC-0001/TCT', description: 'Professional / Tax agent certificate number' },
-        professionalCertificationNumber: { type: 'string', example: 'ĐLTCC-0001/TCT', description: 'Professional certification number (alias for certificateNumber)' },
-        workplace: { type: 'string', example: 'ABC Accounting Co., Ltd.', description: 'Workplace' },
-        district: { type: 'string', example: 'District 1', description: 'District / Region' },
-        address: { type: 'string', example: '123 Main Street, District 1, Ho Chi Minh City', description: 'Contact address' },
-        job: { type: 'string', example: 'Chief Accountant', description: 'Occupation / Job title' },
-        position: { type: 'string', example: 'Department Head', description: 'Position / Title' },
-        isProfessionalCertification: { type: 'boolean', example: true, description: 'Whether the member holds a professional certification' },
-        introduceBy: { type: 'string', example: 'Jane Smith', description: 'Referrer / Introduced by' },
-        starRating: { type: 'string', example: '5', description: 'Star rating (1–5)' },
-        tenure: { type: 'string', example: '2026-2028', description: 'Membership tenure / term' },
-        tag: { type: 'string', example: 'VIP', description: 'Classification tag or label' },
+        dateOfBirth: {
+          type: 'string',
+          example: '1998-01-01',
+          description: 'Date of birth (YYYY-MM-DD)',
+        },
+        email: {
+          type: 'string',
+          example: 'user@example.com',
+          description: 'Email address',
+        },
+        phone: {
+          type: 'string',
+          example: '0900000000',
+          description: 'Contact phone number',
+        },
+        identityCode: {
+          type: 'string',
+          example: '079123456789',
+          description: 'National ID / Passport number',
+        },
+        certificateNumber: {
+          type: 'string',
+          example: 'ĐLTCC-0001/TCT',
+          description: 'Professional / Tax agent certificate number',
+        },
+        professionalCertificationNumber: {
+          type: 'string',
+          example: 'ĐLTCC-0001/TCT',
+          description:
+            'Professional certification number (alias for certificateNumber)',
+        },
+        workplace: {
+          type: 'string',
+          example: 'ABC Accounting Co., Ltd.',
+          description: 'Workplace',
+        },
+        district: {
+          type: 'string',
+          example: 'District 1',
+          description: 'District / Region',
+        },
+        address: {
+          type: 'string',
+          example: '123 Main Street, District 1, Ho Chi Minh City',
+          description: 'Contact address',
+        },
+        job: {
+          type: 'string',
+          example: 'Chief Accountant',
+          description: 'Occupation / Job title',
+        },
+        position: {
+          type: 'string',
+          example: 'Department Head',
+          description: 'Position / Title',
+        },
+        isProfessionalCertification: {
+          type: 'boolean',
+          example: true,
+          description: 'Whether the member holds a professional certification',
+        },
+        introduceBy: {
+          type: 'string',
+          example: 'Jane Smith',
+          description: 'Referrer / Introduced by',
+        },
+        starRating: {
+          type: 'string',
+          example: '5',
+          description: 'Star rating (1–5)',
+        },
+        tenure: {
+          type: 'string',
+          example: '2026-2028',
+          description: 'Membership tenure / term',
+        },
+        tag: {
+          type: 'string',
+          example: 'VIP',
+          description: 'Classification tag or label',
+        },
 
         // ── Membership Settings & Types ────────────────────────────────────
         memberType: {
@@ -210,34 +276,123 @@ export class MemberController {
         },
 
         // ── Organization Information ─────────────────────────────────────────────
-        organizationName: { type: 'string', example: 'ABC Accounting Co., Ltd.', description: 'Organization / Company name' },
-        companyName: { type: 'string', example: 'ABC Accounting Co., Ltd.', description: 'Company name (alias for organizationName)' },
-        organizationTaxCode: { type: 'string', example: '0312345678', description: 'Organization tax identification number' },
-        organizationEmployeeScale: { type: 'string', example: '10-20 employees', description: 'Organization employee scale' },
-        organizationLicense: { type: 'string', example: '0312345678-GP', description: 'Business license number' },
-        companyLicense: { type: 'string', example: '0312345678-GP', description: 'Business license (alias for organizationLicense)' },
-        organizationWebsiteUrl: { type: 'string', example: 'https://abc.com', description: 'Organization website URL' },
-        companyWebsiteUrl: { type: 'string', example: 'https://abc.com', description: 'Company website URL (alias for organizationWebsiteUrl)' },
-        organizationPhoneNumber: { type: 'string', example: '02812345678', description: 'Organization phone number' },
-        companyPhoneNumber: { type: 'string', example: '02812345678', description: 'Company phone number (alias for organizationPhoneNumber)' },
-        organizationJobType: { type: 'string', example: 'Tax & Accounting Advisory', description: 'Industry / Business sector' },
-        companyJobType: { type: 'string', example: 'Tax & Accounting Advisory', description: 'Industry / Business sector (alias for organizationJobType)' },
-        organizationSlogan: { type: 'string', example: 'Trust & Dedication', description: 'Organization slogan' },
-        companySlogan: { type: 'string', example: 'Trust & Dedication', description: 'Company slogan (alias for organizationSlogan)' },
+        organizationName: {
+          type: 'string',
+          example: 'ABC Accounting Co., Ltd.',
+          description: 'Organization / Company name',
+        },
+        companyName: {
+          type: 'string',
+          example: 'ABC Accounting Co., Ltd.',
+          description: 'Company name (alias for organizationName)',
+        },
+        organizationTaxCode: {
+          type: 'string',
+          example: '0312345678',
+          description: 'Organization tax identification number',
+        },
+        organizationEmployeeScale: {
+          type: 'string',
+          example: '10-20 employees',
+          description: 'Organization employee scale',
+        },
+        organizationLicense: {
+          type: 'string',
+          example: '0312345678-GP',
+          description: 'Business license number',
+        },
+        companyLicense: {
+          type: 'string',
+          example: '0312345678-GP',
+          description: 'Business license (alias for organizationLicense)',
+        },
+        organizationWebsiteUrl: {
+          type: 'string',
+          example: 'https://abc.com',
+          description: 'Organization website URL',
+        },
+        companyWebsiteUrl: {
+          type: 'string',
+          example: 'https://abc.com',
+          description: 'Company website URL (alias for organizationWebsiteUrl)',
+        },
+        organizationPhoneNumber: {
+          type: 'string',
+          example: '02812345678',
+          description: 'Organization phone number',
+        },
+        companyPhoneNumber: {
+          type: 'string',
+          example: '02812345678',
+          description:
+            'Company phone number (alias for organizationPhoneNumber)',
+        },
+        organizationJobType: {
+          type: 'string',
+          example: 'Tax & Accounting Advisory',
+          description: 'Industry / Business sector',
+        },
+        companyJobType: {
+          type: 'string',
+          example: 'Tax & Accounting Advisory',
+          description:
+            'Industry / Business sector (alias for organizationJobType)',
+        },
+        organizationSlogan: {
+          type: 'string',
+          example: 'Trust & Dedication',
+          description: 'Organization slogan',
+        },
+        companySlogan: {
+          type: 'string',
+          example: 'Trust & Dedication',
+          description: 'Company slogan (alias for organizationSlogan)',
+        },
 
         // ── Status & Admin Management ─────────────────────────────────────
         status: {
           type: 'string',
-          enum: ['pending', 'active', 'rejected', 'expired', 'renewal_pending', 'cancelled'],
+          enum: [
+            'pending',
+            'active',
+            'rejected',
+            'expired',
+            'renewal_pending',
+            'cancelled',
+          ],
           example: 'active',
           description: 'Member status',
         },
-        cpeHours: { type: 'number', example: 20, description: 'CPE training hours / credits' },
-        isFeatured: { type: 'boolean', example: true, description: 'Whether to mark member as featured' },
-        featuredOrder: { type: 'number', example: 1, description: 'Display priority order for featured member' },
-        expiredAt: { type: 'string', example: '2027-12-31T23:59:59.000Z', description: 'Membership expiration date (ISO 8601)' },
-        rejectReason: { type: 'string', example: 'Application requirements not met', description: 'Rejection reason' },
-        isActive: { type: 'boolean', example: true, description: 'Active status of member profile' },
+        cpeHours: {
+          type: 'number',
+          example: 20,
+          description: 'CPE training hours / credits',
+        },
+        isFeatured: {
+          type: 'boolean',
+          example: true,
+          description: 'Whether to mark member as featured',
+        },
+        featuredOrder: {
+          type: 'number',
+          example: 1,
+          description: 'Display priority order for featured member',
+        },
+        expiredAt: {
+          type: 'string',
+          example: '2027-12-31T23:59:59.000Z',
+          description: 'Membership expiration date (ISO 8601)',
+        },
+        rejectReason: {
+          type: 'string',
+          example: 'Application requirements not met',
+          description: 'Rejection reason',
+        },
+        isActive: {
+          type: 'boolean',
+          example: true,
+          description: 'Active status of member profile',
+        },
 
         // ── File Attachments ───────────────────────────────────────────────
         avatar: {
@@ -276,8 +431,10 @@ export class MemberController {
   ) {
     if (files?.avatar?.[0]) updateMemberDto.avatarFile = files.avatar[0];
     if (files?.banner?.[0]) updateMemberDto.bannerFile = files.banner[0];
-    if (files?.profileFile?.[0]) updateMemberDto.profileFile = files.profileFile[0];
-    if (files?.certificateFile?.[0]) updateMemberDto.certificateFile = files.certificateFile[0];
+    if (files?.profileFile?.[0])
+      updateMemberDto.profileFile = files.profileFile[0];
+    if (files?.certificateFile?.[0])
+      updateMemberDto.certificateFile = files.certificateFile[0];
 
     return this.memberService.updateMe(userId, updateMemberDto);
   }
@@ -308,24 +465,93 @@ export class MemberController {
       type: 'object',
       properties: {
         // ── Personal & Professional Information ────────────────────────────
-        memberCode: { type: 'string', example: 'HTCAA-0001', description: 'Member code' },
+        memberCode: {
+          type: 'string',
+          example: 'HTCAA-0001',
+          description: 'Member code',
+        },
         name: { type: 'string', example: 'John Doe', description: 'Full name' },
-        dateOfBirth: { type: 'string', example: '1998-01-01', description: 'Date of birth (YYYY-MM-DD)' },
-        email: { type: 'string', example: 'user@example.com', description: 'Email address' },
-        phone: { type: 'string', example: '0900000000', description: 'Contact phone number' },
-        identityCode: { type: 'string', example: '079123456789', description: 'National ID / Passport number' },
-        certificateNumber: { type: 'string', example: 'ĐLTCC-0001/TCT', description: 'Professional / Tax agent certificate number' },
-        professionalCertificationNumber: { type: 'string', example: 'ĐLTCC-0001/TCT', description: 'Professional certification number (alias for certificateNumber)' },
-        workplace: { type: 'string', example: 'ABC Accounting Co., Ltd.', description: 'Workplace' },
-        district: { type: 'string', example: 'District 1', description: 'District / Region' },
-        address: { type: 'string', example: '123 Main Street, District 1, Ho Chi Minh City', description: 'Contact address' },
-        job: { type: 'string', example: 'Chief Accountant', description: 'Occupation / Job title' },
-        position: { type: 'string', example: 'Department Head', description: 'Position / Title' },
-        isProfessionalCertification: { type: 'boolean', example: true, description: 'Whether the member holds a professional certification' },
-        introduceBy: { type: 'string', example: 'Jane Smith', description: 'Referrer / Introduced by' },
-        starRating: { type: 'string', example: '5', description: 'Star rating (1–5)' },
-        tenure: { type: 'string', example: '2026-2028', description: 'Membership tenure / term' },
-        tag: { type: 'string', example: 'VIP', description: 'Classification tag or label' },
+        dateOfBirth: {
+          type: 'string',
+          example: '1998-01-01',
+          description: 'Date of birth (YYYY-MM-DD)',
+        },
+        email: {
+          type: 'string',
+          example: 'user@example.com',
+          description: 'Email address',
+        },
+        phone: {
+          type: 'string',
+          example: '0900000000',
+          description: 'Contact phone number',
+        },
+        identityCode: {
+          type: 'string',
+          example: '079123456789',
+          description: 'National ID / Passport number',
+        },
+        certificateNumber: {
+          type: 'string',
+          example: 'ĐLTCC-0001/TCT',
+          description: 'Professional / Tax agent certificate number',
+        },
+        professionalCertificationNumber: {
+          type: 'string',
+          example: 'ĐLTCC-0001/TCT',
+          description:
+            'Professional certification number (alias for certificateNumber)',
+        },
+        workplace: {
+          type: 'string',
+          example: 'ABC Accounting Co., Ltd.',
+          description: 'Workplace',
+        },
+        district: {
+          type: 'string',
+          example: 'District 1',
+          description: 'District / Region',
+        },
+        address: {
+          type: 'string',
+          example: '123 Main Street, District 1, Ho Chi Minh City',
+          description: 'Contact address',
+        },
+        job: {
+          type: 'string',
+          example: 'Chief Accountant',
+          description: 'Occupation / Job title',
+        },
+        position: {
+          type: 'string',
+          example: 'Department Head',
+          description: 'Position / Title',
+        },
+        isProfessionalCertification: {
+          type: 'boolean',
+          example: true,
+          description: 'Whether the member holds a professional certification',
+        },
+        introduceBy: {
+          type: 'string',
+          example: 'Jane Smith',
+          description: 'Referrer / Introduced by',
+        },
+        starRating: {
+          type: 'string',
+          example: '5',
+          description: 'Star rating (1–5)',
+        },
+        tenure: {
+          type: 'string',
+          example: '2026-2028',
+          description: 'Membership tenure / term',
+        },
+        tag: {
+          type: 'string',
+          example: 'VIP',
+          description: 'Classification tag or label',
+        },
 
         // ── Membership Settings & Types ────────────────────────────────────
         memberType: {
@@ -342,34 +568,123 @@ export class MemberController {
         },
 
         // ── Organization Information ─────────────────────────────────────────────
-        organizationName: { type: 'string', example: 'ABC Accounting Co., Ltd.', description: 'Organization / Company name' },
-        companyName: { type: 'string', example: 'ABC Accounting Co., Ltd.', description: 'Company name (alias for organizationName)' },
-        organizationTaxCode: { type: 'string', example: '0312345678', description: 'Organization tax identification number' },
-        organizationEmployeeScale: { type: 'string', example: '10-20 employees', description: 'Organization employee scale' },
-        organizationLicense: { type: 'string', example: '0312345678-GP', description: 'Business license number' },
-        companyLicense: { type: 'string', example: '0312345678-GP', description: 'Business license (alias for organizationLicense)' },
-        organizationWebsiteUrl: { type: 'string', example: 'https://abc.com', description: 'Organization website URL' },
-        companyWebsiteUrl: { type: 'string', example: 'https://abc.com', description: 'Company website URL (alias for organizationWebsiteUrl)' },
-        organizationPhoneNumber: { type: 'string', example: '02812345678', description: 'Organization phone number' },
-        companyPhoneNumber: { type: 'string', example: '02812345678', description: 'Company phone number (alias for organizationPhoneNumber)' },
-        organizationJobType: { type: 'string', example: 'Tax & Accounting Advisory', description: 'Industry / Business sector' },
-        companyJobType: { type: 'string', example: 'Tax & Accounting Advisory', description: 'Industry / Business sector (alias for organizationJobType)' },
-        organizationSlogan: { type: 'string', example: 'Trust & Dedication', description: 'Organization slogan' },
-        companySlogan: { type: 'string', example: 'Trust & Dedication', description: 'Company slogan (alias for organizationSlogan)' },
+        organizationName: {
+          type: 'string',
+          example: 'ABC Accounting Co., Ltd.',
+          description: 'Organization / Company name',
+        },
+        companyName: {
+          type: 'string',
+          example: 'ABC Accounting Co., Ltd.',
+          description: 'Company name (alias for organizationName)',
+        },
+        organizationTaxCode: {
+          type: 'string',
+          example: '0312345678',
+          description: 'Organization tax identification number',
+        },
+        organizationEmployeeScale: {
+          type: 'string',
+          example: '10-20 employees',
+          description: 'Organization employee scale',
+        },
+        organizationLicense: {
+          type: 'string',
+          example: '0312345678-GP',
+          description: 'Business license number',
+        },
+        companyLicense: {
+          type: 'string',
+          example: '0312345678-GP',
+          description: 'Business license (alias for organizationLicense)',
+        },
+        organizationWebsiteUrl: {
+          type: 'string',
+          example: 'https://abc.com',
+          description: 'Organization website URL',
+        },
+        companyWebsiteUrl: {
+          type: 'string',
+          example: 'https://abc.com',
+          description: 'Company website URL (alias for organizationWebsiteUrl)',
+        },
+        organizationPhoneNumber: {
+          type: 'string',
+          example: '02812345678',
+          description: 'Organization phone number',
+        },
+        companyPhoneNumber: {
+          type: 'string',
+          example: '02812345678',
+          description:
+            'Company phone number (alias for organizationPhoneNumber)',
+        },
+        organizationJobType: {
+          type: 'string',
+          example: 'Tax & Accounting Advisory',
+          description: 'Industry / Business sector',
+        },
+        companyJobType: {
+          type: 'string',
+          example: 'Tax & Accounting Advisory',
+          description:
+            'Industry / Business sector (alias for organizationJobType)',
+        },
+        organizationSlogan: {
+          type: 'string',
+          example: 'Trust & Dedication',
+          description: 'Organization slogan',
+        },
+        companySlogan: {
+          type: 'string',
+          example: 'Trust & Dedication',
+          description: 'Company slogan (alias for organizationSlogan)',
+        },
 
         // ── Status & Admin Management ─────────────────────────────────────
         status: {
           type: 'string',
-          enum: ['pending', 'active', 'rejected', 'expired', 'renewal_pending', 'cancelled'],
+          enum: [
+            'pending',
+            'active',
+            'rejected',
+            'expired',
+            'renewal_pending',
+            'cancelled',
+          ],
           example: 'active',
           description: 'Member status',
         },
-        cpeHours: { type: 'number', example: 20, description: 'CPE training hours / credits' },
-        isFeatured: { type: 'boolean', example: true, description: 'Whether to mark member as featured' },
-        featuredOrder: { type: 'number', example: 1, description: 'Display priority order for featured member' },
-        expiredAt: { type: 'string', example: '2027-12-31T23:59:59.000Z', description: 'Membership expiration date (ISO 8601)' },
-        rejectReason: { type: 'string', example: 'Application requirements not met', description: 'Rejection reason' },
-        isActive: { type: 'boolean', example: true, description: 'Active status of member profile' },
+        cpeHours: {
+          type: 'number',
+          example: 20,
+          description: 'CPE training hours / credits',
+        },
+        isFeatured: {
+          type: 'boolean',
+          example: true,
+          description: 'Whether to mark member as featured',
+        },
+        featuredOrder: {
+          type: 'number',
+          example: 1,
+          description: 'Display priority order for featured member',
+        },
+        expiredAt: {
+          type: 'string',
+          example: '2027-12-31T23:59:59.000Z',
+          description: 'Membership expiration date (ISO 8601)',
+        },
+        rejectReason: {
+          type: 'string',
+          example: 'Application requirements not met',
+          description: 'Rejection reason',
+        },
+        isActive: {
+          type: 'boolean',
+          example: true,
+          description: 'Active status of member profile',
+        },
 
         // ── File Attachments ───────────────────────────────────────────────
         avatar: {
@@ -408,8 +723,10 @@ export class MemberController {
   ) {
     if (files?.avatar?.[0]) updateMemberDto.avatarFile = files.avatar[0];
     if (files?.banner?.[0]) updateMemberDto.bannerFile = files.banner[0];
-    if (files?.profileFile?.[0]) updateMemberDto.profileFile = files.profileFile[0];
-    if (files?.certificateFile?.[0]) updateMemberDto.certificateFile = files.certificateFile[0];
+    if (files?.profileFile?.[0])
+      updateMemberDto.profileFile = files.profileFile[0];
+    if (files?.certificateFile?.[0])
+      updateMemberDto.certificateFile = files.certificateFile[0];
 
     return this.memberService.adminUpdate(id, updateMemberDto);
   }
